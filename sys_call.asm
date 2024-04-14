@@ -29,3 +29,10 @@ macro write_m fd_out, buf_ptr, len
 	syscall  
 }
 
+macro exit_m code
+{
+    mov rax, SYS_EXIT
+    mov rdi, code
+    syscall
+}
+
