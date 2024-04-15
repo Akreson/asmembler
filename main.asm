@@ -2,6 +2,7 @@ format ELF64 executable
 
 include 'sys_call.asm'
 include 'helper.asm'
+include 'symbols.asm'
 
 segment readable executable
 entry _start
