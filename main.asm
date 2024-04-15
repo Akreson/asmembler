@@ -22,5 +22,6 @@ _start:
     syscall
 
 segment readable writeable
-msg db "Hellow World", 10
+msg
+db "Hellow World", 10
 db "lllallalalala", 10, 0
