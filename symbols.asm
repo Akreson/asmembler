@@ -137,6 +137,9 @@ AUX_ADD       equ 0x02000B
 AUX_SUB       equ 0x02000C
 AUX_MUL       equ 0x02000D
 
+TOKEN_KIND_SIZE equ 16
+SIZE_HASH_DEF_SYM_TABLE equ 8192
+
 segment readable
 
 ;STR_ "", 0
@@ -280,7 +283,6 @@ macro def_symbol_m value, type, str_ptr
     dq str_ptr
 }
 
-TOKEN_KIND_SIZE equ 16
 
 DEF_SYM_TABLE dd 0, 0xFF
 dq 0; dumy define
