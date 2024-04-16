@@ -1,8 +1,8 @@
-TOKEN_TYPE_KEYWORD egu 1
-TOKEN_TYPE_INS     egu 2
-TOKEN_TYPE_REG     egu 3
+TOKEN_TYPE_KEYWORD equ 1
+TOKEN_TYPE_INS     equ 2
+TOKEN_TYPE_REG     equ 3
 TOKEN_TYPE_AUX     equ 4
-TOKEN_TYPE_NAME    egu 5
+TOKEN_TYPE_NAME    equ 5
 
 REG_AL   equ 0x00
 REG_CL   equ 0x01
@@ -72,6 +72,70 @@ REG_R13 equ 0x4D
 REG_R14 equ 0x4E
 REG_R15 equ 0x4F
 
+
+;STR_REPS
+INS_REP   equ 0x010000
+INS_MOV   equ 0x010001
+INS_MOVS  equ 0x010002
+INS_MOVSB equ 0x010003
+INS_MOVSW equ 0x010004
+INS_MOVSD equ 0x010005
+INS_MOVZX equ 0x010006
+INS_MOVSX equ 0x010007
+INS_LEA   equ 0x010008
+INS_RET   equ 0x010009
+INS_POP   equ 0x01000A
+INS_PUSH  equ 0x01000B
+INS_INC   equ 0x01000C
+INS_DEC   equ 0x01000D
+INS_AND   equ 0x01000E
+INS_OR    equ 0x01000F
+INS_XOR   equ 0x010010
+INS_ADD   equ 0x010011
+INS_SHL   equ 0x010012
+INS_SAL   equ 0x010013
+INS_SHR   equ 0x010014
+INS_SAR   equ 0x010015
+INS_SUB   equ 0x010016
+INS_DIV   equ 0x010017
+INS_IDVI  equ 0x010018
+INS_MUL   equ 0x010019
+INS_MUL   equ 0x01001A
+INS_TEST  equ 0x01001B
+INS_BSR   equ 0x01001C
+INS_BSF   equ 0x01001D
+INS_TZCNT equ 0x01001E
+INS_LZCNT equ 0x01001F
+INS_CMP   equ 0x010020
+INS_CALL  equ 0x010021
+INS_JMP   equ 0x010022
+INS_JE    equ 0x010023
+INS_JNE   equ 0x010024
+INS_JG    equ 0x010025
+INS_JGE   equ 0x010026
+INS_JI    equ 0x010027
+INS_JIE   equ 0x010028
+INS_JZ    equ 0x010029
+INS_JNZ   equ 0x01002A
+INS_JO    equ 0x01002B
+INS_JNO   equ 0x01002C
+INS_JS    equ 0x01002D
+INS_JNS   equ 0x01002E
+ 
+AUX_COLON     equ 0x020000
+AUX_LPAREN    equ 0x020001
+AUX_RPAREN    equ 0x020002
+AUX_LBRACE    equ 0x020003
+AUX_RBRACE    equ 0x020004
+AUX_LBRACKET  equ 0x020005
+AUX_RBRACKET  equ 0x020006
+AUX_COMMA     equ 0x020007
+AUX_DOT       equ 0x020008
+AUX_SEMICOLON equ 0x020009
+AUX_MOD       equ 0x02000A
+AUX_ADD       equ 0x02000B
+AUX_SUB       equ 0x02000C
+AUX_MUL       equ 0x02000D
 
 segment readable
 
@@ -172,7 +236,7 @@ STR_SUB   db "sub", 0
 STR_DIV   db "div", 0
 STR_IDVI  db "idiv", 0
 STR_MUL   db "mul", 0
-STR_MUL   db "imul", 0
+STR_IMUL  db "imul", 0
 STR_TEST  db "test", 0
 STR_BSR   db "bsr", 0
 STR_BSF   db "bsf", 0
@@ -205,16 +269,17 @@ STR_COMMA db ",", 0
 STR_DOT db ".", 0
 STR_SEMICOLON db ";", 0
 STR_MOD db "%", 0
-STR_ADD db "+", 0
-STR_SUB db "-", 0
-STR_MUL db "*", 0
+STR_AUX_ADD db "+", 0
+STR_AUX_SUB db "-", 0
+STR_AUX_MUL db "*", 0
 
 ; reserve for token_type_name field _type_ as _size_?
-macro def_symbol value, type, str_ptr
+macro def_symbol_m value, type, str_ptr
 {
-    dd value
-    dd type
+    dd value, type
     dq str_ptr
 }
 
-;SYM_TABLE def_symbol
+DEF_SYM_TABLE dd 0, 0
+dq 0
+def_symbol_m REG_AL, TOKEN_TYPE_REG, STR_AL
