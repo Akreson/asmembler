@@ -3,6 +3,7 @@ SYS_WRITE equ 1
 SYS_OPEN equ 2
 SYS_CLOSE equ 3
 SYS_MMAP equ 9
+SYS_MUNMAP equ 11
 SYS_LSEEK equ 13
 SYS_EXIT equ 60
 
@@ -12,9 +13,13 @@ O_RDONLY equ 0
 O_WRONLY equ 1
 O_RDWR equ 2
 
-PROT_EXEC equ 4
 PROT_READ equ 1
 PROT_WRITE equ 2
+PROT_EXEC equ 4
+MAP_SHARED equ 1
+MAP_PRIVATE equ 2
+MAP_ANONYMOUS equ 32
+MAP_EXECUTABLE equ 4096
 
 STD_IN equ 0
 STD_OUT equ 1
@@ -36,3 +41,28 @@ macro exit_m code
     syscall
 }
 
+mmap_def:
+    push rbp
+    mov rbp, rsp
+    push rdi
+    mov rax, SYS_MMAP
+    mov rdi, 0
+    pop rsi
+    mov rdx, 0x3 ; READ + WRITE
+    mov r10, 0x22 ; ANON + PRIVATE
+    xor r8, r8
+    xor r9, r9
+    syscall
+    pop rbp
+    ret
+
+munmap:
+    push rbp
+    mov rbp, rsp
+    test rdi, rdi
+    jz _exit_munmap
+    mov rax, SYS_MUNMAP
+    syscall
+_exit_munmap:
+    pop rbp
+    ret
