@@ -7,20 +7,27 @@ include 'symbols.asm'
 segment readable executable
 entry _start
 
-_start: 
-    mov rdi, msg
-    xor rsi, rsi
+_start:
+    mov r15, DEF_SYM_TABLE
+_start_loop:
+    mov rdi, [r15+8]
+    test rdi, rdi
+    jnz _print_val
+    mov rax, [r15+4]
+    test rax, rax
+    jz _exit
+    jmp _next_item
+_print_val:
     call print_str
-    mov rdi, 22990
-    mov rsi, 10
-    call print_u_digit
-    mov rdi, 22910
-    mov rsi, 3
-    call print_u_digit
-    mov rax, SYS_EXIT
-    mov rdi, 0
-    syscall
+    mov rdi, NEW_LINE
+    call print_str
+_next_item:
+    add r15, 16
+    jmp _start_loop
+_exit:
+    exit_m 0
 
 segment readable writeable
 msg db "Hellow World", 10
 db "lllallalalala", 10, 0
+NEW_LINE db 10, 0
