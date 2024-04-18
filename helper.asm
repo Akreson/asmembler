@@ -4,26 +4,37 @@ PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
 
 segment readable executable
-;rdi - string ptr, rsi - len, must be zero if len muct be calc (not implemented)
-print_str:
+;rdi - string ptr
+print_zero_str:
     push rbp
-    xor rax, rax
-    cmp rdi, rax
-    je _end_print_str
-    xor rdx, rdx
-    mov dl, [rdi]
-    cmp rdx, rax
+    test rdi, rdi
+    jz _end_print_str
+    movzx ebx, byte [rdi]
+    test ebx, ebx
     je _end_print_str
     mov rdx, rdi
 _count_loop_print_str:
+    movzx ecx, byte [rdx] 
     inc rdx
-    mov cl, [rdx] 
-    test cl, cl
+    test ecx, ecx
     jnz _count_loop_print_str
     sub rdx, rdi
     mov rsi, rdi
     write_m STD_OUT, rsi, rdx
 _end_print_str:
+    pop rbp
+    ret
+
+;rdi - string ptr, rsi - len
+print_len_str:
+    push rbp
+    test rdi, rdi
+    jz _end_print_len_str
+    test rsi, rsi
+    jz _end_print_len_str
+_loop_print_len_str:
+    write_m STD_OUT, rsi, rdx
+_end_print_len_str:
     pop rbp
     ret
 
@@ -33,7 +44,6 @@ print_u_digit:
     push rbp
     mov rbp, rsp
     sub rsp, 144
-
     mov rax, 2
     mov rbx, rax
     shl rbx, 4
@@ -45,8 +55,7 @@ print_u_digit:
     cmp rsi, r8
     je _begin_loop_print_digit
     mov rdi, PRINT_BASE_ERR
-    xor rsi, rsi
-    call print_str
+    call print_zero_str
     jmp _end_print_digit
 _begin_loop_print_digit:
     mov rcx, rbp
@@ -67,8 +76,7 @@ _loop_print_digit:
 _write_print_digit:
     ;mov [rcx], dil
     mov rdi, rcx
-    xor rsi, rsi
-    call print_str
+    call print_zero_str
 _end_print_digit:
     add rsp, 144
     pop rbp
