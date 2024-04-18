@@ -137,284 +137,287 @@ AUX_ADD       equ 0x02000B
 AUX_SUB       equ 0x02000C
 AUX_MUL       equ 0x02000D
 
-TOKEN_KIND_SIZE equ 16
+TOKEN_KIND_SIZE equ 14
 SIZE_HASH_DEF_SYM_TABLE equ 8192
 
 segment readable
 
 ;STR_ "", 0
-STR_AL   db "al", 0
-STR_CL   db "cl", 0
-STR_DL   db "dl", 0
-STR_BL   db "bl", 0
-STR_AH   db "ah", 0
-STR_CH   db "ch", 0
-STR_DH   db "dh", 0
-STR_BH   db "bh", 0
-STR_R8B  db "r8b", 0
-STR_R9B  db "r9b", 0
-STR_R10B db "r10b", 0
-STR_R11B db "r11b", 0
-STR_R12B db "r12b", 0
-STR_R13B db "r13b", 0
-STR_R14B db "r14b", 0
-STR_R15B db "r15b", 0
+STR_AL   db "al"
+STR_CL   db "cl"
+STR_DL   db "dl"
+STR_BL   db "bl"
+STR_AH   db "ah"
+STR_CH   db "ch"
+STR_DH   db "dh"
+STR_BH   db "bh"
+STR_R8B  db "r8b"
+STR_R9B  db "r9b"
+STR_R10B db "r10b"
+STR_R11B db "r11b"
+STR_R12B db "r12b"
+STR_R13B db "r13b"
+STR_R14B db "r14b"
+STR_R15B db "r15b"
  
-STR_AX   db "ax", 0
-STR_CX   db "cx", 0
-STR_DX   db "dx", 0
-STR_BX   db "bx", 0
-STR_SP   db "sp", 0
-STR_BP   db "bp", 0
-STR_SI   db "si", 0
-STR_DI   db "di", 0
-STR_R8W  db "r8w", 0
-STR_R9W  db "r9w", 0
-STR_R10W db "r10w", 0
-STR_R11W db "r11w", 0
-STR_R12W db "r12w", 0
-STR_R13W db "r13w", 0
-STR_R14W db "r14w", 0
-STR_R15W db "r15w", 0
+STR_AX   db "ax"
+STR_CX   db "cx"
+STR_DX   db "dx"
+STR_BX   db "bx"
+STR_SP   db "sp"
+STR_BP   db "bp"
+STR_SI   db "si"
+STR_DI   db "di"
+STR_R8W  db "r8w"
+STR_R9W  db "r9w"
+STR_R10W db "r10w"
+STR_R11W db "r11w"
+STR_R12W db "r12w"
+STR_R13W db "r13w"
+STR_R14W db "r14w"
+STR_R15W db "r15w"
 
-STR_EAX  db "eax", 0
-STR_ECX  db "ecx", 0
-STR_EDX  db "edx", 0
-STR_EBX  db "ebx", 0
-STR_ESP  db "esp", 0
-STR_EBP  db "ebp", 0
-STR_ESI  db "esi", 0
-STR_EDI  db "edi", 0
-STR_R8D  db "r8d", 0
-STR_R9D  db "r9d", 0
-STR_R10D db "r10d", 0
-STR_R11D db "r11d", 0
-STR_R12D db "r12d", 0
-STR_R13D db "r13d", 0
-STR_R14D db "r14d", 0
-STR_R15D db "r15d", 0
+STR_EAX  db "eax"
+STR_ECX  db "ecx"
+STR_EDX  db "edx"
+STR_EBX  db "ebx"
+STR_ESP  db "esp"
+STR_EBP  db "ebp"
+STR_ESI  db "esi"
+STR_EDI  db "edi"
+STR_R8D  db "r8d"
+STR_R9D  db "r9d"
+STR_R10D db "r10d"
+STR_R11D db "r11d"
+STR_R12D db "r12d"
+STR_R13D db "r13d"
+STR_R14D db "r14d"
+STR_R15D db "r15d"
 
-STR_RAX db "rax", 0
-STR_RCX db "rcx", 0
-STR_RDX db "rdx", 0
-STR_RBX db "rbx", 0
-STR_RSP db "rsp", 0
-STR_RBP db "rbp", 0
-STR_RSI db "rsi", 0
-STR_RDI db "rdi", 0
-STR_R8  db "r8", 0
-STR_R9  db "r9", 0
-STR_R10 db "r10", 0
-STR_R11 db "r11", 0
-STR_R12 db "r12", 0
-STR_R13 db "r13", 0
-STR_R14 db "r14", 0
-STR_R15 db "r15", 0
+STR_RAX db "rax"
+STR_RCX db "rcx"
+STR_RDX db "rdx"
+STR_RBX db "rbx"
+STR_RSP db "rsp"
+STR_RBP db "rbp"
+STR_RSI db "rsi"
+STR_RDI db "rdi"
+STR_R8  db "r8"
+STR_R9  db "r9"
+STR_R10 db "r10"
+STR_R11 db "r11"
+STR_R12 db "r12"
+STR_R13 db "r13"
+STR_R14 db "r14"
+STR_R15 db "r15"
 
 
 ;STR_REPS
-STR_REP   db "rep", 0
-STR_MOV   db "mov", 0
-STR_MOVS  db "movs", 0
-STR_MOVSB db "movsb", 0
-STR_MOVSW db "movsw", 0
-STR_MOVSD db "movsd", 0
-STR_MOVZX db "movzx", 0
-STR_MOVSX db "movcx", 0
-STR_LEA   db "lea", 0
-STR_RET   db "ret", 0
-STR_POP   db "pop", 0
-STR_PUSH  db "push", 0
-STR_INC   db "inc", 0
-STR_DEC   db "dec", 0
-STR_AND   db "and", 0
-STR_OR    db "or", 0
-STR_XOR   db "xor", 0
-STR_ADD   db "add", 0
-STR_SHL   db "shl", 0 ; / same opcode
-STR_SAL   db "sal", 0 ; \
-STR_SHR   db "shr", 0 ; / not the same
-STR_SAR   db "sar", 0 ; \
-STR_SUB   db "sub", 0
-STR_DIV   db "div", 0
-STR_IDVI  db "idiv", 0
-STR_MUL   db "mul", 0
-STR_IMUL  db "imul", 0
-STR_TEST  db "test", 0
-STR_BSR   db "bsr", 0
-STR_BSF   db "bsf", 0
-STR_TZCNT db "tzcnt", 0
-STR_LZCNT db "lzcnt", 0
-STR_CMP   db "cmp", 0
-STR_CALL  db "call", 0
-STR_JMP   db "jmp", 0
-STR_JE    db "je", 0
-STR_JNE   db "jne", 0
-STR_JG    db "jg", 0
-STR_JGE   db "jge", 0
-STR_JI    db "ji", 0
-STR_JIE   db "jie", 0
-STR_JZ    db "jz", 0
-STR_JNZ   db "jne", 0
-STR_JO    db "jo", 0
-STR_JNO   db "jno", 0
-STR_JS    db "js", 0
-STR_JNS   db "jns", 0
+STR_REP   db "rep"
+STR_MOV   db "mov"
+STR_MOVS  db "movs"
+STR_MOVSB db "movsb"
+STR_MOVSW db "movsw"
+STR_MOVSD db "movsd"
+STR_MOVZX db "movzx"
+STR_MOVSX db "movcx"
+STR_LEA   db "lea"
+STR_RET   db "ret"
+STR_POP   db "pop"
+STR_PUSH  db "push"
+STR_INC   db "inc"
+STR_DEC   db "dec"
+STR_AND   db "and"
+STR_OR    db "or"
+STR_XOR   db "xor"
+STR_ADD   db "add"
+STR_SHL   db "shl" ; / same opcode
+STR_SAL   db "sal" ; \
+STR_SHR   db "shr" ; / not the same
+STR_SAR   db "sar" ; \
+STR_SUB   db "sub"
+STR_DIV   db "div"
+STR_IDVI  db "idiv"
+STR_MUL   db "mul"
+STR_IMUL  db "imul"
+STR_TEST  db "test"
+STR_BSR   db "bsr"
+STR_BSF   db "bsf"
+STR_TZCNT db "tzcnt"
+STR_LZCNT db "lzcnt"
+STR_CMP   db "cmp"
+STR_CALL  db "call"
+STR_JMP   db "jmp"
+STR_JE    db "je"
+STR_JNE   db "jne"
+STR_JG    db "jg"
+STR_JGE   db "jge"
+STR_JI    db "ji"
+STR_JIE   db "jie"
+STR_JZ    db "jz"
+STR_JNZ   db "jne"
+STR_JO    db "jo"
+STR_JNO   db "jno"
+STR_JS    db "js"
+STR_JNS   db "jns"
 
-STR_COLON db ":", 0
-STR_LPAREN db "(", 0
-STR_RPAREN db ")", 0
-STR_LBRACE db "{", 0
-STR_RBRACE db "}", 0
-STR_LBRACKET db "[", 0
-STR_RBRACKET db "]", 0
-STR_COMMA db ",", 0
-STR_DOT db ".", 0
-STR_SEMICOLON db ";", 0
-STR_MOD db "%", 0
-STR_AUX_ADD db "+", 0
-STR_AUX_SUB db "-", 0
-STR_AUX_MUL db "*", 0
+STR_COLON     db ":"
+STR_LPAREN    db "("
+STR_RPAREN    db ")"
+STR_LBRACE    db "{"
+STR_RBRACE    db "}"
+STR_LBRACKET  db "["
+STR_RBRACKET  db "]"
+STR_COMMA     db ","
+STR_DOT       db "."
+STR_SEMICOLON db ";"
+STR_MOD       db "%"
+STR_AUX_ADD   db "+"
+STR_AUX_SUB   db "-"
+STR_AUX_MUL   db "*"
 
 ; reserve for token_type_name field _type_ as _size_?
-macro def_symbol_m value, type, str_ptr
+macro def_symbol_m value, type, str_ptr, str_len
 {
-    dd value, type
     dq str_ptr
+    dd value
+    db type
+    db str_len
 }
 
 
-DEF_SYM_TABLE dd 0, 0xFF
-dq 0; dumy define
-def_symbol_m REG_AL, TOKEN_TYPE_REG, STR_AL
-def_symbol_m REG_CL, TOKEN_TYPE_REG, STR_CL 
-def_symbol_m REG_DL, TOKEN_TYPE_REG, STR_DL
-def_symbol_m REG_BL, TOKEN_TYPE_REG, STR_BL
-def_symbol_m REG_AH, TOKEN_TYPE_REG, STR_AH
-def_symbol_m REG_CH, TOKEN_TYPE_REG, STR_CH
-def_symbol_m REG_DH, TOKEN_TYPE_REG, STR_DH
-def_symbol_m REG_BH, TOKEN_TYPE_REG, STR_BH
-def_symbol_m REG_R8B, TOKEN_TYPE_REG, STR_R8B
-def_symbol_m REG_R9B, TOKEN_TYPE_REG, STR_R9B
-def_symbol_m REG_R10B, TOKEN_TYPE_REG, STR_R10B
-def_symbol_m REG_R11B, TOKEN_TYPE_REG, STR_R11B
-def_symbol_m REG_R12B, TOKEN_TYPE_REG, STR_R12B
-def_symbol_m REG_R13B, TOKEN_TYPE_REG, STR_R13B
-def_symbol_m REG_R14B, TOKEN_TYPE_REG, STR_R14B
-def_symbol_m REG_R15B, TOKEN_TYPE_REG, STR_R15B
+DEF_SYM_TABLE dq 0
+dd 0
+db 0xFF, 0; dumy define
+def_symbol_m REG_AL, TOKEN_TYPE_REG, STR_AL, 2
+def_symbol_m REG_CL, TOKEN_TYPE_REG, STR_CL, 2
+def_symbol_m REG_DL, TOKEN_TYPE_REG, STR_DL, 2
+def_symbol_m REG_BL, TOKEN_TYPE_REG, STR_BL, 2
+def_symbol_m REG_AH, TOKEN_TYPE_REG, STR_AH, 2
+def_symbol_m REG_CH, TOKEN_TYPE_REG, STR_CH, 2
+def_symbol_m REG_DH, TOKEN_TYPE_REG, STR_DH, 2
+def_symbol_m REG_BH, TOKEN_TYPE_REG, STR_BH, 2
+def_symbol_m REG_R8B, TOKEN_TYPE_REG, STR_R8B, 3
+def_symbol_m REG_R9B, TOKEN_TYPE_REG, STR_R9B, 3
+def_symbol_m REG_R10B, TOKEN_TYPE_REG, STR_R10B, 4
+def_symbol_m REG_R11B, TOKEN_TYPE_REG, STR_R11B, 4
+def_symbol_m REG_R12B, TOKEN_TYPE_REG, STR_R12B, 4
+def_symbol_m REG_R13B, TOKEN_TYPE_REG, STR_R13B, 4
+def_symbol_m REG_R14B, TOKEN_TYPE_REG, STR_R14B, 4
+def_symbol_m REG_R15B, TOKEN_TYPE_REG, STR_R15B, 4
 
-def_symbol_m REG_AX, TOKEN_TYPE_REG, STR_AX
-def_symbol_m REG_CX, TOKEN_TYPE_REG, STR_CX
-def_symbol_m REG_DX, TOKEN_TYPE_REG, STR_DX
-def_symbol_m REG_BX, TOKEN_TYPE_REG, STR_BX
-def_symbol_m REG_SP, TOKEN_TYPE_REG, STR_SP
-def_symbol_m REG_BP, TOKEN_TYPE_REG, STR_BP
-def_symbol_m REG_SI, TOKEN_TYPE_REG, STR_SI
-def_symbol_m REG_DI, TOKEN_TYPE_REG, STR_DI
-def_symbol_m REG_R8W, TOKEN_TYPE_REG, STR_R8W
-def_symbol_m REG_R9W, TOKEN_TYPE_REG, STR_R9W
-def_symbol_m REG_R10W, TOKEN_TYPE_REG, STR_R10W
-def_symbol_m REG_R11W, TOKEN_TYPE_REG, STR_R11W
-def_symbol_m REG_R12W, TOKEN_TYPE_REG, STR_R12W
-def_symbol_m REG_R13W, TOKEN_TYPE_REG, STR_R13W
-def_symbol_m REG_R14W, TOKEN_TYPE_REG, STR_R14W
-def_symbol_m REG_R15W, TOKEN_TYPE_REG, STR_R15W
+def_symbol_m REG_AX, TOKEN_TYPE_REG, STR_AX, 2
+def_symbol_m REG_CX, TOKEN_TYPE_REG, STR_CX, 2
+def_symbol_m REG_DX, TOKEN_TYPE_REG, STR_DX, 2
+def_symbol_m REG_BX, TOKEN_TYPE_REG, STR_BX, 2
+def_symbol_m REG_SP, TOKEN_TYPE_REG, STR_SP, 2
+def_symbol_m REG_BP, TOKEN_TYPE_REG, STR_BP, 2
+def_symbol_m REG_SI, TOKEN_TYPE_REG, STR_SI, 2
+def_symbol_m REG_DI, TOKEN_TYPE_REG, STR_DI, 2
+def_symbol_m REG_R8W, TOKEN_TYPE_REG, STR_R8W, 3
+def_symbol_m REG_R9W, TOKEN_TYPE_REG, STR_R9W, 3
+def_symbol_m REG_R10W, TOKEN_TYPE_REG, STR_R10W, 4
+def_symbol_m REG_R11W, TOKEN_TYPE_REG, STR_R11W, 4
+def_symbol_m REG_R12W, TOKEN_TYPE_REG, STR_R12W, 4
+def_symbol_m REG_R13W, TOKEN_TYPE_REG, STR_R13W, 4
+def_symbol_m REG_R14W, TOKEN_TYPE_REG, STR_R14W, 4
+def_symbol_m REG_R15W, TOKEN_TYPE_REG, STR_R15W, 4
 
-def_symbol_m REG_EAX, TOKEN_TYPE_REG, STR_EAX
-def_symbol_m REG_ECX, TOKEN_TYPE_REG, STR_ECX
-def_symbol_m REG_EDX, TOKEN_TYPE_REG, STR_EDX
-def_symbol_m REG_EBX, TOKEN_TYPE_REG, STR_EBX
-def_symbol_m REG_ESP, TOKEN_TYPE_REG, STR_ESP
-def_symbol_m REG_EBP, TOKEN_TYPE_REG, STR_EBP
-def_symbol_m REG_ESI, TOKEN_TYPE_REG, STR_ESI
-def_symbol_m REG_EDI, TOKEN_TYPE_REG, STR_EDI
-def_symbol_m REG_R8D, TOKEN_TYPE_REG, STR_R8D
-def_symbol_m REG_R9D, TOKEN_TYPE_REG, STR_R9D
-def_symbol_m REG_R10D, TOKEN_TYPE_REG, STR_R10D
-def_symbol_m REG_R11D, TOKEN_TYPE_REG, STR_R11D
-def_symbol_m REG_R12D, TOKEN_TYPE_REG, STR_R12D
-def_symbol_m REG_R13D, TOKEN_TYPE_REG, STR_R13D
-def_symbol_m REG_R14D, TOKEN_TYPE_REG, STR_R14D
-def_symbol_m REG_R15D, TOKEN_TYPE_REG, STR_R15D
+def_symbol_m REG_EAX, TOKEN_TYPE_REG, STR_EAX, 3
+def_symbol_m REG_ECX, TOKEN_TYPE_REG, STR_ECX, 3
+def_symbol_m REG_EDX, TOKEN_TYPE_REG, STR_EDX, 3
+def_symbol_m REG_EBX, TOKEN_TYPE_REG, STR_EBX, 3
+def_symbol_m REG_ESP, TOKEN_TYPE_REG, STR_ESP, 3
+def_symbol_m REG_EBP, TOKEN_TYPE_REG, STR_EBP, 3
+def_symbol_m REG_ESI, TOKEN_TYPE_REG, STR_ESI, 3
+def_symbol_m REG_EDI, TOKEN_TYPE_REG, STR_EDI, 3
+def_symbol_m REG_R8D, TOKEN_TYPE_REG, STR_R8D, 3
+def_symbol_m REG_R9D, TOKEN_TYPE_REG, STR_R9D, 3
+def_symbol_m REG_R10D, TOKEN_TYPE_REG, STR_R10D, 4
+def_symbol_m REG_R11D, TOKEN_TYPE_REG, STR_R11D, 4
+def_symbol_m REG_R12D, TOKEN_TYPE_REG, STR_R12D, 4
+def_symbol_m REG_R13D, TOKEN_TYPE_REG, STR_R13D, 4
+def_symbol_m REG_R14D, TOKEN_TYPE_REG, STR_R14D, 4
+def_symbol_m REG_R15D, TOKEN_TYPE_REG, STR_R15D, 4
 
-def_symbol_m REG_RAX, TOKEN_TYPE_REG, STR_RAX
-def_symbol_m REG_RCX, TOKEN_TYPE_REG, STR_RCX
-def_symbol_m REG_RDX, TOKEN_TYPE_REG, STR_RDX
-def_symbol_m REG_RBX, TOKEN_TYPE_REG, STR_RBX
-def_symbol_m REG_RSP, TOKEN_TYPE_REG, STR_RSP
-def_symbol_m REG_RBP, TOKEN_TYPE_REG, STR_RBP
-def_symbol_m REG_RSI, TOKEN_TYPE_REG, STR_RSI
-def_symbol_m REG_RDI, TOKEN_TYPE_REG, STR_RDI
-def_symbol_m REG_R8, TOKEN_TYPE_REG, STR_R8
-def_symbol_m REG_R9, TOKEN_TYPE_REG, STR_R9
-def_symbol_m REG_R10, TOKEN_TYPE_REG, STR_R10
-def_symbol_m REG_R11, TOKEN_TYPE_REG, STR_R11
-def_symbol_m REG_R12, TOKEN_TYPE_REG, STR_R12
-def_symbol_m REG_R13, TOKEN_TYPE_REG, STR_R13
-def_symbol_m REG_R14, TOKEN_TYPE_REG, STR_R14
-def_symbol_m REG_R15, TOKEN_TYPE_REG, STR_R15
+def_symbol_m REG_RAX, TOKEN_TYPE_REG, STR_RAX, 3
+def_symbol_m REG_RCX, TOKEN_TYPE_REG, STR_RCX, 3
+def_symbol_m REG_RDX, TOKEN_TYPE_REG, STR_RDX, 3
+def_symbol_m REG_RBX, TOKEN_TYPE_REG, STR_RBX, 3
+def_symbol_m REG_RSP, TOKEN_TYPE_REG, STR_RSP, 3
+def_symbol_m REG_RBP, TOKEN_TYPE_REG, STR_RBP, 3
+def_symbol_m REG_RSI, TOKEN_TYPE_REG, STR_RSI, 3
+def_symbol_m REG_RDI, TOKEN_TYPE_REG, STR_RDI, 3
+def_symbol_m REG_R8, TOKEN_TYPE_REG, STR_R8, 2
+def_symbol_m REG_R9, TOKEN_TYPE_REG, STR_R9, 2
+def_symbol_m REG_R10, TOKEN_TYPE_REG, STR_R10, 3
+def_symbol_m REG_R11, TOKEN_TYPE_REG, STR_R11, 3
+def_symbol_m REG_R12, TOKEN_TYPE_REG, STR_R12, 3
+def_symbol_m REG_R13, TOKEN_TYPE_REG, STR_R13, 3
+def_symbol_m REG_R14, TOKEN_TYPE_REG, STR_R14, 3
+def_symbol_m REG_R15, TOKEN_TYPE_REG, STR_R15, 3
 
-def_symbol_m INS_REP, TOKEN_TYPE_INS, STR_REP
-def_symbol_m INS_MOV, TOKEN_TYPE_INS, STR_MOV
-def_symbol_m INS_MOVS, TOKEN_TYPE_INS, STR_MOVS
-def_symbol_m INS_MOVSB, TOKEN_TYPE_INS, STR_MOVSB
-def_symbol_m INS_MOVSW, TOKEN_TYPE_INS, STR_MOVSW
-def_symbol_m INS_MOVSD, TOKEN_TYPE_INS, STR_MOVSD
-def_symbol_m INS_MOVZX, TOKEN_TYPE_INS, STR_MOVZX
-def_symbol_m INS_MOVSX, TOKEN_TYPE_INS, STR_MOVSX
-def_symbol_m INS_LEA, TOKEN_TYPE_INS, STR_LEA
-def_symbol_m INS_RET, TOKEN_TYPE_INS, STR_RET
-def_symbol_m INS_POP, TOKEN_TYPE_INS, STR_POP
-def_symbol_m INS_PUSH, TOKEN_TYPE_INS, STR_PUSH
-def_symbol_m INS_INC, TOKEN_TYPE_INS, STR_INC
-def_symbol_m INS_DEC, TOKEN_TYPE_INS, STR_DEC
-def_symbol_m INS_AND, TOKEN_TYPE_INS, STR_AND
-def_symbol_m INS_OR, TOKEN_TYPE_INS, STR_OR
-def_symbol_m INS_XOR, TOKEN_TYPE_INS, STR_XOR
-def_symbol_m INS_ADD, TOKEN_TYPE_INS, STR_ADD
-def_symbol_m INS_SHL, TOKEN_TYPE_INS, STR_SHL
-def_symbol_m INS_SAL, TOKEN_TYPE_INS, STR_SAL
-def_symbol_m INS_SHR, TOKEN_TYPE_INS, STR_SHR
-def_symbol_m INS_SAR, TOKEN_TYPE_INS, STR_SAR
-def_symbol_m INS_SUB, TOKEN_TYPE_INS, STR_SUB
-def_symbol_m INS_DIV, TOKEN_TYPE_INS, STR_DIV
-def_symbol_m INS_IDVI, TOKEN_TYPE_INS, STR_IDVI
-def_symbol_m INS_MUL, TOKEN_TYPE_INS, STR_MUL
-def_symbol_m INS_MUL, TOKEN_TYPE_INS, STR_MUL
-def_symbol_m INS_TEST, TOKEN_TYPE_INS, STR_TEST
-def_symbol_m INS_BSR, TOKEN_TYPE_INS, STR_BSR
-def_symbol_m INS_BSF, TOKEN_TYPE_INS, STR_BSF
-def_symbol_m INS_TZCNT, TOKEN_TYPE_INS, STR_TZCNT  
-def_symbol_m INS_LZCNT, TOKEN_TYPE_INS, STR_LZCNT
-def_symbol_m INS_CMP, TOKEN_TYPE_INS, STR_CMP
-def_symbol_m INS_CALL, TOKEN_TYPE_INS, STR_CALL
-def_symbol_m INS_JMP, TOKEN_TYPE_INS, STR_JMP
-def_symbol_m INS_JE, TOKEN_TYPE_INS, STR_JE
-def_symbol_m INS_JNE, TOKEN_TYPE_INS, STR_JNE
-def_symbol_m INS_JG, TOKEN_TYPE_INS, STR_JG
-def_symbol_m INS_JGE, TOKEN_TYPE_INS, STR_JGE
-def_symbol_m INS_JI, TOKEN_TYPE_INS, STR_JI
-def_symbol_m INS_JIE, TOKEN_TYPE_INS, STR_JIE
-def_symbol_m INS_JZ, TOKEN_TYPE_INS, STR_JZ
-def_symbol_m INS_JNZ, TOKEN_TYPE_INS, STR_JNZ
-def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO
-def_symbol_m INS_JNO, TOKEN_TYPE_INS, STR_JNO
-def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS
-def_symbol_m INS_JNS, TOKEN_TYPE_INS, STR_JNS
+def_symbol_m INS_REP, TOKEN_TYPE_INS, STR_REP, 3
+def_symbol_m INS_MOV, TOKEN_TYPE_INS, STR_MOV, 3
+def_symbol_m INS_MOVS, TOKEN_TYPE_INS, STR_MOVS, 4
+def_symbol_m INS_MOVSB, TOKEN_TYPE_INS, STR_MOVSB, 5
+def_symbol_m INS_MOVSW, TOKEN_TYPE_INS, STR_MOVSW, 5
+def_symbol_m INS_MOVSD, TOKEN_TYPE_INS, STR_MOVSD, 5
+def_symbol_m INS_MOVZX, TOKEN_TYPE_INS, STR_MOVZX, 5
+def_symbol_m INS_MOVSX, TOKEN_TYPE_INS, STR_MOVSX, 5
+def_symbol_m INS_LEA, TOKEN_TYPE_INS, STR_LEA, 3
+def_symbol_m INS_RET, TOKEN_TYPE_INS, STR_RET, 3
+def_symbol_m INS_POP, TOKEN_TYPE_INS, STR_POP, 3
+def_symbol_m INS_PUSH, TOKEN_TYPE_INS, STR_PUSH, 4
+def_symbol_m INS_INC, TOKEN_TYPE_INS, STR_INC, 3
+def_symbol_m INS_DEC, TOKEN_TYPE_INS, STR_DEC, 3
+def_symbol_m INS_AND, TOKEN_TYPE_INS, STR_AND, 3
+def_symbol_m INS_OR, TOKEN_TYPE_INS, STR_OR, 2
+def_symbol_m INS_XOR, TOKEN_TYPE_INS, STR_XOR, 3
+def_symbol_m INS_ADD, TOKEN_TYPE_INS, STR_ADD, 3
+def_symbol_m INS_SHL, TOKEN_TYPE_INS, STR_SHL, 3
+def_symbol_m INS_SAL, TOKEN_TYPE_INS, STR_SAL, 3
+def_symbol_m INS_SHR, TOKEN_TYPE_INS, STR_SHR, 3
+def_symbol_m INS_SAR, TOKEN_TYPE_INS, STR_SAR, 3
+def_symbol_m INS_SUB, TOKEN_TYPE_INS, STR_SUB, 3
+def_symbol_m INS_DIV, TOKEN_TYPE_INS, STR_DIV, 3
+def_symbol_m INS_IDVI, TOKEN_TYPE_INS, STR_IDVI, 4
+def_symbol_m INS_MUL, TOKEN_TYPE_INS, STR_MUL, 3
+def_symbol_m INS_IMUL, TOKEN_TYPE_INS, STR_IMUL, 4
+def_symbol_m INS_TEST, TOKEN_TYPE_INS, STR_TEST, 4
+def_symbol_m INS_BSR, TOKEN_TYPE_INS, STR_BSR, 3
+def_symbol_m INS_BSF, TOKEN_TYPE_INS, STR_BSF, 3
+def_symbol_m INS_TZCNT, TOKEN_TYPE_INS, STR_TZCNT, 5
+def_symbol_m INS_LZCNT, TOKEN_TYPE_INS, STR_LZCNT, 5
+def_symbol_m INS_CMP, TOKEN_TYPE_INS, STR_CMP, 3
+def_symbol_m INS_CALL, TOKEN_TYPE_INS, STR_CALL, 4
+def_symbol_m INS_JMP, TOKEN_TYPE_INS, STR_JMP, 3
+def_symbol_m INS_JE, TOKEN_TYPE_INS, STR_JE, 2
+def_symbol_m INS_JNE, TOKEN_TYPE_INS, STR_JNE, 3
+def_symbol_m INS_JG, TOKEN_TYPE_INS, STR_JG, 2
+def_symbol_m INS_JGE, TOKEN_TYPE_INS, STR_JGE, 3
+def_symbol_m INS_JI, TOKEN_TYPE_INS, STR_JI, 2
+def_symbol_m INS_JIE, TOKEN_TYPE_INS, STR_JIE, 3
+def_symbol_m INS_JZ, TOKEN_TYPE_INS, STR_JZ, 2
+def_symbol_m INS_JNZ, TOKEN_TYPE_INS, STR_JNZ, 3
+def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO, 2
+def_symbol_m INS_JNO, TOKEN_TYPE_INS, STR_JNO, 3
+def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS, 2
+def_symbol_m INS_JNS, TOKEN_TYPE_INS, STR_JNS, 3
  
-def_symbol_m AUX_COLON, TOKEN_TYPE_AUX, STR_COLON
-def_symbol_m AUX_LPAREN, TOKEN_TYPE_AUX, STR_LPAREN
-def_symbol_m AUX_RPAREN, TOKEN_TYPE_AUX, STR_RPAREN
-def_symbol_m AUX_LBRACE, TOKEN_TYPE_AUX, STR_LBRACE
-def_symbol_m AUX_RBRACE, TOKEN_TYPE_AUX, STR_RBRACE
-def_symbol_m AUX_LBRACKET, TOKEN_TYPE_AUX, STR_LBRACKET
-def_symbol_m AUX_RBRACKET, TOKEN_TYPE_AUX, STR_RBRACKET
-def_symbol_m AUX_COMMA, TOKEN_TYPE_AUX, STR_COMMA
-def_symbol_m AUX_DOT, TOKEN_TYPE_AUX, STR_DOT
-def_symbol_m AUX_SEMICOLON, TOKEN_TYPE_AUX, STR_SEMICOLON
-def_symbol_m AUX_MOD, TOKEN_TYPE_AUX, STR_MOD
-def_symbol_m AUX_ADD, TOKEN_TYPE_AUX, STR_ADD
-def_symbol_m AUX_SUB, TOKEN_TYPE_AUX, STR_SUB
-def_symbol_m AUX_MUL, TOKEN_TYPE_AUX, STR_MUL
+def_symbol_m AUX_COLON, TOKEN_TYPE_AUX, STR_COLON, 1
+def_symbol_m AUX_LPAREN, TOKEN_TYPE_AUX, STR_LPAREN, 1
+def_symbol_m AUX_RPAREN, TOKEN_TYPE_AUX, STR_RPAREN, 1
+def_symbol_m AUX_LBRACE, TOKEN_TYPE_AUX, STR_LBRACE, 1
+def_symbol_m AUX_RBRACE, TOKEN_TYPE_AUX, STR_RBRACE, 1
+def_symbol_m AUX_LBRACKET, TOKEN_TYPE_AUX, STR_LBRACKET, 1
+def_symbol_m AUX_RBRACKET, TOKEN_TYPE_AUX, STR_RBRACKET, 1
+def_symbol_m AUX_COMMA, TOKEN_TYPE_AUX, STR_COMMA, 1
+def_symbol_m AUX_DOT, TOKEN_TYPE_AUX, STR_DOT, 1
+def_symbol_m AUX_SEMICOLON, TOKEN_TYPE_AUX, STR_SEMICOLON, 1
+def_symbol_m AUX_MOD, TOKEN_TYPE_AUX, STR_MOD, 1
+def_symbol_m AUX_ADD, TOKEN_TYPE_AUX, STR_ADD, 1
+def_symbol_m AUX_SUB, TOKEN_TYPE_AUX, STR_SUB, 1
+def_symbol_m AUX_MUL, TOKEN_TYPE_AUX, STR_MUL, 1
 
-def_symbol_m 0, 0, 0
+def_symbol_m 0, 0, 0, 0
