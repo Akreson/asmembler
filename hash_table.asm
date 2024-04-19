@@ -62,7 +62,8 @@ _cmp_str_ht_find:
     cmp r13d, r14d
     jne _end_cmp_str_ht_find
     test rdx, rdx
-    jnz _cmp_str_ht_find
+    jz _success_ht_find_entry
+    jmp _cmp_str_ht_find
 _end_cmp_str_ht_find:
     mov edx, r12d
 _next_loop_ht_find:
@@ -70,7 +71,7 @@ _next_loop_ht_find:
     or ecx, ebx
     jmp _start_loop_ht_find
 _success_ht_find_entry:
-    mov rax, r10
+    mov rax, r9
 _exit_ht_find_entry:
     pop rbp
     ret
