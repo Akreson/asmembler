@@ -99,7 +99,7 @@ _end_start:
     exit_m 0
 
 segment readable writeable
-; hash table: ptr, count, capacity
+; hash table: 0 ptr, +8 count, +12 capacity
 ; ptr point to array of pointers
 DEF_SYM_HASH_TABLE dq 0
 dd 0, 0
