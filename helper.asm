@@ -14,8 +14,8 @@ print_zero_str:
     je _end_print_str
     mov rdx, rdi
 _count_loop_print_str:
-    movzx ecx, byte [rdx] 
     inc rdx
+    movzx ecx, byte [rdx] 
     test ecx, ecx
     jnz _count_loop_print_str
     sub rdx, rdi
