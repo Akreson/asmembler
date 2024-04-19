@@ -53,9 +53,11 @@ _add_loop_init_def_sym:
     call hash_table_find_entry
     mov rbx, [rax]
     test rbx, rbx
-    jnz _add_init_def_sym 
+    jz _add_init_def_sym 
     mov rdi, DBL_DEF_SYM
+    push rbx
     call print_zero_str
+    pop rbx
     mov rdi, [rbx]
     movzx esi, byte [rbx+13]
     call print_len_str
