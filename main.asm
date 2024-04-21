@@ -33,7 +33,7 @@ _start_loop_init_def_sym:
 _calc_hash_init_def_sym_init:
     mov [rbp-24], rdi
     movzx esi, byte [r8+13]
-    mov [rbp-28], esi
+    mov [rbp-28], esi 
     call hash_str
     test eax, eax
     jnz _add_loop_init_def_sym
@@ -66,7 +66,14 @@ _add_loop_init_def_sym:
     xor rax, rax
     jmp _exit_init_def_sym_table
 _add_init_def_sym:
-    ; add symbol to ht
+    mov rdi, [rbp-16]
+    mov rsi, rax
+    mov rdx, [rbp-8]
+    call hash_table_add_entry    
+    test rax, rax
+    jnz _end_loop_init_def_sym
+    mov rdi, ERR_ADD_HT
+    call print_zero_str
 _end_loop_init_def_sym:
     add qword [rbp-8], TOKEN_KIND_SIZE
     jmp _start_loop_init_def_sym
@@ -109,3 +116,4 @@ INVALID_HASH db "Invalid hash for: ", 0
 MMAP_FAILED db "mmap have failed", 0
 MUNMAP_FAILED db "munmap have failed", 0
 DBL_DEF_SYM db "Dubled default symbol: ", 0
+ERR_ADD_HT db "Error on adding entry to hash table", 0
