@@ -45,8 +45,7 @@ hash_table_find_entry:
     dec ebx
     and ecx, ebx
 _start_loop_ht_find:
-    mov r9, r8
-    add r9, rcx
+    lea r9, [r8+rcx*8]
     mov r10, [r9]
     test r10, r10
     jz _success_ht_find_entry 
@@ -56,7 +55,7 @@ _start_loop_ht_find:
     mov rax, [r10]
     mov r12d, edx
 _cmp_str_ht_find:
-    dec rdx; len of str so last char is [len - 1]
+    dec edx; len of str so last char is [len - 1]
     movzx r13d, byte [rax+rdx]
     movzx r14d, byte [rsi+rdx]
     cmp r13d, r14d
@@ -68,7 +67,7 @@ _end_cmp_str_ht_find:
     mov edx, r12d
 _next_loop_ht_find:
     inc ecx
-    or ecx, ebx
+    and ecx, ebx
     jmp _start_loop_ht_find
 _success_ht_find_entry:
     mov rax, r9
