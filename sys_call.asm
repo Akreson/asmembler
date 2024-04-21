@@ -41,6 +41,7 @@ macro exit_m code
     syscall
 }
 
+;rdi - size to alloc
 mmap_def:
     push rbp
     mov rbp, rsp
@@ -56,6 +57,7 @@ mmap_def:
     pop rbp
     ret
 
+;rdi - ptr to start of maped mem, rsi - size
 munmap:
     push rbp
     mov rbp, rsp
