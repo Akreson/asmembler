@@ -33,6 +33,8 @@ print_len_str:
     test rsi, rsi
     jz _end_print_len_str
 _loop_print_len_str:
+    mov rdx, rsi
+    mov rsi, rdi
     write_m STD_OUT, rsi, rdx
 _end_print_len_str:
     pop rbp
