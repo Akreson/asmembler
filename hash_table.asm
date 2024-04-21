@@ -76,21 +76,40 @@ _exit_ht_find_entry:
     pop rbp
     ret
 
-;rdi - ptr to hash table main block, rsi - hash of value, edx - ptr to sym table entry
+;rdi - ptr to hash table main block, rsi - ptr to ht entry, rdx - ptr to sym table entry,
 hash_table_add_entry:
     push rbp
     mov rbp, rsp
     push rdi
-    push rdx
     push rsi
-    ;TODO: check size and realloc array if need
+    push rdx
+
+    xor rax, rax
+    test rdi, rdi
+    jz _exit_ht_add_entry
+    test rsi, rsi
+    jz _exit_ht_add_entry
+    test rdx, rdx
+    jz _exit_ht_add_entry
+    cmp rsi, rdi
+    jb _exit_ht_add_entry
+    mov rbx, rdi
     mov ecx, [rdi+12]
-    mov rdi, [rdi]
-    call hash_table_find_entry
-    test rax, rax
-    jnz _exit_ht_add_entry
-    mov rdx, [rbp-16]
-    mov [rax], rdx
+    add rbx, rcx
+    cmp rsi, rdi
+    jge _exit_ht_add_entry
+
+    mov [rsi], rdx
+    mov rbx, [rdi]
+    mov ebx, [rdi+8]
+    mov eax, ecx
+    mov r8d, ecx
+    shl eax, 1
+    shl r8d, 2
+    add eax, r8d
+    cmp ecx, eax
+    jb _exit_ht_add_entry
+    ;realloc all entries
 _exit_ht_add_entry:
     add rsp, 24
     pop rbp
