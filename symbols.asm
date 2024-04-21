@@ -138,7 +138,7 @@ AUX_SUB       equ 0x02000C
 AUX_MUL       equ 0x02000D
 
 TOKEN_KIND_SIZE equ 14
-SIZE_HASH_DEF_SYM_TABLE equ 8192
+SIZE_HASH_DEF_SYM_TABLE equ 2048
 
 segment readable
 

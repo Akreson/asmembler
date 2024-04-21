@@ -109,7 +109,7 @@ hash_table_add_entry:
     cmp ebx, eax
     jb _success_exit_ht_add_entry 
     mov edi, ecx
-    shl edi, 1
+    shl edi, 4; 3 + 1
     call mmap_def
     xor rdx, rdx
     sub rdx, 1
@@ -181,6 +181,7 @@ hash_table_init:
     mov [rbp-8], rdi
     mov [rbp-12], esi
     mov rdi, rsi
+    shl rdi, 3
     call mmap_def
     xor rdx, rdx
     sub rdx, 1
