@@ -2,6 +2,7 @@ SYS_READ equ 0
 SYS_WRITE equ 1
 SYS_OPEN equ 2
 SYS_CLOSE equ 3
+SYS_STAT equ 4
 SYS_MMAP equ 9
 SYS_MUNMAP equ 11
 SYS_LSEEK equ 13
@@ -25,6 +26,14 @@ STD_IN equ 0
 STD_OUT equ 1
 STD_ERR equ 2
 
+EACCES equ 13
+
+STRUCT_STAT_SIZE equ 144
+S_IFREG equ 0x400000
+; st_ino offset 8, size 8
+; st_mode offset 24, size 4
+; st_size offset 48, size 8
+
 macro write_m fd_out, buf_ptr, len
 {
     mov rax, SYS_WRITE
@@ -40,6 +49,27 @@ macro exit_m code
     mov rdi, code
     syscall
 }
+
+segment readable executable
+
+; rdi - zero end str
+open_file_read:
+    push rbp
+    mov rax, SYS_OPEN
+    mov rsi, O_RDONLY
+    xor rdx, rdx
+    syscall
+    pop rbp
+    ret
+;rdi - ptr to path (zero ending str), rsi - ptr to memory for _struct stat_
+stat:
+    push rbp
+    mov rbp, rsp
+    mov rax, SYS_STAT
+    syscall
+    pop rbp
+    ret
+
 
 ;rdi - size to alloc
 mmap_def:
