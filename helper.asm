@@ -4,24 +4,46 @@ PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
 
 segment readable executable
+
+print_new_line:
+    push rbp
+    mov rsi, NEW_LINE
+    mov rdx, 1
+    write_m STD_OUT, rsi, rdx
+    pop rbp
+    ret
+
 ;rdi - string ptr
 print_zero_str:
     push rbp
     test rdi, rdi
     jz _end_print_str
-    movzx ebx, byte [rdi]
-    test ebx, ebx
-    je _end_print_str
-    mov rdx, rdi
-_count_loop_print_str:
-    inc rdx
-    movzx ecx, byte [rdx] 
-    test ecx, ecx
-    jnz _count_loop_print_str
-    sub rdx, rdi
+    push rdi
+    call get_zero_str_len
+    pop rdi
+    test rax, rax
+    jz _end_print_str 
     mov rsi, rdi
+    mov rdx, rax
     write_m STD_OUT, rsi, rdx
 _end_print_str:
+    pop rbp
+    ret
+
+;rdi - string ptr
+get_zero_str_len:
+    push rbp
+    test rdi, rdi
+    jz _end_get_zero_len
+    xor rax, rax
+_loop_get_zero_len:
+    movzx ebx, byte [rdi]
+    test ebx, ebx
+    jz _end_get_zero_len
+    inc rax
+    inc rdi
+    jmp _loop_get_zero_len
+_end_get_zero_len:
     pop rbp
     ret
 
@@ -76,7 +98,6 @@ _loop_print_digit:
     je _write_print_digit
     jmp _loop_print_digit
 _write_print_digit:
-    ;mov [rcx], dil
     mov rdi, rcx
     call print_zero_str
 _end_print_digit:
