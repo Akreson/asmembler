@@ -20,20 +20,49 @@ segment readable executable
 get_free_file_entry:
     push rbp
     mov rbp, rsp
+    sub rsp, 24
     mov rdi, FILES_ARRAY
     mov rdx, [rdi]
     mov ecx, [rdi+8]
     mov ebx, [rdi+12]
     cmp ecx, ebx
     jne _fetch_entry_ptr_gffe
-    ;TODO: realloc
+    mov [rbp-16], rdi
+    mov edi, ebx
+    shl edi, 1
+    mov [rbp-4], edi
+    shl edi, 5
+    call mmap_def
+    xor r8, r8
+    cmp rax, r8
+    jl _exit_get_free_file_entry
+    mov [rbp-24], rax
+    mov rbx, [rbp-16]
+    mov rsi, [rbx]
+    mov ecx, [rbx+8]
+    shl ecx, 5
+    mov rdi, rax
+    rep movsb
+    mov rdi, [rbx]
+    mov esi, [rbx+12]
+    shl esi, 5
+    call munmap
+    test rax, rax
+    jnz _exit_get_free_file_entry
+    mov rdi, [rbp-16]
+    mov rdx, [rbp-24]
+    mov esi, [rbp-4]
+    mov [rdi], rdx
+    mov [rdi+12], esi
+    mov ecx, [rdi+8]
 _fetch_entry_ptr_gffe:
     mov ebx, ecx
-    shl ebx, 4
+    shl ebx, 5
     lea rax, [rdx+rbx]
     inc ecx
     mov [rdi+8], ecx
-_exit_get_free_file_entry:  
+_exit_get_free_file_entry:
+    add rsp, 24
     pop rbp
     ret
 
@@ -160,7 +189,7 @@ init_file_array:
     push rbp
     mov rbp, rsp
     mov rdi, 64
-    shl rdi, 4
+    shl rdi, 5
     call mmap_def
     xor rdx, rdx
     sub rdx, 1
