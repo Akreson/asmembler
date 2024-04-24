@@ -44,7 +44,7 @@ _exit_get_free_file_entry:
 load_file_by_path:
     push rbp
     mov rbp, rsp
-    sub rsp, 4256
+    sub rsp, 4280
     mov eax, 4096
     cmp esi, eax
     jng _len_pach_check_lfbp 
@@ -152,7 +152,7 @@ _exit_load_file_by_path:
     close_m
     mov rax, [rbp-168]
 _end_lfbp:
-    add rsp, 4256
+    add rsp, 4280
     pop rbp
     ret
 
