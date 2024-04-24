@@ -1,7 +1,22 @@
 format ELF64 executable
 
+segment readable writeable
+
+NEW_LINE db 10, 0
+INVALID_HASH db "Invalid hash for: ", 0
+MMAP_FAILED db "mmap have failed", 0
+MUNMAP_FAILED db "munmap have failed", 0
+DBL_DEF_SYM db "Dubled default symbol: ", 0
+ERR_ADD_HT db "Error on adding entry to hash table", 0
+
+; hash table: 0 ptr, +8 count, +12 capacity (in 8-byte ptr)
+; ptr point to array of pointers
+DEF_SYM_HASH_TABLE dq 0
+dd 0, 0
+
 include 'sys_call.asm'
 include 'helper.asm'
+include 'files.asm'
 include 'hash_table.asm'
 include 'symbols.asm'
 
@@ -74,6 +89,8 @@ _add_init_def_sym:
     jnz _end_loop_init_def_sym
     mov rdi, ERR_ADD_HT
     call print_zero_str
+    xor rax, rax
+    jmp _exit_init_def_sym_table
 _end_loop_init_def_sym:
     add qword [rbp-8], TOKEN_KIND_SIZE
     jmp _start_loop_init_def_sym
@@ -83,37 +100,48 @@ _exit_init_def_sym_table:
     ret
 
 _start:
+    mov rbp, rsp
+    sub rsp, 8
     call init_def_sym_table
-    mov rdi, SIZE_HASH_DEF_SYM_TABLE
-    call mmap_def
-    xor rdx, rdx
-    sub rdx, 1
-    cmp rax, rdx
-    jne _next_round
-    mov rdi, MMAP_FAILED
-    ;call print_str
+    test rax, rax
+    jz _end_start
+    call init_file_array
+    test rax, rax
+    jz _end_start
+    mov rax, [rbp]
+    cmp rax, 2
+    jb _end_start
+    mov rdi, [rbp+16]
+    call get_zero_str_len
+    mov rdi, [rbp+16]
+    mov rsi, rax
+    call load_file_by_path
+    test rax, rax
+    jz _end_start
+    mov rdi, [rax]
+    mov rsi, [rax+16]
+    call print_len_str
 
-_next_round:
-    mov rdi, rax
-    mov rsi, SIZE_HASH_DEF_SYM_TABLE
-    call munmap
-    xor rdx, rdx
-    cmp rax, rdx
-    je _end_start
-    mov rdi, MUNMAP_FAILED
-    ;call print_str
+    mov rdi, [rbp]
+    mov rsi, 10
+    call print_u_digit
+    xor rax, rax
+    mov qword [rbp-8], 1
+    _start_loop:
+    mov rax, [rbp-8]
+    mov rcx, 8
+    mul rcx
+    mov rdi, [rbp+rax*1]
+    call print_zero_str
+    mov rax, [rbp-8]
+    inc rax
+    mov [rbp-8], rax
+    mov rcx, [rbp]
+    cmp rax, rcx 
+    jg _end_start
+    jmp _start_loop
+        
 _end_start:
+    add rsp, 8
     exit_m 0
 
-segment readable writeable
-; hash table: 0 ptr, +8 count, +12 capacity
-; ptr point to array of pointers
-DEF_SYM_HASH_TABLE dq 0
-dd 0, 0
-
-NEW_LINE db 10, 0
-INVALID_HASH db "Invalid hash for: ", 0
-MMAP_FAILED db "mmap have failed", 0
-MUNMAP_FAILED db "munmap have failed", 0
-DBL_DEF_SYM db "Dubled default symbol: ", 0
-ERR_ADD_HT db "Error on adding entry to hash table", 0
