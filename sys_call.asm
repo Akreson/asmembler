@@ -41,7 +41,7 @@ macro write_m fd_out, buf_ptr, len
 	mov rdi, fd_out
 	mov rsi, buf_ptr
 	mov rdx, len
-	syscall  
+	syscall
 }
 
 macro exit_m code
@@ -51,9 +51,23 @@ macro exit_m code
     syscall
 }
 
+macro close_m
+{
+    mov rax, SYS_CLOSE
+    syscall
+}
+
 segment readable executable
 
-; rdi - zero end str
+;rdi - fd, rsi - buf, rdx - count in bytes
+read:
+    push rbp
+    mov rax, SYS_READ
+    syscall
+    pop rbp
+    ret
+
+;rdi - zero end str
 open_file_read:
     push rbp
     mov rax, SYS_OPEN
@@ -62,6 +76,7 @@ open_file_read:
     syscall
     pop rbp
     ret
+
 ;rdi - ptr to path (zero ending str), rsi - ptr to memory for _struct stat_
 stat:
     push rbp
@@ -70,7 +85,6 @@ stat:
     syscall
     pop rbp
     ret
-
 
 ;rdi - size to alloc
 mmap_def:
