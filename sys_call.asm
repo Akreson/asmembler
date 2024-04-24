@@ -29,7 +29,8 @@ STD_ERR equ 2
 EACCES equ 13
 
 STRUCT_STAT_SIZE equ 144
-S_IFREG equ 0x400000
+S_IFMT equ 0xF000
+S_IFREG equ 0x8000
 ; st_ino offset 8, size 8
 ; st_mode offset 24, size 4
 ; st_size offset 48, size 8
