@@ -1,4 +1,4 @@
-FILE_ENTRY_SIZE equ 32
+FILE_ENTRY_SIZE equ 64
 
 segment readable writeable
 
@@ -8,8 +8,10 @@ ACCES_DENIED db ": access denied", 0
 ERROR_ACCESS db ": error on access file", 0
 READ_ERR db ": error during file reading", 0
 
+ALREADY_INCLUDED db ": already included", 0
+
 ;file array
-;entry format - 0 ptr to file data, +8 ptr to str name, +16 file size, +24 inode, +28 name len (4 bytes are reserved[)
+;entry format - 0 ptr to file data, +8 ptr to str name, +16 file size, +24 inode, +32 name len (32 bytes reserved)
 ;array - 0 ptr to buf, +8 count, +12 capacity
 FILES_ARRAY dq 0
 dd 0, 0
@@ -31,7 +33,7 @@ get_free_file_entry:
     mov edi, ebx
     shl edi, 1
     mov [rbp-4], edi
-    shl edi, 5
+    shl edi, 6
     call mmap_def
     xor r8, r8
     cmp rax, r8
@@ -40,12 +42,12 @@ get_free_file_entry:
     mov rbx, [rbp-16]
     mov rsi, [rbx]
     mov ecx, [rbx+8]
-    shl ecx, 5
+    shl ecx, 6
     mov rdi, rax
     rep movsb
     mov rdi, [rbx]
     mov esi, [rbx+12]
-    shl esi, 5
+    shl esi, 6
     call munmap
     test rax, rax
     jnz _exit_get_free_file_entry
@@ -57,12 +59,37 @@ get_free_file_entry:
     mov ecx, [rdi+8]
 _fetch_entry_ptr_gffe:
     mov ebx, ecx
-    shl ebx, 5
+    shl ebx, 6
     lea rax, [rdx+rbx]
     inc ecx
     mov [rdi+8], ecx
 _exit_get_free_file_entry:
     add rsp, 24
+    pop rbp
+    ret
+
+;rdi - inode
+check_if_inode_exist:
+    push rbp
+    mov rbp, rsp
+    mov r8, FILES_ARRAY
+    mov r9, [r8]
+    mov ecx, [r8+8]
+    xor rax, rax
+    test ecx, ecx
+    jz _exit_check_if_inode_exist
+_loop_ciie:
+    mov r10, [r9+24]
+    cmp r10, rdi
+    jne _next_loop_ciie
+    mov rax, r9
+    jmp _exit_check_if_inode_exist
+_next_loop_ciie:
+    add r9, FILE_ENTRY_SIZE
+    dec ecx
+    test ecx, ecx
+    jnz _loop_ciie
+_exit_check_if_inode_exist:
     pop rbp
     ret
 
@@ -116,7 +143,17 @@ _stat_success_lfbp:
     call print_new_line
     jmp _exit_load_file_by_path
 _check_is_file_exit_lfbp:
-    ;TODO: check if file was already loaded
+    mov rdi, [rbp-136]
+    call check_if_inode_exist
+    test rax, rax
+    ;TODO: better report?
+    jz _get_file_entry_lfbp
+    mov rdi, [rbp-160]
+    mov esi, [rbp-152]
+    call print_len_str
+    mov rdi, ALREADY_INCLUDED
+    call print_zero_str
+    jmp _error_exit_lfbp 
 _get_file_entry_lfbp:
     call get_free_file_entry
     mov [rbp-168], rax
@@ -137,7 +174,7 @@ _err1_lfbp:
     call print_zero_str
     jmp _error_exit_lfbp
 _alloc_file_mem_lfbp:
-    mov [rbp-176], rax; fd
+    mov [rbp-176], rax;fd
     mov rdi, [rbp-96] ;size
     call mmap_def
     mov rdi, [rbp-176]
@@ -169,7 +206,7 @@ _save_read_file_lfbp:
     mov [rax+8], rbx
     mov [rax+16], rcx
     mov [rax+24], rdx
-    mov [rax+28], esi
+    mov [rax+32], esi
     jmp _exit_load_file_by_path
 _error_exit_lfbp:
     call print_new_line
@@ -189,7 +226,7 @@ init_file_array:
     push rbp
     mov rbp, rsp
     mov rdi, 64
-    shl rdi, 5
+    shl rdi, 6
     call mmap_def
     xor rdx, rdx
     sub rdx, 1
