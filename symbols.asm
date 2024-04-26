@@ -3,6 +3,8 @@ TOKEN_TYPE_INS     equ 2
 TOKEN_TYPE_REG     equ 3
 TOKEN_TYPE_AUX     equ 4
 TOKEN_TYPE_NAME    equ 5
+TOKEN_TYPE_DIGIT   equ 6
+TOKEN_TYPE_STR     equ 7
 
 REG_AL   equ 0x00
 REG_CL   equ 0x01
@@ -279,7 +281,7 @@ STR_AUX_MUL   db "*"
 ; reserve for token_type_name field _type_ as _size_?
 macro def_symbol_m value, type, str_ptr, str_len
 {
-    dq str_ptr
+    dq str_ptr; / general prt to struct / digit container
     dd value
     db type
     db str_len
