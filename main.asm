@@ -19,6 +19,7 @@ include 'helper.asm'
 include 'files.asm'
 include 'hash_table.asm'
 include 'symbols.asm'
+include 'lex.asm'
 
 segment readable executable
 entry _start
@@ -101,7 +102,7 @@ _exit_init_def_sym_table:
 
 _start:
     mov rbp, rsp
-    sub rsp, 8
+    sub rsp, 24
     call init_def_sym_table
     test rax, rax
     jz _end_start
@@ -115,33 +116,14 @@ _start:
     call get_zero_str_len
     mov rdi, [rbp+16]
     mov rsi, rax
+    mov [rbp-24], rdi
+    mov [rbp-16], rsi
     call load_file_by_path
     test rax, rax
     jz _end_start
-    mov rdi, [rax]
-    mov rsi, [rax+16]
-    call print_len_str
-
-    mov rdi, [rbp]
-    mov rsi, 10
-    call print_u_digit
-    xor rax, rax
-    mov qword [rbp-8], 1
-    _start_loop:
-    mov rax, [rbp-8]
-    mov rcx, 8
-    mul rcx
-    mov rdi, [rbp+rax*1]
-    call print_zero_str
-    mov rax, [rbp-8]
-    inc rax
-    mov [rbp-8], rax
-    mov rcx, [rbp]
-    cmp rax, rcx 
-    jg _end_start
-    jmp _start_loop
-        
+    mov rdi, rax
+    call next_token
 _end_start:
-    add rsp, 8
+    add rsp, 24
     exit_m 0
 
