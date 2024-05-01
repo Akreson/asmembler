@@ -10,13 +10,13 @@ READ_ERR db ": error during file reading", 0
 
 ALREADY_INCLUDED db ": already included", 0
 
+; TODO: change abi
 ;file array
 ;entry format - 0 ptr to file data, +8 ptr to str name, +16 file size, +24 inode,
-;+32 name len, +36 read pos (32 bytes reserved)
+;+32 name len, +36 read pos (28 bytes reserved)
 ;array - 0 ptr to buf, +8 count, +12 capacity
 FILES_ARRAY dq 0
 dd 0, 0
-
 
 segment readable executable
 
@@ -208,7 +208,8 @@ _save_read_file_lfbp:
     mov [rax+16], rcx
     mov [rax+24], rdx
     mov [rax+32], esi
-    mov dword [rax+36], 0
+    xor r8, r8
+    mov [rax+36], r8
     jmp _exit_load_file_by_path
 _error_exit_lfbp:
     call print_new_line
