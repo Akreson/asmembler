@@ -102,7 +102,7 @@ _exit_init_def_sym_table:
 
 _start:
     mov rbp, rsp
-    sub rsp, 24
+    sub rsp, 40
     call init_def_sym_table
     test rax, rax
     jz _end_start
@@ -121,9 +121,22 @@ _start:
     call load_file_by_path
     test rax, rax
     jz _end_start
-    mov rdi, rax
+    mov [rbp-8], rax
+_token_loop:
+    mov rdi, [rbp-8]
+    lea rsi, [rbp-40]
     call next_token
+    lea rcx, [rbp-40]
+    mov edx, [rcx+8]
+    movzx eax, byte [rcx+12]
+    cmp eax, TOKEN_TYPE_EOF
+    je _end_start
+    mov rdi, [rcx]
+    movzx esi, byte [rcx+13]
+    call print_len_str
+    call print_new_line
+    jmp _token_loop
 _end_start:
-    add rsp, 24
+    add rsp, 40
     exit_m 0
 
