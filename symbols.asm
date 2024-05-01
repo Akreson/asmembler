@@ -5,6 +5,7 @@ TOKEN_TYPE_AUX     equ 4
 TOKEN_TYPE_NAME    equ 5
 TOKEN_TYPE_DIGIT   equ 6
 TOKEN_TYPE_STR     equ 7
+TOKEN_TYPE_EOF     equ 8
 
 REG_AL   equ 0x00
 REG_CL   equ 0x01
@@ -138,6 +139,9 @@ AUX_MOD       equ 0x02000A
 AUX_ADD       equ 0x02000B
 AUX_SUB       equ 0x02000C
 AUX_MUL       equ 0x02000D
+AUX_DQM       equ 0x02000E
+AUX_QM        equ 0x02000F
+AUX_NEW_LINE  equ 0x020010
 
 TOKEN_KIND_SIZE equ 14
 SIZE_HASH_DEF_SYM_TABLE equ 2048
@@ -263,25 +267,30 @@ STR_JNO   db "jno"
 STR_JS    db "js"
 STR_JNS   db "jns"
 
+;START OF AUX STR
+STR_COMMA     db ","
 STR_COLON     db ":"
+STR_LBRACKET  db "["
+STR_RBRACKET  db "]"
+STR_AUX_ADD   db "+"
+STR_AUX_SUB   db "-"
+STR_AUX_MUL   db "*"
+STR_NEW_LINE  db 0x0A
+STR_DQM       db 0x22
+STR_QM        db 0x27
 STR_LPAREN    db "("
 STR_RPAREN    db ")"
 STR_LBRACE    db "{"
 STR_RBRACE    db "}"
-STR_LBRACKET  db "["
-STR_RBRACKET  db "]"
-STR_COMMA     db ","
 STR_DOT       db "."
 STR_SEMICOLON db ";"
 STR_MOD       db "%"
-STR_AUX_ADD   db "+"
-STR_AUX_SUB   db "-"
-STR_AUX_MUL   db "*"
+db 0 dup 7; this block of data must be multible of 8
+AUX_MEM_BLOCK_SIZE equ 24
 
 ; reserve for token_type_name field _type_ as _size_?
 macro def_symbol_m value, type, str_ptr, str_len
-{
-    dq str_ptr; / general prt to struct / digit container
+{   dq str_ptr; / general prt to struct / digit container
     dd value
     db type
     db str_len
@@ -406,20 +415,27 @@ def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO, 2
 def_symbol_m INS_JNO, TOKEN_TYPE_INS, STR_JNO, 3
 def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS, 2
 def_symbol_m INS_JNS, TOKEN_TYPE_INS, STR_JNS, 3
- 
+
+DUMMY_NODE_AUX dq 0
+dd 0
+db 0xFF, 0
+
+def_symbol_m AUX_COMMA, TOKEN_TYPE_AUX, STR_COMMA, 1
 def_symbol_m AUX_COLON, TOKEN_TYPE_AUX, STR_COLON, 1
+def_symbol_m AUX_LBRACKET, TOKEN_TYPE_AUX, STR_LBRACKET, 1
+def_symbol_m AUX_RBRACKET, TOKEN_TYPE_AUX, STR_RBRACKET, 1
+def_symbol_m AUX_ADD, TOKEN_TYPE_AUX, STR_AUX_ADD, 1
+def_symbol_m AUX_SUB, TOKEN_TYPE_AUX, STR_AUX_SUB, 1
+def_symbol_m AUX_MUL, TOKEN_TYPE_AUX, STR_AUX_MUL, 1
+def_symbol_m AUX_NEW_LINE, TOKEN_TYPE_AUX, STR_NEW_LINE, 1
+def_symbol_m AUX_DQM, TOKEN_TYPE_AUX, STR_DQM, 1
+def_symbol_m AUX_QM, TOKEN_TYPE_AUX, STR_QM, 1
 def_symbol_m AUX_LPAREN, TOKEN_TYPE_AUX, STR_LPAREN, 1
 def_symbol_m AUX_RPAREN, TOKEN_TYPE_AUX, STR_RPAREN, 1
 def_symbol_m AUX_LBRACE, TOKEN_TYPE_AUX, STR_LBRACE, 1
 def_symbol_m AUX_RBRACE, TOKEN_TYPE_AUX, STR_RBRACE, 1
-def_symbol_m AUX_LBRACKET, TOKEN_TYPE_AUX, STR_LBRACKET, 1
-def_symbol_m AUX_RBRACKET, TOKEN_TYPE_AUX, STR_RBRACKET, 1
-def_symbol_m AUX_COMMA, TOKEN_TYPE_AUX, STR_COMMA, 1
 def_symbol_m AUX_DOT, TOKEN_TYPE_AUX, STR_DOT, 1
 def_symbol_m AUX_SEMICOLON, TOKEN_TYPE_AUX, STR_SEMICOLON, 1
 def_symbol_m AUX_MOD, TOKEN_TYPE_AUX, STR_MOD, 1
-def_symbol_m AUX_ADD, TOKEN_TYPE_AUX, STR_ADD, 1
-def_symbol_m AUX_SUB, TOKEN_TYPE_AUX, STR_SUB, 1
-def_symbol_m AUX_MUL, TOKEN_TYPE_AUX, STR_MUL, 1
 
 def_symbol_m 0, 0, 0, 0
