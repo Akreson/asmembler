@@ -10,10 +10,7 @@ READ_ERR db ": error during file reading", 0
 
 ALREADY_INCLUDED db ": already included", 0
 
-; TODO: change abi
 ;file array
-;entry format - 0 ptr to file data, +8 ptr to str name, +16 file size, +24 inode,
-;+32 name len, +36 read pos (28 bytes reserved)
 ;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
 ;+32 inode, +40 name len (20 bytes reserved) 
 ;array - 0 ptr to buf, +8 count, +12 capacity
