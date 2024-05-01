@@ -14,6 +14,8 @@ ALREADY_INCLUDED db ": already included", 0
 ;file array
 ;entry format - 0 ptr to file data, +8 ptr to str name, +16 file size, +24 inode,
 ;+32 name len, +36 read pos (28 bytes reserved)
+;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
+;+32 inode, +40 name len (20 bytes reserved) 
 ;array - 0 ptr to buf, +8 count, +12 capacity
 FILES_ARRAY dq 0
 dd 0, 0
@@ -80,7 +82,7 @@ check_if_inode_exist:
     test ecx, ecx
     jz _exit_check_if_inode_exist
 _loop_ciie:
-    mov r10, [r9+24]
+    mov r10, [r9+32]
     cmp r10, rdi
     jne _next_loop_ciie
     mov rax, r9
@@ -204,12 +206,12 @@ _save_read_file_lfbp:
     mov rdx, [rbp-136];inode
     mov esi, [rbp-152];name len
     mov [rax], rdi
-    mov [rax+8], rbx
-    mov [rax+16], rcx
-    mov [rax+24], rdx
-    mov [rax+32], esi
+    mov [rax+24], rbx
+    mov [rax+8], rcx
+    mov [rax+32], rdx
+    mov [rax+40], esi
     xor r8, r8
-    mov [rax+36], r8
+    mov [rax+16], r8
     jmp _exit_load_file_by_path
 _error_exit_lfbp:
     call print_new_line

@@ -137,9 +137,9 @@ next_token:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov rbx, [rdi]
-    mov rcx, [rdi+36]; curr pos
+    mov rcx, [rdi+16]; curr pos
     mov [rbp-24], rbx
-    mov rdx, [rdi+16]
+    mov rdx, [rdi+8]
     mov [rbp-32], rdx
     mov esi, dword [SPACE_CHAR_4B]
 _loop_skip_wt_nt:
@@ -216,13 +216,9 @@ _eof_nt:
     mov byte [rdi+13], 0
 _unrec_char_nt:
 _end_next_token:
-    mov rdi,[rbp-40] 
-    mov rsi, 10
-    call print_u_digit
-    call print_new_line
     mov rcx, [rbp-40]
     mov rax, [rbp-8]
-    mov [rax+36], rcx
+    mov [rax+16], rcx
     add rsp, 56
     pop rbp
     ret
