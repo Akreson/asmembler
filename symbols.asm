@@ -142,6 +142,7 @@ AUX_MUL       equ 0x02000D
 AUX_DQM       equ 0x02000E
 AUX_QM        equ 0x02000F
 AUX_NEW_LINE  equ 0x020010
+AUX_ATSIGN    equ 0x020011
 
 TOKEN_KIND_SIZE equ 14
 SIZE_HASH_DEF_SYM_TABLE equ 2048
@@ -282,12 +283,15 @@ STR_LPAREN    db "("
 STR_RPAREN    db ")"
 STR_LBRACE    db "{"
 STR_RBRACE    db "}"
-STR_DOT       db "."
 STR_SEMICOLON db ";"
 STR_MOD       db "%"
-db 0 dup 7; this block of data must be multible of 8
+STR_DOT       db "."
+STR_ATSIGN    db "@"
+db 0 dup 6; this block of data must be multible of 8
 AUX_MEM_BLOCK_SIZE equ 24
+AUX_NAME_VALID_FROM equ 17
 
+SYM_NAME_MAX_LEN equ 255
 ; reserve for token_type_name field _type_ as _size_?
 macro def_symbol_m value, type, str_ptr, str_len
 {   dq str_ptr; / general prt to struct / digit container
@@ -295,7 +299,6 @@ macro def_symbol_m value, type, str_ptr, str_len
     db type
     db str_len
 }
-
 
 DEF_SYM_TABLE dq 0
 dd 0
@@ -434,8 +437,9 @@ def_symbol_m AUX_LPAREN, TOKEN_TYPE_AUX, STR_LPAREN, 1
 def_symbol_m AUX_RPAREN, TOKEN_TYPE_AUX, STR_RPAREN, 1
 def_symbol_m AUX_LBRACE, TOKEN_TYPE_AUX, STR_LBRACE, 1
 def_symbol_m AUX_RBRACE, TOKEN_TYPE_AUX, STR_RBRACE, 1
-def_symbol_m AUX_DOT, TOKEN_TYPE_AUX, STR_DOT, 1
 def_symbol_m AUX_SEMICOLON, TOKEN_TYPE_AUX, STR_SEMICOLON, 1
 def_symbol_m AUX_MOD, TOKEN_TYPE_AUX, STR_MOD, 1
+def_symbol_m AUX_DOT, TOKEN_TYPE_AUX, STR_DOT, 1
+def_symbol_m AUX_ATSIGN, TOKEN_TYPE_AUX, STR_ATSIGN, 1
 
 def_symbol_m 0, 0, 0, 0
