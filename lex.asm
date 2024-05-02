@@ -6,6 +6,8 @@ SPACE_CHAR_4B dq 0x200D090B
 ALL_ONE_4B dd 0x01010101
 ALL_HIGH_SET_4B dd 0x80808080
 
+LEXER_TO_LONG_NAME db "ERR: Name is to long, max. is 255 bytes", 10, 0
+
 segment readable executable
 
 ;does not modifies rbx - rdi reg
@@ -128,12 +130,37 @@ _end_next_char:
     pop rbp
     ret
 
+;does not modifies rbx, rcx, rdx, rdi reg
+;rdi - char to check
+is_valid_sym_char:
+    push rbp
+    mov rbp, rsp
+    mov esi, dword [SPACE_CHAR_4B]
+    test edi, edi
+    jz _fail_ivsc
+    call is_contain_byte_4b
+    test eax, eax
+    jnz _fail_ivsc
+    call is_aux_sym
+    test rax, rax
+    jz _success_ivsc
+    cmp rax, AUX_NAME_VALID_FROM
+    jb _fail_ivsc
+_success_ivsc:
+    mov rax, 1
+    jmp _end_valid_sym_char
+_fail_ivsc:
+    xor rax, rax
+_end_valid_sym_char:
+    pop rbp
+    ret
+;TODO: return succes or not in rax
 ;TODO: add line info
 ;rdi - file entry ptr, rsi - ptr to space for symbol entry
 next_token:
     push rbp
     mov rbp, rsp
-    sub rsp, 56
+    sub rsp, 64
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov rbx, [rdi]
@@ -200,6 +227,56 @@ _set_aux_token:
     rep movsb
     jmp _end_next_token
 _scan_symbol_nt:
+    mov rbx, [rbp-24]
+    mov rcx, [rbp-40]
+    mov rsi, [rbp-16]
+    mov [rbp-64], rcx
+_loop_scan_symbol_nt:
+    inc rcx
+    mov r8, [rbp-32]
+    cmp rcx, r8
+    jae _finish_loop_scan_symbol_nt
+    mov rdx, rcx
+    mov rax, [rbp-64]
+    sub rdx, rax
+    cmp rdx, SYM_NAME_MAX_LEN
+    ja _err_to_long_sym_nt
+    movzx edi, byte [rbx+rcx]
+    call is_valid_sym_char
+    test rax, rax
+    jnz _loop_scan_symbol_nt
+_finish_loop_scan_symbol_nt:
+    mov [rbp-40], rcx
+    mov rbx, [rbp-24]
+    mov rsi, rcx
+    mov rcx, [rbp-64]
+    sub rsi, rcx
+    lea rdi, [rbx+rcx]
+    call hash_str
+    mov ecx, eax
+    mov edx, esi
+    mov rsi, rdi
+    mov rdi, DEF_SYM_HASH_TABLE
+    call hash_table_find_entry
+    mov r8, [rax]
+    mov rdi, [rbp-16]
+    test r8, r8
+    jnz _def_symbol_found_nt
+    mov byte [rdi+12], TOKEN_TYPE_NAME 
+    mov rbx, [rbp-24]
+    mov rdx, [rbp-40]
+    mov rcx, [rbp-64]
+    lea rax, [rbx+rcx]
+    mov [rdi], rax
+    ;TODO: save hash for NAME token in value field?
+    sub rdx, rcx
+    mov [rdi+13], dl
+    jmp _end_next_token
+_def_symbol_found_nt:
+    mov rsi, rax
+    mov rcx, TOKEN_KIND_SIZE
+    rep movsb
+    jmp _end_next_token 
 _scan_digit_nt:
     inc qword [rbp-40]
     mov rdi, [rbp-16]
@@ -215,10 +292,27 @@ _eof_nt:
     mov byte [rdi+12], TOKEN_TYPE_EOF
     mov byte [rdi+13], 0
 _unrec_char_nt:
+    xor rax, rax
+    jmp _end_next_token
+_err_to_long_sym_nt:
+    movzx edi, byte [rbx+rcx]
+    inc rcx
+    call is_valid_sym_char
+    test rax, rax
+    jnz _err_to_long_sym_nt
+    mov [rbp-40], rcx
+    mov rdi, LEXER_TO_LONG_NAME
+    call print_zero_str
+    mov rdx, [rbp-40]
+    mov rax, [rbp-64]
+    lea rdi, [rdx+rax]
+    sub rdx, rax
+    call print_len_str
+    xor rax, rax
 _end_next_token:
     mov rcx, [rbp-40]
     mov rax, [rbp-8]
     mov [rax+16], rcx
-    add rsp, 56
+    add rsp, 64
     pop rbp
     ret
