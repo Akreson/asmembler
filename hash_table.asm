@@ -32,6 +32,7 @@ _end_hash_str:
 
 ;table stores ptr to sym table entry
 ;rdi - ptr to hash table main block, rsi - ptr to str, edx - str len, ecx - hash of str
+;return pointer to entry [entry] -> zero | ptr to entry
 hash_table_find_entry:
     push rbp
     mov rbp, rsp
