@@ -10,7 +10,7 @@ ERR_LEXER_TO_LONG_NAME db "ERR: Name is to long, max. is 255 bytes", 10, 0
 ERR_LEXER_NUM_TO_BIG db "ERR: Number overflow 64-bit reg", 10, 0
 ERR_LEXER_NUMBER_FORMAT db "ERR: invalid digit format", 10, 0
 ERR_LEXER_NUMBER_ORDER db "ERR: invalid symbol for choosen base of digit", 10, 0
-
+ERR_LEXER_INVALID_CHAR db "ERR: Unsupported char", 10, 0
 segment readable executable
 
 ;does not modifies rbx - rdi reg
@@ -229,6 +229,7 @@ _set_aux_token:
     mov rsi, [rbp-56]
     mov rdi, [rbp-16]
     rep movsb
+    mov rax, 1
     jmp _end_next_token
 _scan_symbol_nt:
     mov rbx, [rbp-24]
@@ -274,6 +275,7 @@ __finish_loop_scan_symbol_nt:
     ;TODO: save hash for NAME token in value field?
     sub rdx, rcx
     mov [rdi+13], dl
+    mov rax, 1
     jmp _end_next_token
 __def_symbol_found_nt:
     mov rsi, rax
@@ -372,6 +374,7 @@ __finish_scan_digit_nt:
     mov [rdi], rax
     mov byte [rdi+12], TOKEN_TYPE_DIGIT
     mov [rdi+13], dl
+    mov rax, 1
     jmp _end_next_token
 _err_digit_format:
     mov rdi, ERR_LEXER_NUMBER_FORMAT
@@ -404,13 +407,19 @@ __finish_loop_err_digit_end_nt:
     sub rsi, rax
     lea rdi, [rbx+rax]
     call print_len_str
+    xor rax, rax
+    jmp _end_next_token
 _eof_nt:
     mov rdi, [rbp-16]
     mov qword [rdi], 0
     mov dword [rdi+8], 0
     mov byte [rdi+12], TOKEN_TYPE_EOF
     mov byte [rdi+13], 0
+    mov rax, 1
+    jmp _end_next_token
 _unrec_char_nt:
+    mov rdi, ERR_LEXER_INVALID_CHAR
+    call print_zero_str
     xor rax, rax
     jmp _end_next_token
 _err_to_long_sym_nt:
