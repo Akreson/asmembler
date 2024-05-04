@@ -70,13 +70,16 @@ print_u_digit:
     sub rsp, 144
     mov rax, 2
     mov rbx, rax
-    shl rbx, 4
+    shl rbx, 3
     mov r8, 10
+    mov r9, 8
     cmp rsi, rax
     je _begin_loop_print_digit
     cmp rsi, rbx
     je _begin_loop_print_digit
     cmp rsi, r8
+    je _begin_loop_print_digit
+    cmp rsi, r9
     je _begin_loop_print_digit
     mov rdi, PRINT_BASE_ERR
     call print_zero_str
