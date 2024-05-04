@@ -116,14 +116,18 @@ INS_JE    equ 0x010023
 INS_JNE   equ 0x010024
 INS_JG    equ 0x010025
 INS_JGE   equ 0x010026
-INS_JI    equ 0x010027
-INS_JIE   equ 0x010028
+INS_JL    equ 0x010027
+INS_JLE   equ 0x010028
 INS_JZ    equ 0x010029
 INS_JNZ   equ 0x01002A
 INS_JO    equ 0x01002B
 INS_JNO   equ 0x01002C
 INS_JS    equ 0x01002D
 INS_JNS   equ 0x01002E
+INS_JA    equ 0x01002F
+INS_JAE   equ 0x010030
+INS_JB    equ 0x010031
+INS_JBE   equ 0x010032
  
 AUX_COLON     equ 0x020000
 AUX_LPAREN    equ 0x020001
@@ -258,9 +262,13 @@ STR_JMP   db "jmp"
 STR_JE    db "je"
 STR_JNE   db "jne"
 STR_JG    db "jg"
+STR_JA    db "ja"
 STR_JGE   db "jge"
-STR_JI    db "ji"
-STR_JIE   db "jie"
+STR_JAE   db "jae"
+STR_JL    db "jl"
+STR_JB    db "jb"
+STR_JLE   db "jle"
+STR_JBE   db "jbe"
 STR_JZ    db "jz"
 STR_JNZ   db "jnz"
 STR_JO    db "jo"
@@ -410,14 +418,18 @@ def_symbol_m INS_JE, TOKEN_TYPE_INS, STR_JE, 2
 def_symbol_m INS_JNE, TOKEN_TYPE_INS, STR_JNE, 3
 def_symbol_m INS_JG, TOKEN_TYPE_INS, STR_JG, 2
 def_symbol_m INS_JGE, TOKEN_TYPE_INS, STR_JGE, 3
-def_symbol_m INS_JI, TOKEN_TYPE_INS, STR_JI, 2
-def_symbol_m INS_JIE, TOKEN_TYPE_INS, STR_JIE, 3
+def_symbol_m INS_JL, TOKEN_TYPE_INS, STR_JL, 2
+def_symbol_m INS_JLE, TOKEN_TYPE_INS, STR_JLE, 3
 def_symbol_m INS_JZ, TOKEN_TYPE_INS, STR_JZ, 2
 def_symbol_m INS_JNZ, TOKEN_TYPE_INS, STR_JNZ, 3
 def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO, 2
 def_symbol_m INS_JNO, TOKEN_TYPE_INS, STR_JNO, 3
 def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS, 2
 def_symbol_m INS_JNS, TOKEN_TYPE_INS, STR_JNS, 3
+def_symbol_m INS_JA, TOKEN_TYPE_INS, STR_JA, 2
+def_symbol_m INS_JAE, TOKEN_TYPE_INS, STR_JAE, 3
+def_symbol_m INS_JB, TOKEN_TYPE_INS, STR_JB, 2
+def_symbol_m INS_JBE, TOKEN_TYPE_INS, STR_JBE, 3
 
 DUMMY_NODE_AUX dq 0
 dd 0
