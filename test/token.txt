@@ -1,17 +1,19 @@
+         mov rax, [rbx*2+rcx+12212]
+0x123abc
+0xffAfeeEE
+123
+2342343
     
     
 
 .*+-
 jmp _sdfsdfs
 sdffsdf:
-2342343
 test al, r15b
 shl r10d, 22
-         mov rax, [rbx*2+rcx+12212]
 mov [rbp-10], 1
 
 
 
 
 add [31123 + r15 + rax*8], ecx
-0xffffeeEE

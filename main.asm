@@ -129,12 +129,29 @@ _token_loop:
     lea rcx, [rbp-40]
     mov edx, [rcx+8]
     movzx eax, byte [rcx+12]
+    cmp eax, TOKEN_TYPE_DIGIT
+    je _print_int
     cmp eax, TOKEN_TYPE_EOF
     je _end_start
     mov rdi, [rcx]
     movzx esi, byte [rcx+13]
     call print_len_str
     call print_new_line
+    jmp _end_token
+_print_int:
+    mov rsi, 10
+    mov rdi, [rcx]
+    call print_u_digit
+    call print_new_line
+    mov rsi, 16
+    mov rdi, [rbp-40]
+    call print_u_digit
+    call print_new_line
+    mov rsi, 8
+    mov rdi, [rbp-40]
+    call print_u_digit
+    call print_new_line
+_end_token:
     jmp _token_loop
 _end_start:
     add rsp, 40

@@ -6,7 +6,10 @@ SPACE_CHAR_4B dq 0x200D090B
 ALL_ONE_4B dd 0x01010101
 ALL_HIGH_SET_4B dd 0x80808080
 
-LEXER_TO_LONG_NAME db "ERR: Name is to long, max. is 255 bytes", 10, 0
+ERR_LEXER_TO_LONG_NAME db "ERR: Name is to long, max. is 255 bytes", 10, 0
+ERR_LEXER_NUM_TO_BIG db "ERR: Number overflow 64-bit reg", 10, 0
+ERR_LEXER_NUMBER_FORMAT db "ERR: invalid digit format", 10, 0
+ERR_LEXER_NUMBER_ORDER db "ERR: invalid symbol for choosen base of digit", 10, 0
 
 segment readable executable
 
@@ -70,18 +73,19 @@ _end_is_alpha:
     pop rbp
     ret
 
+;does not modifies rbx -rdi reg
 ;rdi - char to check
 is_digit:
     push rbp
     mov rbp, rsp
-    xor rax, rax
-    mov ecx, '0'
-    mov ebx, '9'
-    cmp edi, ecx
+    xor eax, eax
+    mov r8d, '0'
+    mov r9d, '9'
+    cmp edi, r8d
     jb _end_is_digit
-    cmp edi, ebx
+    cmp edi, r9d
     ja _end_is_digit
-    inc rax
+    inc eax
 _end_is_digit:
     pop rbp
     ret
@@ -160,7 +164,7 @@ _end_valid_sym_char:
 next_token:
     push rbp
     mov rbp, rsp
-    sub rsp, 64
+    sub rsp, 72
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov rbx, [rdi]
@@ -229,13 +233,12 @@ _set_aux_token:
 _scan_symbol_nt:
     mov rbx, [rbp-24]
     mov rcx, [rbp-40]
-    mov rsi, [rbp-16]
     mov [rbp-64], rcx
-_loop_scan_symbol_nt:
+__loop_scan_symbol_nt:
     inc rcx
     mov r8, [rbp-32]
     cmp rcx, r8
-    jae _finish_loop_scan_symbol_nt
+    jae __finish_loop_scan_symbol_nt
     mov rdx, rcx
     mov rax, [rbp-64]
     sub rdx, rax
@@ -244,8 +247,8 @@ _loop_scan_symbol_nt:
     movzx edi, byte [rbx+rcx]
     call is_valid_sym_char
     test rax, rax
-    jnz _loop_scan_symbol_nt
-_finish_loop_scan_symbol_nt:
+    jnz __loop_scan_symbol_nt
+__finish_loop_scan_symbol_nt:
     mov [rbp-40], rcx
     mov rbx, [rbp-24]
     mov rsi, rcx
@@ -261,7 +264,7 @@ _finish_loop_scan_symbol_nt:
     mov r8, [rax]
     mov rdi, [rbp-16]
     test r8, r8
-    jnz _def_symbol_found_nt
+    jnz __def_symbol_found_nt
     mov byte [rdi+12], TOKEN_TYPE_NAME 
     mov rbx, [rbp-24]
     mov rdx, [rbp-40]
@@ -272,19 +275,135 @@ _finish_loop_scan_symbol_nt:
     sub rdx, rcx
     mov [rdi+13], dl
     jmp _end_next_token
-_def_symbol_found_nt:
+__def_symbol_found_nt:
     mov rsi, rax
     mov rcx, TOKEN_KIND_SIZE
     rep movsb
     jmp _end_next_token 
 _scan_digit_nt:
-    inc qword [rbp-40]
+    xor rax, rax
+    mov [rbp-72], rax
+    mov rbx, [rbp-24]
+    mov rcx, [rbp-40]
+    mov [rbp-64], rcx
+    cmp edi, '0'
+    je __check_base16_start_nt
+    mov eax, 10
+    jmp __start_loop_scan_digit_nt
+__check_base16_start_nt:
+    inc rcx
+    movzx edi, byte [rbx+rcx]
+    cmp edi, 'x'
+    jne __check_base8_start_nt
+    mov eax, 16
+    jmp __start_loop_inc_scan_digit_nt
+__check_base8_start_nt:
+    call is_digit
+    test eax, eax
+    jz __check_base2_start_nt
+    mov eax, 8
+    jmp __start_loop_inc_scan_digit_nt
+__check_base2_start_nt:
+    cmp edi, 'b'
+    jne _err_digit_format
+    mov eax, 2
+__start_loop_inc_scan_digit_nt:
+    inc rcx
+__start_loop_scan_digit_nt:
+    mov [rbp-48], eax
+__loop_scan_digit_nt:
+    mov r8, [rbp-32]
+    cmp rcx, r8
+    jae __finish_scan_digit_nt
+    movzx edi, byte [rbx+rcx]
+    call is_digit
+    test eax, eax
+    jz __check_base16_digit_nt
+    sub edi, '0'
+    jmp __build_up_digit_nt
+__check_base16_digit_nt:
+    mov edx, edi
+    mov eax, 32
+    not eax
+    and edx, eax
+    mov eax, 'A'
+    mov esi, 'F'
+    cmp edi, eax
+    jb __check_end_of_digit
+    cmp edx, esi
+    ja __check_end_of_digit
+    mov edi, edx
+    sub edi, 55
+    jmp __build_up_digit_nt
+__check_end_of_digit:
+    call is_aux_sym
+    test rax, rax
+    jnz __finish_scan_digit_nt
+    mov esi, dword [SPACE_CHAR_4B]
+    call is_contain_byte_4b
+    test rax, rax
+    jnz __finish_scan_digit_nt
+    jmp _err_digit_format
+__build_up_digit_nt:
+    mov rsi, [rbp-72]
+    mov r8d, [rbp-48]
+    cmp edi, r8d
+    jae _err_out_of_base_digit
+    xor rdx, rdx
+    xor rax, rax
+    sub rax, 1
+    sub rax, rdi
+    div r8
+    cmp rsi, rax
+    ja _err_digit_overflow
+    mov rax, rsi
+    mul r8
+    add rax, rdi
+    mov [rbp-72], rax
+    inc rcx
+    jmp __loop_scan_digit_nt
+__finish_scan_digit_nt:
+    mov [rbp-40], rcx
+    mov rax, [rbp-72]
+    lzcnt rbx, rax
+    mov rdx, 64
+    sub rdx, rbx
     mov rdi, [rbp-16]
-    mov qword [rdi], STR_COMMA
-    mov dword [rdi+8], 1
-    mov byte [rdi+12], TOKEN_TYPE_NAME
-    mov byte [rdi+13], 8
+    mov [rdi], rax
+    mov byte [rdi+12], TOKEN_TYPE_DIGIT
+    mov [rdi+13], dl
     jmp _end_next_token
+_err_digit_format:
+    mov rdi, ERR_LEXER_NUMBER_FORMAT
+    jmp __err_digit_end_nt
+_err_out_of_base_digit:
+    mov rdi, ERR_LEXER_NUMBER_ORDER
+    jmp __err_digit_end_nt
+_err_digit_overflow:
+    mov rdi, ERR_LEXER_NUM_TO_BIG
+    jmp __err_digit_end_nt
+__err_digit_end_nt:
+    mov [rbp-40], rcx
+    call print_zero_str
+    mov rcx, [rbp-40]
+    mov rbx, [rbp-24]
+    mov esi, dword [SPACE_CHAR_4B]
+__loop_err_digit_end_nt:
+    inc rcx
+    movzx edi, byte [rbx+rcx]
+    call is_aux_sym
+    test eax, eax
+    jnz __finish_loop_err_digit_end_nt
+    call is_contain_byte_4b
+    test eax, eax
+    jnz __finish_loop_err_digit_end_nt
+    jmp __loop_err_digit_end_nt
+__finish_loop_err_digit_end_nt:
+    mov rsi, rcx
+    mov rax, [rbp-64]
+    sub rsi, rax
+    lea rdi, [rbx+rax]
+    call print_len_str
 _eof_nt:
     mov rdi, [rbp-16]
     mov qword [rdi], 0
@@ -301,7 +420,7 @@ _err_to_long_sym_nt:
     test rax, rax
     jnz _err_to_long_sym_nt
     mov [rbp-40], rcx
-    mov rdi, LEXER_TO_LONG_NAME
+    mov rdi, ERR_LEXER_TO_LONG_NAME
     call print_zero_str
     mov rdx, [rbp-40]
     mov rax, [rbp-64]
@@ -313,6 +432,6 @@ _end_next_token:
     mov rcx, [rbp-40]
     mov rax, [rbp-8]
     mov [rax+16], rcx
-    add rsp, 64
+    add rsp, 72
     pop rbp
     ret
