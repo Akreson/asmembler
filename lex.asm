@@ -158,9 +158,12 @@ _fail_ivsc:
 _end_valid_sym_char:
     pop rbp
     ret
-;TODO: return succes or not in rax
+
 ;TODO: add line info
 ;rdi - file entry ptr, rsi - ptr to space for symbol entry
+; -8 passed rdi, -16 passed rsi, -24 ptr to buff, -32 size of buff
+; -40 curr read ptr; -48 cahed last read char, -56 ptr to aux token
+; -64 offset for start of token, -72 building digit / hash of token
 next_token:
     push rbp
     mov rbp, rsp
@@ -257,6 +260,7 @@ __finish_loop_scan_symbol_nt:
     sub rsi, rcx
     lea rdi, [rbx+rcx]
     call hash_str
+    mov [rbp-72], eax
     mov ecx, eax
     mov edx, esi
     mov rsi, rdi
@@ -272,7 +276,8 @@ __finish_loop_scan_symbol_nt:
     mov rcx, [rbp-64]
     lea rax, [rbx+rcx]
     mov [rdi], rax
-    ;TODO: save hash for NAME token in value field?
+    mov esi, [rbp-72]
+    mov [rdi+8], esi
     sub rdx, rcx
     mov [rdi+13], dl
     mov rax, 1
