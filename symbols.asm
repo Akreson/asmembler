@@ -75,6 +75,10 @@ REG_R13 equ 0x4D
 REG_R14 equ 0x4E
 REG_R15 equ 0x4F
 
+NAME_JUMP  equ 0x01
+NAME_CONST equ 0x02
+NAME_VAR   equ 0x03
+
 
 ;STR_REPS
 INS_REP   equ 0x010000
