@@ -1,4 +1,4 @@
-segment readable
+segment readable writeable
 
 ALL_ONE_8B dq 0x0101010101010101
 ALL_HIGH_SET_8B dq 0x8080808080808080
@@ -6,11 +6,15 @@ SPACE_CHAR_4B dq 0x200D090B
 ALL_ONE_4B dd 0x01010101
 ALL_HIGH_SET_4B dd 0x80808080
 
+; TODO: SAVE IN FILE ENTRY FOR BEING ABLE GET IT BACK LATER
+LAST_LINE_NUM dd 0
+
 ERR_LEXER_TO_LONG_NAME db "ERR: Name is to long, max. is 255 bytes", 10, 0
 ERR_LEXER_NUM_TO_BIG db "ERR: Number overflow 64-bit reg", 10, 0
 ERR_LEXER_NUMBER_FORMAT db "ERR: invalid digit format", 10, 0
 ERR_LEXER_NUMBER_ORDER db "ERR: invalid symbol for choosen base of digit", 10, 0
 ERR_LEXER_INVALID_CHAR db "ERR: Unsupported char", 10, 0
+
 segment readable executable
 
 ;does not modifies rbx - rdi reg
@@ -214,20 +218,24 @@ _char_check_nt:
     mov rdx, [rbp-32]
     mov rcx, [rbp-40]
     mov esi, dword [SPACE_CHAR_4B]
+_loop_new_line_collate_nl_nt:
+    mov rax, LAST_LINE_NUM
+    inc dword [rax]
+    ;inc dword [LAST_LINE_NUM]
 _loop_collate_nl_nt:
     inc rcx
     cmp rcx, rdx
     je _eof_nt
     movzx edi, byte [rbx+rcx]
     cmp edi, 10
-    je _loop_collate_nl_nt
+    je _loop_new_line_collate_nl_nt
     call is_contain_byte_4b
     test eax, eax
     jnz _loop_collate_nl_nt
     dec rcx
     mov [rbp-40], rcx
 _set_aux_token:
-    inc qword [rbp-40]
+    inc dword [rbp-40]
     mov ecx, TOKEN_KIND_SIZE
     mov rsi, [rbp-56]
     mov rdi, [rbp-16]

@@ -85,7 +85,7 @@ _add_init_def_sym:
     mov rdi, [rbp-16]
     mov rsi, rax
     mov rdx, [rbp-8]
-    call hash_table_add_entry    
+    call hash_table_add_entry 
     test rax, rax
     jnz _end_loop_init_def_sym
     mov rdi, ERR_ADD_HT
@@ -121,6 +121,7 @@ _start:
     call load_file_by_path
     test rax, rax
     jz _end_start
+    mov dword [LAST_LINE_NUM], 1
     mov [rbp-8], rax
 _token_loop:
     mov rdi, [rbp-8]
@@ -152,6 +153,10 @@ _print_int:
     call print_u_digit
     call print_new_line
 _end_token:
+    mov edi, dword [LAST_LINE_NUM]
+    mov rsi, 10
+    call print_u_digit
+    call print_new_line
     jmp _token_loop
 _end_start:
     add rsp, 40
