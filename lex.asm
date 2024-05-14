@@ -274,8 +274,8 @@ __finish_loop_scan_symbol_nt:
     mov rsi, rdi
     mov rdi, DEF_SYM_HASH_TABLE
     call hash_table_find_entry
-    mov r8, [rax]
     mov rdi, [rbp-16]
+    mov r8, [rax]
     test r8, r8
     jnz __def_symbol_found_nt
     mov byte [rdi+12], TOKEN_TYPE_NAME 
@@ -288,6 +288,7 @@ __finish_loop_scan_symbol_nt:
     mov [rdi+8], esi
     sub rdx, rcx
     mov [rdi+13], dl
+    mov byte [rdi+14], 0
     mov rax, 1
     jmp _end_next_token
 __def_symbol_found_nt:

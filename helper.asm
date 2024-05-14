@@ -2,7 +2,6 @@ segment readable
 DIGIT_MAP db "0123456789ABCDEF", 0
 PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
-
 segment readable executable
 
 print_new_line:

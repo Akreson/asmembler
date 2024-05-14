@@ -1,3 +1,14 @@
+AASDASD
+sdf82323
+AASDASD
+sdf
+cjcj
+qwuq
+AASDASD
+uzuz
+xuc
+suiudi
+sud
          mov rax, [rbx*2+rcx+12212]
 0x123abc
 0xffAfeeEE

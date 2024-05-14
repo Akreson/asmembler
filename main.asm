@@ -3,6 +3,7 @@ format ELF64 executable
 segment readable writeable
 
 NEW_LINE db 10, 0
+
 INVALID_HASH db "Invalid hash for: ", 0
 MMAP_FAILED db "mmap have failed", 0
 MUNMAP_FAILED db "munmap have failed", 0
@@ -16,10 +17,12 @@ dd 0, 0
 
 include 'sys_call.asm'
 include 'helper.asm'
-include 'files.asm'
 include 'hash_table.asm'
+include 'entry_array.asm'
+include 'files.asm'
 include 'symbols.asm'
 include 'lex.asm'
+include 'parser.asm'
 
 segment readable executable
 entry _start
@@ -109,6 +112,9 @@ _start:
     call init_file_array
     test rax, rax
     jz _end_start
+    call init_parser_data
+    test rax, rax
+    jz _end_start
     mov rax, [rbp]
     cmp rax, 2
     jb _end_start
@@ -123,6 +129,9 @@ _start:
     jz _end_start
     mov dword [LAST_LINE_NUM], 1
     mov [rbp-8], rax
+
+    mov rdi, rax
+    call start_parser
 _token_loop:
     mov rdi, [rbp-8]
     lea rsi, [rbp-40]
@@ -162,3 +171,6 @@ _end_start:
     add rsp, 40
     exit_m 0
 
+segment readable executable
+_end_of_end:
+    exit_m -1
