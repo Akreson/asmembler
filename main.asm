@@ -99,6 +99,8 @@ _end_loop_init_def_sym:
     add qword [rbp-8], TOKEN_KIND_SIZE
     jmp _start_loop_init_def_sym
 _exit_init_def_sym_table:
+    ;mov rdi, DEF_SYM_HASH_TABLE
+    ;call print_ht_sym_str
     add rsp, 28
     pop rbp
     ret
@@ -129,44 +131,8 @@ _start:
     jz _end_start
     mov dword [LAST_LINE_NUM], 1
     mov [rbp-8], rax
-
     mov rdi, rax
     call start_parser
-_token_loop:
-    mov rdi, [rbp-8]
-    lea rsi, [rbp-40]
-    call next_token
-    lea rcx, [rbp-40]
-    mov edx, [rcx+8]
-    movzx eax, byte [rcx+12]
-    cmp eax, TOKEN_TYPE_DIGIT
-    je _print_int
-    cmp eax, TOKEN_TYPE_EOF
-    je _end_start
-    mov rdi, [rcx]
-    movzx esi, byte [rcx+13]
-    call print_len_str
-    call print_new_line
-    jmp _end_token
-_print_int:
-    mov rsi, 10
-    mov rdi, [rcx]
-    call print_u_digit
-    call print_new_line
-    mov rsi, 16
-    mov rdi, [rbp-40]
-    call print_u_digit
-    call print_new_line
-    mov rsi, 8
-    mov rdi, [rbp-40]
-    call print_u_digit
-    call print_new_line
-_end_token:
-    mov edi, dword [LAST_LINE_NUM]
-    mov rsi, 10
-    call print_u_digit
-    call print_new_line
-    jmp _token_loop
 _end_start:
     add rsp, 40
     exit_m 0

@@ -267,11 +267,13 @@ __finish_loop_scan_symbol_nt:
     mov rcx, [rbp-64]
     sub rsi, rcx
     lea rdi, [rbx+rcx]
+    push rsi
+    push rdi
     call hash_str
     mov [rbp-72], eax
     mov ecx, eax
-    mov edx, esi
-    mov rsi, rdi
+    pop rsi
+    pop rdx
     mov rdi, DEF_SYM_HASH_TABLE
     call hash_table_find_entry
     mov rdi, [rbp-16]
@@ -292,7 +294,7 @@ __finish_loop_scan_symbol_nt:
     mov rax, 1
     jmp _end_next_token
 __def_symbol_found_nt:
-    mov rsi, rax
+    mov rsi, r8
     mov rcx, TOKEN_KIND_SIZE
     rep movsb
     jmp _end_next_token 
