@@ -306,10 +306,13 @@ AUX_NAME_VALID_FROM equ 17
 SYM_NAME_MAX_LEN equ 255
 ; reserve for token_type_name field _type_ as _size_?
 macro def_symbol_m value, type, str_ptr, str_len
-{   dq str_ptr; / general prt to struct / digit container
+{   
+    ; 0, +8, +12, +13, (+14)
+    dq str_ptr; / general prt to struct / digit container
     dd value
     db type
     db str_len
+    ;db name type (only for _name_ type token in memory)
 }
 
 DEF_SYM_TABLE dq 0
