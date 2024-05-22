@@ -78,7 +78,7 @@ REG_R15 equ 0x4F
 NAME_JUMP  equ 0x01
 NAME_CONST equ 0x02
 NAME_VAR   equ 0x03
-
+NAME_MACRO equ 0x04
 
 ;STR_REPS
 INS_REP   equ 0x010000
@@ -151,6 +151,20 @@ AUX_DQM       equ 0x02000E
 AUX_QM        equ 0x02000F
 AUX_NEW_LINE  equ 0x020010
 AUX_ATSIGN    equ 0x020011
+
+KW_DB    equ 0x030000
+KW_DW    equ 0x030001
+KW_DD    equ 0x030002
+KW_DQ    equ 0x030003
+KW_EQU   equ 0x030004
+KW_SEGMT equ 0x030005
+KW_SECT  equ 0x030006
+KW_RDBL  equ 0x030007
+KW_WRTB  equ 0x030008
+KW_EXTB  equ 0x030009
+KW_INCL  equ 0x03000A
+KW_MACR  equ 0x03000B
+KW_ENTRY equ 0x03000C
 
 TOKEN_KIND_SIZE equ 14
 SIZE_HASH_DEF_SYM_TABLE equ 2048
@@ -279,6 +293,20 @@ STR_JO    db "jo"
 STR_JNO   db "jno"
 STR_JS    db "js"
 STR_JNS   db "jns"
+
+STR_KW_DB db "db"
+STR_KW_DW db "dw"
+STR_KW_DD db "dd"
+STR_KW_DQ db "dq"
+STR_KW_EQU db "equ"
+STR_KW_SEGMT db "segment"
+STR_KW_SECT db "section"
+STR_KW_RDBL db "readable"
+STR_KW_WRTB db "writeable"
+STR_KW_EXTB db "executable"
+STR_KW_INCL db "include"
+STR_KW_MACR db "macro"
+STR_KW_ENTRY db "entry"
 
 ;START OF AUX STR
 STR_COMMA     db ","
@@ -437,6 +465,20 @@ def_symbol_m INS_JA, TOKEN_TYPE_INS, STR_JA, 2
 def_symbol_m INS_JAE, TOKEN_TYPE_INS, STR_JAE, 3
 def_symbol_m INS_JB, TOKEN_TYPE_INS, STR_JB, 2
 def_symbol_m INS_JBE, TOKEN_TYPE_INS, STR_JBE, 3
+
+KW_DB    equ 0x030000
+KW_DW    equ 0x030001
+KW_DD    equ 0x030002
+KW_DQ    equ 0x030003
+KW_EQU   equ 0x030004
+KW_SEGMT equ 0x030005
+KW_SECT  equ 0x030006
+KW_RDBL  equ 0x030007
+KW_WRTB  equ 0x030008
+KW_EXTB  equ 0x030009
+KW_INCL  equ 0x03000A
+KW_MACR  equ 0x03000B
+KW_ENTRY equ 0x03000C
 
 DUMMY_NODE_AUX dq 0
 dd 0
