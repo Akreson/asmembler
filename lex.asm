@@ -131,6 +131,45 @@ _end_is_aux_sym:
     pop rbp
     ret
 
+;rdi - ptr to file entry
+;return rax - offset to line, rbx - line len
+get_curr_line_start_end:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov rdx, [rdi]
+    mov rcx, [rdi+16]
+    mov [rbp-8], rcx
+    test rcx, rcx
+    jz _count_len_gclse
+_back_loop_gclse:
+    dec rcx
+    test rcx, rcx
+    jz _count_len_gclse
+    movzx eax, byte [rdx+rcx]
+    cmp eax, 0x0A
+    jne _back_loop_gclse
+    inc rcx
+_count_len_gclse:
+    mov [rbp-16], rcx
+    mov rbx, [rbp-8]
+    mov r8, [rdi+8]
+__loop_len_gclse:
+    cmp rbx, r8
+    jae __end_loop_len_gclse
+    movzx eax, byte [rdx+rbx]
+    cmp eax, 0x0A
+    je __end_loop_len_gclse
+    inc rbx
+    jmp __end_loop_len_gclse
+__end_loop_len_gclse:
+    mov rax, [rbp-16]
+    sub rbx, rax
+_end_get_curr_line_start_end:
+    add rsp, 16
+    pop rbp
+    ret
+
 next_char:
     push rbp
     mov rbp, rsp

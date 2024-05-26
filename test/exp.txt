@@ -1,0 +1,3 @@
+segment readable
+segment readable writeable executable
+segment readable readable

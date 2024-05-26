@@ -146,3 +146,45 @@ _end_print_ht_sym_str:
     add rsp, 24
     pop rbp
     ret
+
+;rdi - curr file entry ptr
+print_file_line:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov [rbp-8], rdi
+    mov rbx, rdi
+    mov rdi, [rbx+24]
+    mov esi, [rbx+40]
+    call print_len_str
+    mov rdi, _STR_SPACE
+    mov esi, 1
+    call print_len_str
+    mov rdi, STR_LBRACKET
+    mov esi, 1
+    call print_len_str
+    mov edi, dword [LAST_LINE_NUM]
+    mov esi, 10
+    call print_u_digit
+    mov rdi, STR_RBRACKET
+    mov esi, 1
+    call print_len_str
+    mov rdi, STR_COLON
+    mov esi, 1
+    call print_len_str
+    call print_new_line
+    mov rdi, _STR_TAB
+    mov esi, 1
+    call print_len_str
+    mov rdi, [rbp-8]
+    call get_curr_line_start_end
+    mov r8, [rbp-8]
+    mov rdi, [r8]
+    add rdi, rax
+    mov rsi, rbx
+    call print_len_str
+    call print_new_line
+_ent_print_file_line:
+    add rsp, 8
+    pop rbp
+    ret
