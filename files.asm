@@ -13,6 +13,7 @@ ALREADY_INCLUDED db ": already included", 0
 ;file array
 ;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
 ;+32 inode, +40 name len (20 bytes reserved) 
+FILE_ARRAY_ENTRY_SIZE equ 64
 ;array - 0 ptr to buf, +8 count, +12 capacity
 FILES_ARRAY dq 0
 dd 0, 0
