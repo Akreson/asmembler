@@ -217,7 +217,6 @@ _exit_load_file_by_path:
     mov rdi, [rbp-176]
     test rdi, rdi
     jz _end_lfbp
-    close_m
     mov rax, [rbp-168]
 _end_lfbp:
     add rsp, 4280
