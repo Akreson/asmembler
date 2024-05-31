@@ -20,6 +20,33 @@ dd 0, 0
 
 segment readable executable
 
+;rdi - ptr to entry
+get_file_offset_by_ptr:
+    push rbp
+    mov rbp, rsp
+    test rdi, rdi
+    jz _fail_get_fobp
+    mov r8, qword [FILES_ARRAY]
+    cmp rdi, r8
+    jb _fail_get_fobp
+    mov r9, r8
+    mov r10d, dword [FILES_ARRAY+8]
+    shl r10d, 6
+    sub eax, FILE_ARRAY_ENTRY_SIZE
+    add r9, rax
+    cmp rdi, r9
+    ja _fail_get_fobp
+    sub rdi, r8
+    shr rdi, 6
+    mov eax, edi
+    jmp _end_get_file_offset_by_ptr
+_fail_get_fobp:
+    xor eax, eax
+    dec eax
+_end_get_file_offset_by_ptr:
+    pop rbp
+    ret
+
 get_free_file_entry:
     push rbp
     mov rbp, rsp
@@ -95,13 +122,13 @@ _exit_check_if_inode_exist:
     ret
 
 ;rdi - ptr to path str, esi - str len
-;144 stat struct, +152 8 (4 padding) str len, +160 8 str ptr, +168 8 file entry ptr,
-;+176 8 temp fd, +184 8 temp mem, 4KiB temp path
+;-144 stat struct, -152 (4) (4 padding) str len, -160(8) str ptr, -168(8) file entry ptr,
+;-176(8) temp fd, -184(8) temp mem, -188(4) offset of file entry, 4KiB temp path
 
 load_file_by_path:
     push rbp
     mov rbp, rsp
-    sub rsp, 4280
+    sub rsp, 4288
     mov eax, 4096
     cmp esi, eax
     jng _len_pach_check_lfbp 
@@ -158,6 +185,7 @@ _check_is_file_exit_lfbp:
 _get_file_entry_lfbp:
     call get_free_file_entry
     mov [rbp-168], rax
+    mov [rbp-188], ebx
     mov rdi, rsp
     call open_file_read
     xor rbx, rbx
@@ -188,7 +216,7 @@ _read_up_file_lfbp:
     mov rdx, [rbp-96]
     call read
     xor rbx, rbx
-    cmp rax, rbx
+    cmp rax, rbx;TODO: check properly
     jg _save_read_file_lfbp
     mov rdi, rsp
     call print_zero_str
@@ -210,6 +238,7 @@ _save_read_file_lfbp:
     mov [rax+40], esi
     xor r8, r8
     mov [rax+16], r8
+    mov ebx, [rbp-188]
     jmp _exit_load_file_by_path
 _error_exit_lfbp:
     call print_new_line
