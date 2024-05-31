@@ -13,14 +13,14 @@ dd 0, 0, UNK_ENTRY_SIZE
 
 
 ; entry
-; 0 data size, +4 offset in segment arr, +8 offset in file data, +12 line num in file
+; 0 data size, +4 offset in segment arr?, +8 offset of definition in file data, +12 line num in file
 ; +16 symbol entry (roud up), (header size 32b)
 ; +32 start of data in _token buff_ format
 NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
 
 ; TODO: complete
-; entry - 0 (entry array, work size 1b) tokens byff , +20 file array id start,
+; entry - 0 (entry array, work size 1b) token buf , +20 file array id start,
 ; +24 file array id end, +28 mod (4b) (32b total)
 SEG_ENTRY_SIZE equ 32
 SEG_ENTRY_ARRAY dq 0
@@ -29,17 +29,18 @@ dd 0, 0, SEG_ENTRY_SIZE
 NAME_SYM_HASH_TABLE dq 0
 dd 0, 0
 
-
 ;entry array (for ease mem mang.) + 
 PATCH_LIST dq 0
 dd 0, 0, 0
 dd 0, 0
 
-; token buff
+TOKEN_HEADER_SIZE equ 16
+; token buf
 ; (header)
-; 0(4) offset in render buff, +4(4) line num, +8(2) offset on line, +10(2) entry size in byte
+; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
+; (2 bytes reseved)
 ; (body) 
-; +12(1) token type, +13 [(8) ptr to token | (TOKEN_KIND_SIZE) token body] ... (n times)
+; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body] ... (n times)
 
 CURR_SEG_OFFSET dd 0
 
@@ -211,8 +212,8 @@ _end_patch_unk_ref:
     ret
 
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
-;-56(4) seg mask val /, 
-; rdi - ptr to file entry
+;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry
+; rdi - ptr to file entry, esi- offset of file entry
 start_parser:
     push rbp
     mov rbp, rsp
