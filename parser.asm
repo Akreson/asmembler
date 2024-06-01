@@ -1,4 +1,7 @@
-
+TOKEN_BUF_NONE equ 0
+TOKEN_BUF_PTR equ 1
+TOKEN_BUF_DIRECT equ 2
+TOKEN_TYPE_ADDR equ 3
 
 segment readable writeable
 
@@ -36,7 +39,7 @@ dd 0, 0
 
 TOKEN_HEADER_SIZE equ 16
 ; token buf
-; (header)
+; (header)(16b)
 ; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
 ; (2 bytes reseved)
 ; (body) 
@@ -48,6 +51,87 @@ ERR_SEG_INV_DEF db "ERR: invalid definition of segment", 0
 ERR_INV_EXP db "ERR: invalid expresion", 0
 
 segment readable executable
+
+; rdi - ptr to token entry array, esi - size
+; return rax - ptr to start of alloc mem, ebx - offset in buffer
+token_buf_reserve_size:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+    mov [rbp-28], rdi
+    mov [rbp-32], esi
+    call entry_array_check_get
+    test rax, rax
+    jnz _finish_token_brs
+    mov rdi, [rbp-28]
+    mov esi, [rdi+12]
+    shl esi, 1
+    lea rdx, [rbp-20]
+    call entry_array_copy_realloc
+    test rax, rax
+    jnz _success_realloc_token_brs
+    exit_m -9
+_success_realloc_token_brs:
+    mov rdi, [rbp-28]
+    call entry_array_dealloc
+    mov rdx, [rbp-28]
+    mov rdi, rdx
+    lea rsi, [rbp-20]
+    mov ecx, 20
+    rep movsb
+    mov rdi, rdx
+    mov esi, [rbp-32]
+    call entry_array_check_get
+    test rax, rax
+    jnz _finish_token_brs
+    exit_m -9
+_finish_token_brs:
+    mov rbx, rax
+    mov rdi, [rbp-28]
+    mov r8, [rdi]
+    sub rbx, r8
+_end_token_buf_reserve_size:
+    add rsp, 32
+    pop rbp
+    ret
+
+;rdi - ptr to token entry array, esi - size of push mem, rdx - ptr to push mem
+;return rax - ptr to start of alloc mem, ebx - offset in buffer
+token_buf_push_size:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 20
+    mov [rbp-8], rdx
+    mov [rbp-12], esi
+    call token_buf_reserve_size
+    mov rdi, rax
+    mov rsi, [rbp-8]
+    mov ecx, [rbp-12]
+    rep movsb
+_end_token_buf_push_size:
+    add rsp, 20
+    pop rbp
+    ret
+
+;-8 passed rdi, -24 token group entry header
+;rdi - ptr to token entry array, esi - offset of curr file entry
+push_token_entry_header:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 24
+    xor rax, rax
+    mov [rbp-8], rdi
+    mov [rbp-24], rax
+    mov [rbp-16], rax
+    mov [rbp-20], esi
+    mov ecx, dword [LAST_LINE_NUM]
+    mov [rbp-16], ecx
+    mov rdx, rsp
+    mov esi, TOKEN_HEADER_SIZE
+    call token_buf_push_size
+_end_push_render_entry_header:
+    pop rbp
+    ret
 
 ;rdi - ptr to ht entry, rsi - ptr to temp token block storage
 push_name_to_unk:
@@ -211,6 +295,13 @@ _end_patch_unk_ref:
     pop rbp
     ret
 
+;do not modifies rbx-rdi reg
+curr_token_buf_ptr:
+    mov rax, qword [SEG_ENTRY_ARRAY]
+    mov r8d, dword [CURR_SEG_OFFSET]
+    add rax, r8
+    ret
+
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry
 ; rdi - ptr to file entry, esi- offset of file entry
@@ -219,6 +310,7 @@ start_parser:
     mov rbp, rsp
     sub rsp, 256
     mov [rbp-40], rdi
+    mov [rbp-52], esi
 _new_entry_start_ps:
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -226,8 +318,8 @@ _new_entry_start_ps:
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-4]
-    ;cmp eax, TOKEN_TYPE_INS
-    ;je _begin_ins_sp
+    cmp eax, TOKEN_TYPE_INS
+    je _begin_ins_sp
     cmp eax, TOKEN_TYPE_NAME
     je _begin_name_sp
     cmp eax, TOKEN_TYPE_KEYWORD
@@ -236,6 +328,111 @@ _new_entry_start_ps:
     jz _end_start_parser
     jmp _new_entry_start_ps;TODO: remove
 
+_begin_ins_sp:
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, [rbp-52]
+    call push_token_entry_header
+    call curr_token_buf_ptr
+    mov rdi, rax
+    lea rdx, [rbp-16]
+    mov esi, TOKEN_KIND_SIZE 
+    call token_buf_push_size
+__get_ins_arg:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_REG
+    jne __ins_kw_check_sp
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, 17; TOKEN_BUF_TYPE + TOKEN_KIND_SIZE
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_BUF_DIRECT
+    inc rax
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
+    mov ecx, [rbp-24]
+    cmp ecx, AUX_NEW_LINE
+    je _new_entry_start_ps
+    cmp ecx, AUX_COMMA
+    je __get_ins_arg
+__ins_kw_check_sp:
+    cmp eax, TOKEN_TYPE_KEYWORD
+    jne __ins_aux_check_sp
+    mov ebx, [rbp-24]
+    cmp ebx, ADDR_QUL_TYPE_MASK
+    jne _err_invalid_expr
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, 17; TOKEN_BUF_TYPE + TOKEN_KIND_SIZE
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_TYPE_ADDR 
+    inc rax
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    mov ecx, 16
+    rep movsb
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
+    mov ecx, [rbp-8]
+    cmp ecx, AUX_LBRACKET
+    jne _err_invalid_expr
+    jmp __ins_addr_tokens
+__ins_aux_check_sp:
+    cmp eax, TOKEN_TYPE_AUX
+    jne __ins_pref_check_sp
+    mov ecx, [rbp-20]
+    cmp ecx, AUX_LBRACKET
+    jne _err_invalid_expr
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, 1
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_TYPE_ADDR 
+    jmp __ins_addr_tokens
+__ins_pref_check_sp:
+    cmp eax, TOKEN_TYPE_INS
+    jne __ins_name_check_sp
+    mov ecx, [rbp-8]
+    and ecx, PREF_INS_TYPE_MASK
+    test ecx, ecx
+    jz _err_invalid_expr
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, 17
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_BUF_DIRECT
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+    jmp __get_ins_arg
+    ;ADD checks
+__ins_name_check_sp:
+    cmp eax, TOKEN_TYPE_NAME
+    jne _err_invalid_expr
+__ins_addr_tokens:
+   
 _begin_name_sp:
     mov ecx, [rbp-8]
     mov rdi, NAME_SYM_HASH_TABLE
@@ -248,7 +445,7 @@ _begin_name_sp:
     lea rsi, [rbp-16]
     mov rdi, rax
     call push_name_to_unk
-    jmp _print_buff_info
+    jmp _print_buff_info;TODO: delete
 _check_next_sym:
     mov [rbp-48], rbx
     mov rdi, [rbp-40]
@@ -273,6 +470,7 @@ _add_to_chain:
     mov edx, 0
     call push_link_to_unk
     jmp _new_entry_start_ps
+
 _print_buff_info:
     movzx rdi, byte [rbp-4]
     mov rsi, 10
@@ -347,7 +545,6 @@ __assign_segment_collate:
 _next_test_sp:
     jmp _new_entry_start_ps
 
-_begin_ins_sp:
 _err_invalid_expr:
     mov rdi, [rbp-40]
     call print_file_line
@@ -377,7 +574,6 @@ segment_entry_init:
     call init_entry_array
     pop rbp
     ret
-
 
 init_parser_data:
     push rbp

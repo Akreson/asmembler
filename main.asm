@@ -133,6 +133,7 @@ _start:
     mov dword [LAST_LINE_NUM], 1
     mov [rbp-8], rax
     mov rdi, rax
+    mov esi, ebx
     call start_parser
 _end_start:
     add rsp, 40
