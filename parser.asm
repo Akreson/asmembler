@@ -16,7 +16,8 @@ segment readable writeable
 ; 0 (4b) offset to linked list of location to patch, 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
-; linked list body - +4 offset in segment arr, +4 offset to patch
+; linked list body - +4 offset in file array, +8 **ptr of buf to offset, +16 offset in buff,
+; +20 second indirectional offset (must be 0 if not set)
 ; ptr, count in entries, capacity in entries, entry size
 UNKNOWN_NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, UNK_ENTRY_SIZE
@@ -622,7 +623,7 @@ _init_seg_loop:
     jmp _init_seg_loop
 _end_seg_loop:
     mov rdi, PATCH_LIST
-    mov dword [rdi+16], 16
+    mov dword [rdi+16], 24
     mov esi, 256
     call init_list
     test rax, rax
