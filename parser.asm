@@ -4,6 +4,7 @@ TOKEN_BUF_DIRECT     equ 2
 TOKEN_BUF_ADDR       equ 3
 
 PARSER_ADDR_FLAG_BITS      equ 4
+PARSER_ADDR_FLAG_MASK      equ 0xF
 PARSER_ADDR_FLAG_REG       equ 0x1
 PARSER_ADDR_FLAG_SCALE     equ 0x2
 PARSER_ADDR_FLAG_REG_SCALE equ 0x3
@@ -142,13 +143,19 @@ _end_push_render_entry_header:
     pop rbp
     ret
 
-;rdi - ptr to ht entry, rsi - ptr to temp token block storage
+;rdi - ptr to ht entry, rsi - ptr to temp token block storage,
+;rdx - **ptr to buff, ecx - offset in buff, r8d - offset in file array,
+;r9d - indirectional offset in buffer
 push_name_to_unk:
     push rbp
     mov rbp, rsp
-    sub rsp, 68
+    sub rsp, 88
     mov [rbp-32], rdi
     mov [rbp-40], rsi
+    mov [rbp-72], ecx
+    mov [rbp-80], rdx
+    mov [rbp-84], r8d
+    mov [rbp-88], r9d
     mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
     mov esi, 1
     call entry_array_check_get
@@ -220,7 +227,6 @@ _add_entry_pnt_unk:
     mov rdx, rax
     call hash_table_add_entry
     test rax, rax
-    ;TODO: init header
     ;TODO: add check
     mov rdi, PATCH_LIST
     call list_check_get_free
@@ -233,23 +239,42 @@ _add_entry_pnt_unk:
     mov rdi, PATCH_LIST
     call list_check_get_free
 _node_fetch_succ_pnt_unk:
-    mov r8, [rbp-48]
-    mov [r8], eax 
-    ;TODO: init list entry
+    mov edx, eax
+    mov rbx, [UNKNOWN_NAME_SYM_REF_ARRAY]
+    mov rcx, [rbp-48]
+    mov [rcx], edx
+    add rcx, 16
+    sub rcx, rbx
+    mov rdi, PATCH_LIST
+    mov esi, edx
+    call list_get_node_ptr
+    mov r10d, [rbp-88]
+    mov r9d, [rbp-84]
+    mov r8, [rbp-80]
+    mov edx, [rbp-72]
+    mov [rax+4], r9d
+    mov [rax+8], r8
+    mov [rax+16], edx
+    mov [rax+20], r10d
+    mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
+    mov ebx, ecx
 _end_push_name_to_unk:
     add rsp, 68
     pop rbp
     ret
 
-;rdi - ptr to symbol entry, esi - segment id, edx - offset to patch
+;rdi - ptr to symbol entry, rsi - **ptr to buff, edx - offset in buff
+;ecx - offset in file array, r8d - indirectional offset
 push_link_to_unk:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 28
     sub rdi, 16
     mov [rbp-8], rdi
-    mov [rbp-12], esi
-    mov [rbp-16], edx
+    mov [rbp-16], rsi
+    mov [rbp-20], edx
+    mov [rbp-24], ecx
+    mov [rbp-28], r8d
     mov rdi, PATCH_LIST
     call list_check_get_free
     test eax, eax
@@ -260,12 +285,19 @@ push_link_to_unk:
     call list_realloc
     mov rdi, PATCH_LIST
     call list_check_get_free
+    test eax, eax
+    jnz _add_link_to_chain_unk
+    exit_m -8
 _add_link_to_chain_unk:
     mov esi, eax
-    mov ecx, [rbp-12]
-    mov eax, [rbp-16]
+    mov r9d, [rbp-28]
+    mov ecx, [rbp-24]
+    mov eax, [rbp-20]
+    mov r8, [rbp-16]
     mov [rbx+4], ecx
-    mov [rbx+8], eax
+    mov [rbx+8], r8
+    mov [rbx+16], eax
+    mov [rbx+20], r9d
     mov rax, [rbp-8]
     mov edx, [rax]
     mov rdi, PATCH_LIST
@@ -277,7 +309,7 @@ _finish_add_link_unk:
     mov rbx, [rbp-8]
     mov [rbx], eax
 _end_push_link_to_unk:
-    add rsp, 16
+    add rsp, 28
     pop rbp
     ret
 
@@ -304,16 +336,181 @@ _end_patch_unk_ref:
     pop rbp
     ret
 
-;do not modifies rbx-rdi reg
+;rdi - ptr to temp token mem, rsi - **ptr to buff, edx - offset in buff,
+;ecx - offset in file array, r8d - indirectional offset
+;return rax - **ptr to buff, ebx offset in buff
+get_name_sym_ref_data:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 36
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-20], edx
+    mov [rbp-24], ecx
+    mov [rbp-36], r8d
+    mov rsi, rdi
+    mov rdi, NAME_SYM_HASH_TABLE
+    movzx edx, byte [rbp+13]
+    mov ecx, [rsi+8]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jnz _check_exist_gnsrd
+    mov rdi, rax
+    mov rsi, [rbp-8]
+    mov rdx, [rbp-16]
+    mov ecx, [rbp-20]
+    mov r8d, [rbp-24]
+    mov r9d, [rbp-36]
+    call push_name_to_unk
+    jmp _end_get_name_sym_ref_data
+_check_exist_gnsrd:
+    movzx ecx, byte [rbx+14]
+    test ecx, ecx
+    jnz _def_sym_gnsrd
+    mov [rbp-32], rbx
+    mov rdi, rbx
+    mov rsi, [rbp-16]
+    mov edx, [rbp-20]
+    mov ecx, [rbp-24]
+    mov r8d, [rbp-36]
+    call push_link_to_unk
+    mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
+    mov rbx, [rbp-32]
+    mov rcx, [rax]
+    sub rbx, rcx
+    jmp _end_get_name_sym_ref_data
+_def_sym_gnsrd:
+    mov rax, NAME_SYM_REF_ARRAY
+    mov rcx, [rax]
+    sub rbx, rcx
+_end_get_name_sym_ref_data:
+    add rsp, 36
+    pop rbp
+    ret
+
+;do not modifies rcx-rdi reg
 curr_token_buf_ptr:
+    mov r9, qword [SEG_ENTRY_ARRAY]
+    mov r8d, dword [CURR_SEG_OFFSET]
+    add r9, r8
+    mov rax, [r9]
+    mov ebx, [r9+8]
+    add rax, rbx
+    ret
+
+;do not modifies rbx-rdi reg
+curr_token_buf_start_ptr:
+    mov r9, qword [SEG_ENTRY_ARRAY]
+    mov r8d, dword [CURR_SEG_OFFSET]
+    add r9, r8
+    mov rax, [r9]
+    ret
+
+;do not modifies rbx-rdi reg
+curr_seg_ptr:
     mov rax, qword [SEG_ENTRY_ARRAY]
     mov r8d, dword [CURR_SEG_OFFSET]
     add rax, r8
     ret
 
+;edi - offset of tbuf entry header
+set_tbuf_body_size:
+    call curr_token_buf_ptr
+    sub ebx, edi
+    sub rax, rbx
+    sub ebx, 16
+    mov ecx, 65535
+    cmp ebx, ecx
+    jbe _end_set_tbuf_body_size
+    exit_m -8
+_end_set_tbuf_body_size:
+    mov word [rax+12], bx
+    ret
+
+;rdi - push from addr
+push_direct:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov [rbp-8], rdi
+    call curr_seg_ptr
+    mov rdi, rax
+    mov esi, 15
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_BUF_DIRECT
+    inc rax
+    mov rdi, rax
+    mov rsi, [rbp-8]
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+_end_push_direct:
+    add rsp, 8
+    pop rbp
+    ret
+   
+;rdi - ptr to file entry, rsi - push from addr, rdx - read to addr
+push_direct_and_read_next:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 24
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-24], rdx
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, 15
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_BUF_DIRECT
+    inc rax
+    mov rdi, rax
+    mov rsi, [rbp-16]
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+    mov rdi, [rbp-8]
+    lea rsi, [rbp-24]
+    call next_token
+_end_push_direct_and_read_next:
+    add rsp, 24
+    pop rbp
+    ret
+
+;rdi - ptr to temp token mem, esi - offset in file array
+push_name_ptr_offset:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 24
+    mov [rbp-8], rdi
+    mov [rbp-16], esi
+    call curr_token_buf_ptr
+    mov rdi, rax
+    mov esi, 13; TOKEN_BUF_TYPE + buff ptr + offset
+    call token_buf_reserve_size
+    mov byte [rax], TOKEN_BUF_PTR_OFFSET
+    mov rcx, rax
+    sub rcx, rbx
+    inc rax
+    inc ebx
+    mov [rbp-24], rax
+    mov rdi, [rbp-8]
+    mov rsi, SEG_ENTRY_ARRAY 
+    mov edx, dword [CURR_SEG_OFFSET] 
+    mov ecx, [rbp-16]
+    mov r8d, ebx
+    call get_name_sym_ref_data
+    mov rdx, [rbp-24]
+    mov [rdx], rax
+    mov [rdx+8], ebx
+_end_push_name_ptr_offset:
+    add rsp, 24
+    pop rbp
+    ret
+
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
-;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry
-; rdi - ptr to file entry, esi- offset of file entry
+;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
+;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
+;-84 temp token buf ptr
+; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
     mov rbp, rsp
@@ -338,15 +535,13 @@ _new_entry_start_ps:
     jmp _new_entry_start_ps;TODO: remove
 
 _begin_ins_sp:
-    call curr_token_buf_ptr
+    call curr_seg_ptr
     mov rdi, rax
     mov esi, [rbp-52]
     call push_token_entry_header
-    call curr_token_buf_ptr
-    mov rdi, rax
-    lea rdx, [rbp-16]
-    mov esi, TOKEN_KIND_SIZE 
-    call token_buf_push_size
+    mov [rbp-76], ebx
+    lea rdi, [rbp-16]
+    call push_direct
 __get_ins_arg:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
@@ -356,29 +551,9 @@ __get_ins_arg:
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_REG
     jne __ins_kw_check_sp
-    call curr_token_buf_ptr
-    mov rdi, rax
-    mov esi, 17; TOKEN_BUF_TYPE + TOKEN_KIND_SIZE
-    call token_buf_reserve_size
-    mov byte [rax], TOKEN_BUF_DIRECT
-    inc rax
-    mov rdi, rax
-    lea rsi, [rbp-32]
-    mov ecx, TOKEN_KIND_SIZE
-    rep movsb
-    mov rdi, [rbp-40]
-    lea rsi, [rbp-32]
-    call next_token
-    test rax, rax
-    jz _end_start_parser
-    movzx eax, byte [rbp-20]
-    cmp eax, TOKEN_TYPE_AUX
-    jne _err_invalid_expr
-    mov ecx, [rbp-24]
-    cmp ecx, AUX_NEW_LINE
-    je _new_entry_start_ps
-    cmp ecx, AUX_COMMA
-    je __get_ins_arg
+    lea rdi, [rbp-32]
+    call push_direct
+    jmp __ins_next_arg_check
 __ins_kw_check_sp:
     cmp eax, TOKEN_TYPE_KEYWORD
     jne __ins_aux_check_sp
@@ -387,13 +562,15 @@ __ins_kw_check_sp:
     jne _err_invalid_expr
     call curr_token_buf_ptr
     mov rdi, rax
-    mov esi, 17; TOKEN_BUF_TYPE + TOKEN_KIND_SIZE
+    mov esi, 15; TOKEN_BUF_TYPE + TOKEN_KIND_SIZE
     call token_buf_reserve_size
-    mov byte [rax], TOKEN_TYPE_ADDR 
+    mov byte [rax], TOKEN_BUF_ADDR 
+    inc rax
+    mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax
     lea rsi, [rbp-32]
-    mov ecx, 16
+    mov ecx, TOKEN_KIND_SIZE
     rep movsb
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -410,14 +587,14 @@ __ins_kw_check_sp:
 __ins_aux_check_sp:
     cmp eax, TOKEN_TYPE_AUX
     jne __ins_pref_check_sp
-    mov ecx, [rbp-20]
+    mov ecx, [rbp-24]
     cmp ecx, AUX_LBRACKET
     jne _err_invalid_expr
     call curr_token_buf_ptr
     mov rdi, rax
     mov esi, 1
     call token_buf_reserve_size
-    mov byte [rax], TOKEN_TYPE_ADDR 
+    mov byte [rax], TOKEN_BUF_ADDR 
     jmp __ins_addr_tokens
 __ins_pref_check_sp:
     cmp eax, TOKEN_TYPE_INS
@@ -426,22 +603,204 @@ __ins_pref_check_sp:
     and ecx, PREF_INS_TYPE_MASK
     test ecx, ecx
     jz _err_invalid_expr
-    call curr_token_buf_ptr
-    mov rdi, rax
-    mov esi, 17
-    call token_buf_reserve_size
-    mov byte [rax], TOKEN_BUF_DIRECT
-    mov rdi, [rbp-40]
-    lea rsi, [rbp-32]
-    mov ecx, TOKEN_KIND_SIZE
-    rep movsb
+    lea rdi, [rbp-32]
+    call push_direct
     jmp __get_ins_arg
-    ;ADD checks
 __ins_name_check_sp:
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
+    lea rdi, [rbp-32]
+    mov esi, [rbp-52]
+    call push_name_ptr_offset
+    jmp __ins_next_arg_check
 __ins_addr_tokens:
-   
+    xor rax, rax
+    mov [rbp-72], rax
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_REG
+    jne ___ins_addr_name_test
+    mov byte [rbp-68], 3
+    lea rdi, [rbp-16]
+    call push_direct
+    jmp ___ins_addr_def
+___ins_addr_name_test:
+    cmp eax, TOKEN_TYPE_NAME
+    jne _err_invalid_addr_expr
+    lea rdi, [rbp-16]
+    mov esi, [rbp-52]
+    call push_name_ptr_offset
+    mov byte [rbp-68], 2
+    mov byte [rbp-67], 1
+    mov eax, PARSER_ADDR_FLAG_NAME
+    mov [rbp-72], eax
+___ins_addr_def:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
+    mov ebx, [rbp-24]
+    cmp ebx, AUX_RBRACKET
+    je __ins_next_arg_check 
+    movzx ecx, byte [rbp-68]
+    movzx edx, byte [rbp-67]
+    sub ecx, edx
+    test ecx, ecx
+    jz _err_invalid_addr_expr
+    cmp ebx, AUX_ADD
+    je ___ins_addr_arith_check
+    cmp ebx, AUX_SUB
+    je ___ins_addr_arith_check 
+    cmp ebx, AUX_MUL
+    je ___ins_addr_scale_check
+    jne _err_invalid_addr_expr
+___ins_addr_arith_check:
+    mov edx, [rbp-72]
+    mov ebx, edx
+    movzx eax, byte [rbp-67]
+    mov edi, PARSER_ADDR_FLAG_BITS
+    mul edi
+    mov ecx, eax
+    shr edx, cl 
+    and edx, PARSER_ADDR_FLAG_MASK
+    test edx, edx
+    jnz ___ins_addr_arith_fetch_next
+    mov esi, PARSER_ADDR_FLAG_REG
+    mov edx, esi
+    shl esi, cl 
+    and ebx, esi
+    mov [rbp-72], ebx
+___ins_addr_arith_fetch_next:
+    mov byte [rbp-66], dl
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_REG
+    je ___inc_addr_arith_reg
+    cmp eax, TOKEN_TYPE_DIGIT
+    je ___inc_addr_arith_digit_offset
+    cmp eax, TOKEN_TYPE_NAME
+    je ___inc_addr_arith_name_offset
+    jmp _err_invalid_addr_expr
+___inc_addr_arith_reg:
+    movzx eax, byte [rbp-24]
+    movzx ecx, byte [rbp-67]
+    movzx edx, byte [rbp-66]
+    cmp eax, AUX_ADD
+    jne _err_invalid_addr_expr
+    cmp ecx, 2
+    ja _err_invalid_addr_expr
+    cmp ecx, 1
+    jne ___ins_addr_def
+    cmp edx, PARSER_ADDR_FLAG_REG_SCALE
+    je _err_invalid_addr_expr
+    cmp edx, PARSER_ADDR_FLAG_NAME
+    je _err_invalid_addr_expr
+    inc ecx
+    mov byte [rbp-67], cl
+    lea rdi, [rbp-16]
+    call push_direct
+    jmp ___ins_addr_def
+___inc_addr_arith_digit_offset:
+    lea rdi, [rbp-16]
+    call push_direct
+    jmp ___inc_addr_arith_offset
+___inc_addr_arith_name_offset:
+    lea rdi, [rbp-16]
+    mov esi, [rbp-52]
+    call push_name_ptr_offset
+___inc_addr_arith_offset:
+    movzx edx, byte [rbp-68]
+    mov byte [rbp-67], dl 
+    jmp ___ins_addr_def
+___ins_addr_scale_check:
+    movzx edx, byte [rbp-67]
+    cmp edx, 2
+    ja _err_invalid_addr_expr
+    cmp edx, 1
+    jne ___ins_addr_scale_mul
+    movzx ecx, byte [rbp-72]
+    and ecx, PARSER_ADDR_FLAG_MASK
+    cmp ecx, PARSER_ADDR_FLAG_REG_SCALE
+    je _err_invalid_addr_expr
+    cmp ecx, PARSER_ADDR_FLAG_NAME
+    je _err_invalid_addr_expr
+___ins_addr_scale_mul:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    mov rdx, rsi
+    call push_direct_and_read_next
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_NAME
+    jne ___ins_addr_scale_mul_name
+    cmp eax, TOKEN_TYPE_DIGIT
+    jne _err_invalid_addr_expr
+    mov rcx, [rbp-32]
+    cmp rcx, 8
+    ja _err_invalid_addr_expr
+    mov rdx, rcx
+    dec rcx
+    and rdx, rcx
+    test rdx, rdx
+    jnz _err_invalid_addr_expr
+    lea rdi, [rbp-32]
+    call push_direct
+    jmp ___ins_addr_scale_set
+___ins_addr_scale_mul_name:
+    lea rdi, [rbp-32]
+    mov esi, [rbp-52]
+    call push_name_ptr_offset
+___ins_addr_scale_set:
+    movzx eax, byte [rbp-67]
+    mov edi, PARSER_ADDR_FLAG_BITS
+    mul edi
+    mov ecx, eax
+    mov esi, PARSER_ADDR_FLAG_REG_SCALE
+    shl esi, cl
+    mov edx, [rbp-72]
+    and edx, esi
+    mov [rbp-72], edx
+    jmp ___ins_addr_def
+__ins_next_arg_check:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne ___ins_next_arg_eof
+    mov ecx, [rbp-24]
+    cmp ecx, AUX_NEW_LINE
+    jne ___ins_next_arg_comma
+    mov edi, [rbp-76]
+    call set_tbuf_body_size
+    jmp _new_entry_start_ps
+___ins_next_arg_comma:
+    cmp ecx, AUX_COMMA
+    je __get_ins_arg
+    jmp _err_invalid_expr
+___ins_next_arg_eof:
+    cmp eax, TOKEN_TYPE_EOF
+    jne _err_invalid_expr
+    mov edi, [rbp-76]
+    call set_tbuf_body_size
+    jmp _end_start_parser
+
+;TODO: fix abi calls
 _begin_name_sp:
     mov ecx, [rbp-8]
     mov rdi, NAME_SYM_HASH_TABLE
@@ -554,6 +913,7 @@ __assign_segment_collate:
 _next_test_sp:
     jmp _new_entry_start_ps
 
+_err_invalid_addr_expr:
 _err_invalid_expr:
     mov rdi, [rbp-40]
     call print_file_line
