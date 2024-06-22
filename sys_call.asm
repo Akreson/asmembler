@@ -14,6 +14,10 @@ O_RDONLY equ 0
 O_WRONLY equ 1
 O_RDWR equ 2
 
+O_CREAT equ 0x40
+O_TRUNC equ 0x200
+O_APPEND equ 0x400
+
 PROT_READ equ 1
 PROT_WRITE equ 2
 PROT_EXEC equ 4
@@ -61,10 +65,14 @@ segment readable executable
 
 ;rdi - fd, rsi - buf, rdx - count in bytes
 read:
-    push rbp
     mov rax, SYS_READ
     syscall
-    pop rbp
+    ret
+
+;rdi - fd, rsi - buf, rdx - count in bytes
+write:
+    mov rax, SYS_WRITE
+    syscall
     ret
 
 ;rdi - zero end str
@@ -73,6 +81,15 @@ open_file_read:
     mov rax, SYS_OPEN
     mov rsi, O_RDONLY
     xor rdx, rdx
+    syscall
+    pop rbp
+    ret
+
+open_file_w_trunc:
+    push rbp
+    mov rax, SYS_OPEN
+    mov rsi, 0x242
+    mov rdx, rdx
     syscall
     pop rbp
     ret
