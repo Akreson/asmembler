@@ -16,13 +16,12 @@ entry_array_check_get:
     sub edx, ebx
     cmp edx, esi
     jb _check_fail_eacg
-    xor edx, edx
     mov eax, [rdi+16]
     mul ebx
     mov rcx, [rdi]
     lea r8, [rcx+rax]
     mov rax, r8
-    inc ebx
+    add ebx, esi
     mov [rdi+8], ebx
     jmp _end_entry_array_check_get
 _check_fail_eacg:
