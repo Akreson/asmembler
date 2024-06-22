@@ -138,6 +138,7 @@ push_token_entry_header:
     mov esi, TOKEN_HEADER_SIZE
     call token_buf_push_size
 _end_push_render_entry_header:
+    add rsp, 24
     pop rbp
     ret
 
