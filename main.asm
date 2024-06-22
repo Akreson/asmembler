@@ -10,6 +10,7 @@ MUNMAP_FAILED db "munmap have failed", 0
 DBL_DEF_SYM db "Dubled default symbol: ", 0
 ERR_ADD_HT db "Error on adding entry to hash table", 0
 
+TEST_STR db "./out.bin", 0
 ; hash table: 0 ptr, +8 count, +12 capacity (in 8-byte ptr)
 ; ptr point to array of pointers
 DEF_SYM_HASH_TABLE dq 0
@@ -135,6 +136,14 @@ _start:
     mov rdi, rax
     mov esi, ebx
     call start_parser
+    mov rdi, TEST_STR
+    call open_file_w_trunc
+    mov r8, [SEG_ENTRY_ARRAY]
+    add r8, 160
+    mov rdi, rax
+    mov rsi, [r8]
+    mov edx, [r8+8]
+    call write
 _end_start:
     add rsp, 40
     exit_m 0
