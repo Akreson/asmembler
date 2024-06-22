@@ -249,7 +249,7 @@ _exit_load_file_by_path:
     jz _end_lfbp
     mov rax, [rbp-168]
 _end_lfbp:
-    add rsp, 4280
+    add rsp, 4288
     pop rbp
     ret
 
