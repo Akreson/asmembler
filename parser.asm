@@ -604,11 +604,11 @@ init_parser_data:
     jz _fail_exit_init_parser_data
     ;TODO: do not init seg array if non collate mod is enabled
     mov rdi, SEG_ENTRY_ARRAY
-    mov rsi, 7
+    mov rsi, 8
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
-    mov ecx, 7
+    mov ecx, 8
 _init_seg_loop:
     dec ecx
     test ecx, ecx
