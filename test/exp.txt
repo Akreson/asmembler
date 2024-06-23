@@ -1,3 +1,2 @@
 segment readable executable
-    mov eax, ebx
-    mov r9, r10
+    mov [rax+rbx*4], ebx

@@ -457,7 +457,7 @@ push_direct_and_read_next:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-24], rdx
-    call curr_token_buf_ptr
+    call curr_seg_ptr
     mov rdi, rax
     mov esi, 15
     call token_buf_reserve_size
@@ -468,7 +468,7 @@ push_direct_and_read_next:
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
     mov rdi, [rbp-8]
-    lea rsi, [rbp-24]
+    mov rsi, [rbp-24]
     call next_token
 _end_push_direct_and_read_next:
     add rsp, 24
@@ -509,7 +509,7 @@ _end_push_name_ptr_offset:
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
-;-84 temp token buf ptr
+;-84 temp token buf ptr / temp token buf offset
 ; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
@@ -560,12 +560,14 @@ __ins_kw_check_sp:
     mov ebx, [rbp-24]
     cmp ebx, ADDR_QUL_TYPE_MASK
     jne _err_invalid_expr
-    call curr_token_buf_ptr
+    call curr_seg_ptr
     mov rdi, rax
-    mov esi, 15; TOKEN_BUF_TYPE + TOKEN_KIND_SIZE
+    mov esi, 17; TOKEN_BUF_TYPE + count + _TYPE + token body
     call token_buf_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR 
-    inc rax
+    inc ebx
+    add rax, 2
+    mov [rbp-84], ebx
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax
@@ -590,11 +592,13 @@ __ins_aux_check_sp:
     mov ecx, [rbp-24]
     cmp ecx, AUX_LBRACKET
     jne _err_invalid_expr
-    call curr_token_buf_ptr
+    call curr_seg_ptr
     mov rdi, rax
-    mov esi, 1
+    mov esi, 2
     call token_buf_reserve_size
-    mov byte [rax], TOKEN_BUF_ADDR 
+    mov byte [rax], TOKEN_BUF_ADDR
+    inc ebx
+    mov [rbp-84], ebx
     jmp __ins_addr_tokens
 __ins_pref_check_sp:
     cmp eax, TOKEN_TYPE_INS
@@ -649,7 +653,13 @@ ___ins_addr_def:
     jne _err_invalid_expr
     mov ebx, [rbp-24]
     cmp ebx, AUX_RBRACKET
-    je __ins_next_arg_check 
+    jne ___ins_addr_def_next_aux
+    call curr_token_buf_start_ptr
+    movzx edx, byte [rbp-67]
+    mov ecx, [rbp-84]
+    mov byte [rax+rcx], dl
+    jmp __ins_next_arg_check
+___ins_addr_def_next_aux:
     movzx ecx, byte [rbp-68]
     movzx edx, byte [rbp-67]
     sub ecx, edx
@@ -676,10 +686,12 @@ ___ins_addr_arith_check:
     mov esi, PARSER_ADDR_FLAG_REG
     mov edx, esi
     shl esi, cl 
-    and ebx, esi
+    or ebx, esi
     mov [rbp-72], ebx
 ___ins_addr_arith_fetch_next:
     mov byte [rbp-66], dl
+    lea rdi, [rbp-32]
+    call push_direct
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
@@ -694,7 +706,7 @@ ___ins_addr_arith_fetch_next:
     je ___inc_addr_arith_name_offset
     jmp _err_invalid_addr_expr
 ___inc_addr_arith_reg:
-    movzx eax, byte [rbp-24]
+    mov eax, [rbp-24]
     movzx ecx, byte [rbp-67]
     movzx edx, byte [rbp-66]
     cmp eax, AUX_ADD
@@ -702,11 +714,12 @@ ___inc_addr_arith_reg:
     cmp ecx, 2
     ja _err_invalid_addr_expr
     cmp ecx, 1
-    jne ___ins_addr_def
+    jne ___inc_addr_arith_reg_pass 
     cmp edx, PARSER_ADDR_FLAG_REG_SCALE
     je _err_invalid_addr_expr
     cmp edx, PARSER_ADDR_FLAG_NAME
     je _err_invalid_addr_expr
+___inc_addr_arith_reg_pass:
     inc ecx
     mov byte [rbp-67], cl
     lea rdi, [rbp-16]
@@ -721,8 +734,10 @@ ___inc_addr_arith_name_offset:
     mov esi, [rbp-52]
     call push_name_ptr_offset
 ___inc_addr_arith_offset:
-    movzx edx, byte [rbp-68]
-    mov byte [rbp-67], dl 
+    movzx edx, byte [rbp-67]
+    inc edx
+    mov byte [rbp-68], dl
+    mov byte [rbp-67], dl
     jmp ___ins_addr_def
 ___ins_addr_scale_check:
     movzx edx, byte [rbp-67]
@@ -745,7 +760,7 @@ ___ins_addr_scale_mul:
     jz _end_start_parser
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_NAME
-    jne ___ins_addr_scale_mul_name
+    je ___ins_addr_scale_mul_name
     cmp eax, TOKEN_TYPE_DIGIT
     jne _err_invalid_addr_expr
     mov rcx, [rbp-32]
@@ -765,13 +780,16 @@ ___ins_addr_scale_mul_name:
     call push_name_ptr_offset
 ___ins_addr_scale_set:
     movzx eax, byte [rbp-67]
+    mov ebx, eax
+    inc ebx
+    mov byte [rbp-67], bl
     mov edi, PARSER_ADDR_FLAG_BITS
     mul edi
     mov ecx, eax
     mov esi, PARSER_ADDR_FLAG_REG_SCALE
     shl esi, cl
     mov edx, [rbp-72]
-    and edx, esi
+    or edx, esi
     mov [rbp-72], edx
     jmp ___ins_addr_def
 __ins_next_arg_check:
