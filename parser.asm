@@ -259,7 +259,7 @@ _node_fetch_succ_pnt_unk:
     mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
     mov ebx, ecx
 _end_push_name_to_unk:
-    add rsp, 68
+    add rsp, 88
     pop rbp
     ret
 
@@ -348,10 +348,10 @@ get_name_sym_ref_data:
     mov [rbp-20], edx
     mov [rbp-24], ecx
     mov [rbp-36], r8d
-    mov rsi, rdi
+    mov rsi, [rdi]
+    movzx edx, byte [rdi+13]
+    mov ecx, [rdi+8]
     mov rdi, NAME_SYM_HASH_TABLE
-    movzx edx, byte [rbp+13]
-    mov ecx, [rsi+8]
     call hash_table_find_entry
     mov rbx, [rax]
     test rbx, rbx
@@ -482,13 +482,11 @@ push_name_ptr_offset:
     sub rsp, 24
     mov [rbp-8], rdi
     mov [rbp-16], esi
-    call curr_token_buf_ptr
+    call curr_seg_ptr
     mov rdi, rax
     mov esi, 13; TOKEN_BUF_TYPE + buff ptr + offset
     call token_buf_reserve_size
     mov byte [rax], TOKEN_BUF_PTR_OFFSET
-    mov rcx, rax
-    sub rcx, rbx
     inc rax
     inc ebx
     mov [rbp-24], rax
@@ -639,7 +637,7 @@ ___ins_addr_name_test:
     mov esi, [rbp-52]
     call push_name_ptr_offset
     mov byte [rbp-68], 2
-    mov byte [rbp-67], 1
+    ;mov byte [rbp-67], 1
     mov eax, PARSER_ADDR_FLAG_NAME
     mov [rbp-72], eax
 ___ins_addr_def:
@@ -662,9 +660,8 @@ ___ins_addr_def:
 ___ins_addr_def_next_aux:
     movzx ecx, byte [rbp-68]
     movzx edx, byte [rbp-67]
-    sub ecx, edx
-    test ecx, ecx
-    jz _err_invalid_addr_expr
+    cmp edx, ecx
+    ja _err_invalid_addr_expr
     cmp ebx, AUX_ADD
     je ___ins_addr_arith_check
     cmp ebx, AUX_SUB
@@ -673,22 +670,28 @@ ___ins_addr_def_next_aux:
     je ___ins_addr_scale_check
     jne _err_invalid_addr_expr
 ___ins_addr_arith_check:
-    mov edx, [rbp-72]
-    mov ebx, edx
     movzx eax, byte [rbp-67]
+    mov esi, eax
     mov edi, PARSER_ADDR_FLAG_BITS
     mul edi
     mov ecx, eax
-    shr edx, cl 
-    and edx, PARSER_ADDR_FLAG_MASK
-    test edx, edx
-    jnz ___ins_addr_arith_fetch_next
-    mov esi, PARSER_ADDR_FLAG_REG
-    mov edx, esi
-    shl esi, cl 
-    or ebx, esi
-    mov [rbp-72], ebx
+    mov ebx, [rbp-72]
+    mov r9d, ebx
+    shr ebx, cl
+    mov edi, PARSER_ADDR_FLAG_MASK
+    and ebx, edi
+    test ebx, ebx
+    jnz ___ins_addr_arith_check_set_curr
+    mov edx, PARSER_ADDR_FLAG_REG
+    shl edx, cl
+    or r9d, edx
+    mov [rbp-72], r9d
+    jmp ___ins_addr_arith_fetch_next
+___ins_addr_arith_check_set_curr:
+    mov edx, ebx
 ___ins_addr_arith_fetch_next:
+    inc esi
+    mov byte [rbp-67], sil
     mov byte [rbp-66], dl
     lea rdi, [rbp-32]
     call push_direct
@@ -712,16 +715,12 @@ ___inc_addr_arith_reg:
     cmp eax, AUX_ADD
     jne _err_invalid_addr_expr
     cmp ecx, 2
-    ja _err_invalid_addr_expr
-    cmp ecx, 1
-    jne ___inc_addr_arith_reg_pass 
+    jae _err_invalid_addr_expr
     cmp edx, PARSER_ADDR_FLAG_REG_SCALE
     je _err_invalid_addr_expr
     cmp edx, PARSER_ADDR_FLAG_NAME
     je _err_invalid_addr_expr
 ___inc_addr_arith_reg_pass:
-    inc ecx
-    mov byte [rbp-67], cl
     lea rdi, [rbp-16]
     call push_direct
     jmp ___ins_addr_def
@@ -734,10 +733,8 @@ ___inc_addr_arith_name_offset:
     mov esi, [rbp-52]
     call push_name_ptr_offset
 ___inc_addr_arith_offset:
-    movzx edx, byte [rbp-67]
-    inc edx
-    mov byte [rbp-68], dl
-    mov byte [rbp-67], dl
+    movzx eax, byte [rbp-68]
+    mov byte [rbp-67], al
     jmp ___ins_addr_def
 ___ins_addr_scale_check:
     movzx edx, byte [rbp-67]
@@ -780,9 +777,6 @@ ___ins_addr_scale_mul_name:
     call push_name_ptr_offset
 ___ins_addr_scale_set:
     movzx eax, byte [rbp-67]
-    mov ebx, eax
-    inc ebx
-    mov byte [rbp-67], bl
     mov edi, PARSER_ADDR_FLAG_BITS
     mul edi
     mov ecx, eax

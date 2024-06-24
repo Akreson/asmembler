@@ -131,6 +131,7 @@ _end_is_aux_sym:
     pop rbp
     ret
 
+;TODO: debug
 ;rdi - ptr to file entry
 ;return rax - offset to line, rbx - line len
 get_curr_line_start_end:
