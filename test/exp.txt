@@ -1,2 +1,2 @@
 segment readable executable
-    mov [NAME+14], ebx
+    mov [rax+rsi*8+NAME], NAME1

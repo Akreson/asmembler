@@ -3,6 +3,12 @@ TOKEN_BUF_PTR_OFFSET equ 1
 TOKEN_BUF_DIRECT     equ 2
 TOKEN_BUF_ADDR       equ 3
 
+TOKEN_NAME_NONE      equ 0
+TOKEN_NAME_CONST     equ 1
+TOKEN_NAME_CONST_MUT equ 2
+TOKEN_NAME_JMP       equ 3
+TOKEN_NAME_DATA      equ 4
+
 PARSER_ADDR_FLAG_BITS      equ 4
 PARSER_ADDR_FLAG_MASK      equ 0xF
 PARSER_ADDR_FLAG_REG       equ 0x1
@@ -428,14 +434,12 @@ _end_set_tbuf_body_size:
     mov word [rax+12], bx
     ret
 
-;rdi - push from addr
+;rdi - ptr to element buff with elements size of size 1, rsi - push from addr 
 push_direct:
     push rbp
     mov rbp, rsp
     sub rsp, 8
-    mov [rbp-8], rdi
-    call curr_seg_ptr
-    mov rdi, rax
+    mov [rbp-8], rsi
     mov esi, 15
     call token_buf_reserve_size
     mov byte [rax], TOKEN_BUF_DIRECT
@@ -449,16 +453,14 @@ _end_push_direct:
     pop rbp
     ret
    
-;rdi - ptr to file entry, rsi - push from addr, rdx - read to addr
+;rdi - ptr to elemnt buf with elements of size 1, rsi - ptr to file entry, rdx - push from addr, rcx - read to addr
 push_direct_and_read_next:
     push rbp
     mov rbp, rsp
     sub rsp, 24
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov [rbp-24], rdx
-    call curr_seg_ptr
-    mov rdi, rax
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
     mov esi, 15
     call token_buf_reserve_size
     mov byte [rax], TOKEN_BUF_DIRECT
@@ -475,15 +477,13 @@ _end_push_direct_and_read_next:
     pop rbp
     ret
 
-;rdi - ptr to temp token mem, esi - offset in file array
+;rdi - ptr to elemnt buf with elements of size 1, rsi - ptr to temp token mem, edx - offset in file array
 push_name_ptr_offset:
     push rbp
     mov rbp, rsp
     sub rsp, 24
-    mov [rbp-8], rdi
-    mov [rbp-16], esi
-    call curr_seg_ptr
-    mov rdi, rax
+    mov [rbp-8], rsi
+    mov [rbp-16], edx
     mov esi, 13; TOKEN_BUF_TYPE + buff ptr + offset
     call token_buf_reserve_size
     mov byte [rax], TOKEN_BUF_PTR_OFFSET
@@ -538,7 +538,9 @@ _begin_ins_sp:
     mov esi, [rbp-52]
     call push_token_entry_header
     mov [rbp-76], ebx
-    lea rdi, [rbp-16]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
     call push_direct
 __get_ins_arg:
     mov rdi, [rbp-40]
@@ -549,7 +551,9 @@ __get_ins_arg:
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_REG
     jne __ins_kw_check_sp
-    lea rdi, [rbp-32]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
     call push_direct
     jmp __ins_next_arg_check
 __ins_kw_check_sp:
@@ -605,14 +609,18 @@ __ins_pref_check_sp:
     and ecx, PREF_INS_TYPE_MASK
     test ecx, ecx
     jz _err_invalid_expr
-    lea rdi, [rbp-32]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
     call push_direct
     jmp __get_ins_arg
 __ins_name_check_sp:
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
-    lea rdi, [rbp-32]
-    mov esi, [rbp-52]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    mov edx, [rbp-52]
     call push_name_ptr_offset
     jmp __ins_next_arg_check
 __ins_addr_tokens:
@@ -627,14 +635,18 @@ __ins_addr_tokens:
     cmp eax, TOKEN_TYPE_REG
     jne ___ins_addr_name_test
     mov byte [rbp-68], 3
-    lea rdi, [rbp-16]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
     call push_direct
     jmp ___ins_addr_def
 ___ins_addr_name_test:
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_addr_expr
-    lea rdi, [rbp-16]
-    mov esi, [rbp-52]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
     call push_name_ptr_offset
     mov byte [rbp-68], 2
     ;mov byte [rbp-67], 1
@@ -693,7 +705,9 @@ ___ins_addr_arith_fetch_next:
     inc esi
     mov byte [rbp-67], sil
     mov byte [rbp-66], dl
-    lea rdi, [rbp-32]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
     call push_direct
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -721,16 +735,22 @@ ___inc_addr_arith_reg:
     cmp edx, PARSER_ADDR_FLAG_NAME
     je _err_invalid_addr_expr
 ___inc_addr_arith_reg_pass:
-    lea rdi, [rbp-16]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
     call push_direct
     jmp ___ins_addr_def
 ___inc_addr_arith_digit_offset:
-    lea rdi, [rbp-16]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
     call push_direct
     jmp ___inc_addr_arith_offset
 ___inc_addr_arith_name_offset:
-    lea rdi, [rbp-16]
-    mov esi, [rbp-52]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
     call push_name_ptr_offset
 ___inc_addr_arith_offset:
     movzx eax, byte [rbp-68]
@@ -749,9 +769,11 @@ ___ins_addr_scale_check:
     cmp ecx, PARSER_ADDR_FLAG_NAME
     je _err_invalid_addr_expr
 ___ins_addr_scale_mul:
-    mov rdi, [rbp-40]
-    lea rsi, [rbp-32]
-    mov rdx, rsi
+    call curr_seg_ptr
+    mov rdi, rax
+    mov rsi, [rbp-40]
+    lea rdx, [rbp-32]
+    mov rcx, rdx
     call push_direct_and_read_next
     test rax, rax
     jz _end_start_parser
@@ -768,12 +790,16 @@ ___ins_addr_scale_mul:
     and rdx, rcx
     test rdx, rdx
     jnz _err_invalid_addr_expr
-    lea rdi, [rbp-32]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
     call push_direct
     jmp ___ins_addr_scale_set
 ___ins_addr_scale_mul_name:
-    lea rdi, [rbp-32]
-    mov esi, [rbp-52]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    mov edx, [rbp-52]
     call push_name_ptr_offset
 ___ins_addr_scale_set:
     movzx eax, byte [rbp-67]
