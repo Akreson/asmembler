@@ -20,10 +20,10 @@ PARSER_ADDR_FLAG_DIGIT     equ 0x8
 segment readable writeable
 
 ; entry
-; 0 (4b) offset to linked list of location to patch, 
+; 0 (4b) linked list entry offset to a chain of patch location, 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
-; linked list body - +4 offset in file array, +8 **ptr of buf to offset, +16 offset in buff,
+; linked list body - +4 offset in file array, +8 **ptr of buf to offset from, +16 offset in buff,
 ; +20 second indirectional offset (must be 0 if not set)
 ; ptr, count in entries, capacity in entries, entry size
 UNKNOWN_NAME_SYM_REF_ARRAY dq 0
