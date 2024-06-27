@@ -31,9 +31,16 @@ dd 0, 0, UNK_ENTRY_SIZE
 
 
 ; entry
-; 0 data size, +4 offset in segment arr?, +8 offset of definition in file data, +12 line num in file
-; +16 symbol entry (roud up), (header size 32b)
-; +32 start of data in _token buff_ format
+; 0 data size, +4 offset in file array, +8 offset of definition in file data,
+; +12 line num in file
+; +16 name symbol token (+30 type, ), (header size 32b)
+; +32 start of data
+;(TOKEN_NAME_CONST || TOKEN_NAME_CONST_MUT)
+; +32 sym token
+;(TOKEN_NAME_JMP)
+;(TOKEN_NAME_DATA)
+;+32 segment offest, +36 offest to entry header in section token buf
+NAME_SYM_REF_HEADER_SIZE equ 32
 NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
 
@@ -183,7 +190,6 @@ _success_realloc_pnt_unk:
     mov [rbp-56], r9
     mov eax, [rdi+8]
     mov ebx, [rdi+16]
-    xor edx, edx
     mul ebx
     mov dword [rbp-60], 0
     mov [rbp-64], eax
@@ -212,8 +218,8 @@ __dealloc_old_push_unk:
     call entry_array_dealloc
     mov rdx, UNKNOWN_NAME_SYM_REF_ARRAY 
     mov rdi, rdx
-    mov ecx, 20
     lea rsi, [rbp-24]
+    mov ecx, ENTRY_ARRAY_DATA_SIZE 
     rep movsb
     mov rdi, rdx
     mov esi, 1
@@ -320,25 +326,153 @@ _end_push_link_to_unk:
     ret
 
 ;TODO: complete
-;rdi - ptr to unk symbol
+;rdi - ptr to unk symbol, rsi - new buf to offset from, edx - new offset
 patch_unk_ref:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 20
     mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-20], edx
     mov rbx, rdi
     sub rbx, 16
+    mov esi, [rbx]
 _loop_patch_ur:
     mov rdi, PATCH_LIST
-    mov esi, [rbx]
-    call list_free_node
-    test eax, eax
+    call list_get_node_ptr
+    test rax, rax
+    jnz _valid_list_entry_patch_ur
+    exit_m -7
+_valid_list_entry_patch_ur:
+    mov ebx, [rax]
+    test ebx, ebx
     jz _end_patch_unk_ref
-    mov rbx, [rbp-8]
-    mov [rbx], eax
+    mov esi, ebx
+    mov r8, [rax+8]
+    mov edx, [rax+16]
+    mov ecx, [rax+20]
+    add r8, rdx
+    test ecx, ecx
+    jz _no_indrct_patch_ur
+    mov r9, [r8]
+    add r9, rcx
+    mov r8, r9
+_no_indrct_patch_ur:
+    mov rax, [rbp-16]
+    mov ebx, [rbp-20]
+    mov [r8], rax
+    mov [r8+8], ebx
     jmp _loop_patch_ur
 _end_patch_unk_ref:
-    add rsp, 16
+    add rsp, 20
+    pop rbp
+    ret
+
+; edi - req size
+; return rax - addr to mem
+get_mem_def_name_buf:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov esi, edi 
+    mov rdi, NAME_SYM_REF_ARRAY
+    call entry_array_check_get
+    test rax, rax
+    jnz _end_get_mem_def_name_buf 
+    mov rdi, NAME_SYM_REF_ARRAY
+    mov esi, [rdi]
+    shl esi, 1
+    lea rdx, [rbp-24]
+    call entry_array_copy_realloc
+    test rax, rax
+    jnz _success_realloc_pnt_unk 
+    exit_m -9
+_success_realloc_pnt_def:
+    mov rdi, NAME_SYM_REF_ARRAY
+    mov r8, [rdi]
+    mov r9, [rbp-24]
+    mov [rbp-32], r8
+    mov [rbp-40], r9
+    mov eax, [rdi+8]
+    mov ebx, [rdi+16]
+    mul ebx
+    mov dword [rbp-44], 0
+    mov [rbp-48], eax
+__ht_reasign_pnt_def:
+    mov rdi, NAME_SYM_HASH_TABLE
+    mov rsi, [r8+16]
+    mov ecx, [r8+24]
+    movzx edx, byte [r8+29]
+    call hash_table_find_entry
+    mov rdx, [rbp-40]
+    mov ecx, [rbp-44]
+    mov esi, [rbp-48]
+    mov ebx, [rdx]
+    lea r9, [rdx+rcx+16]
+    mov [rax], r9
+    add ecx, ebx
+    cmp ecx, esi
+    jae __dealloc_old_pnt_def
+    mov [rbp-44], ecx
+    mov rdi, [rbp-32]
+    lea r8, [rdi+rcx]
+    jmp __ht_reasign_pnt_def
+__dealloc_old_pnt_def:
+    mov rdi, NAME_SYM_REF_ARRAY
+    call entry_array_dealloc
+    mov rdx, NAME_SYM_REF_ARRAY
+    mov rdi, rdx
+    lea rsi, [rbp-24]
+    mov ecx, ENTRY_ARRAY_DATA_SIZE 
+    rep movsb
+    mov rdi, rdx
+    mov esi, NAME_SYM_REF_HEADER_SIZE
+    call entry_array_check_get
+    test rax, rax
+    jnz _end_get_mem_def_name_buf 
+    exit_m -8
+_end_get_mem_def_name_buf:
+    add rsp, 64
+    pop rbp
+    ret
+
+;TODO: add offset to definition
+;rdi - ht entry ptr, rsi - ptr to sym temp mem, ecx - file entry offset
+;return rax - addr to start of allco mem, ebx - offset from start of buff 
+push_name_to_defined:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-24], ecx
+    mov edi, NAME_SYM_REF_HEADER_SIZE
+    call get_mem_def_name_buf
+    mov [rbp-32], rax
+    add rax, 16
+    mov rdi, rax
+    mov rsi, [rbp-16]
+    mov ecx, TOKEN_HEADER_SIZE
+    rep movsb
+    mov rbx, [rbp-8]
+    mov rdi, [rbx]
+    test rbx, rbx
+    jz _add_entry_pnt_def
+    mov rsi, NAME_SYM_REF_ARRAY
+    mov rcx, [rsi]
+    mov rdx, rax
+    sub rdx, rcx
+    mov [rbp-40], edx
+    call patch_unk_ref
+_add_entry_pnt_def:
+    mov rax, [rbp-32]
+    mov ebx, [rbp-40]
+    mov edi, [rbp-24]
+    mov ecx, dword [LAST_LINE_NUM]
+    mov [rax+4], edi
+    mov [rax+12], ecx
+_end_push_name_to_defined:
+    add rsp, 64
     pop rbp
     ret
 
@@ -502,6 +636,13 @@ push_name_ptr_offset:
 _end_push_name_ptr_offset:
     add rsp, 24
     pop rbp
+    ret
+
+; edi - offset to name entry, esi - type
+set_name_token_type:
+    mov rax, [NAME_SYM_REF_ARRAY]
+    add rax, rdi
+    mov byte [rdi+30], sil 
     ret
 
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
@@ -838,44 +979,104 @@ ___ins_next_arg_eof:
     call set_tbuf_body_size
     jmp _end_start_parser
 
-;TODO: fix abi calls
 _begin_name_sp:
-    mov ecx, [rbp-8]
-    mov rdi, NAME_SYM_HASH_TABLE
-    mov rsi, [rbp-16]
-    movzx edx, byte [rbp-3]
-    call hash_table_find_entry
-    mov rbx, [rax]
-    test rbx, rbx
-    jnz _check_next_sym
-    lea rsi, [rbp-16]
-    mov rdi, rax
-    call push_name_to_unk
-    jmp _print_buff_info;TODO: delete
-_check_next_sym:
-    mov [rbp-48], rbx
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
     call next_token
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-20]
-    cmp eax, TOKEN_TYPE_EOF
-    je _add_to_chain
+    cmp eax, TOKEN_TYPE_KEYWORD
+    je __name_sp_check_name
     cmp eax, TOKEN_TYPE_AUX
-    jne _new_entry_start_ps
-    mov eax, [rbp-24]
-    cmp eax, AUX_COLON
-    jne _add_to_chain
-    mov rdi, [rbp-48]
-    call patch_unk_ref
+    je __name_sp_check_name
+    jmp _err_invalid_expr
+__name_sp_check_name:
+    mov rdi, NAME_SYM_HASH_TABLE
+    lea rsi, [rbp-16]
+    movzx edx, byte [rsi+13]
+    mov ecx, [rsi+8]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jz __name_sp_set_def
+    movzx ecx, byte [rbx+14]
+    test ecx, ecx
+    jz __name_sp_set_def
+    jmp _err_defined_symbol
+__name_sp_set_def:
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
+    call push_name_to_defined
+    mov [rbp-84], rax
+    mov [rbp-72], ebx
+    movzx ebx, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_KEYWORD
+    je __name_sp_kw
+    cmp eax, TOKEN_TYPE_AUX
+    je __name_sp_aux
+__name_sp_kw:
+    mov ecx, [rbp-24]
+    mov ebx, ecx
+    mov edx, DATA_QUL_TYPE_MASK
+    and ebx, edx
+    cmp ebx, edx
+    je ___name_data_def
+    cmp ecx, KW_EQU
+    je ___name_const_def
+    jmp _err_invalid_expr
+___name_data_def:
+___name_const_def:
+    mov rdi, [rbp-40]
+    mov rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_DIGIT
+    je ___name_const_set_token
+    cmp eax, TOKEN_TYPE_STR
+    je ___name_const_set_token
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_const_value
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_NEW_LINE
+    je ___name_const_set_empty
+    jmp _err_invalid_const_value
+___name_const_set_token:
+    mov edi, TOKEN_KIND_SIZE
+    call get_mem_def_name_buf
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+    mov edi, [ebp-72]
+    mov esi, TOKEN_NAME_CONST
+    call set_name_token_type
+    mov rdi, [rbp-40]
+    mov rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_const_value
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_NEW_LINE
+    je _new_entry_start_ps
+    jmp _err_invalid_const_value
+___name_const_set_empty:
+    mov edi, TOKEN_KIND_SIZE
+    call get_mem_def_name_buf
+    mov byte [rax+13], TOKEN_TYPE_NONE
+    mov edi, [ebp-72]
+    mov esi, TOKEN_NAME_CONST
+    call set_name_token_type
     jmp _new_entry_start_ps
-_add_to_chain:
-    mov rdi, [rbp-48]
-    mov esi, 0
-    mov edx, 0
-    call push_link_to_unk
-    jmp _new_entry_start_ps
+___name_const_check_next:
+___name_entry_def:
+__name_sp_aux:
 
 _print_buff_info:
     movzx rdi, byte [rbp-4]
@@ -951,6 +1152,8 @@ __assign_segment_collate:
 _next_test_sp:
     jmp _new_entry_start_ps
 
+_err_invalid_const_value:
+_err_defined_symbol:
 _err_invalid_addr_expr:
 _err_invalid_expr:
     mov rdi, [rbp-40]
