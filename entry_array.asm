@@ -1,5 +1,7 @@
 segment readable executable
 
+ENTRY_ARRAY_DATA_SIZE equ 20
+
 ;0 ptr to buff, +8 count, +12 capacity, +16 entry size (20b) 
 macro entry_array_data_m size
 {
