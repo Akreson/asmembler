@@ -17,7 +17,7 @@ ERR_LEXER_INVALID_CHAR db "ERR: Unsupported char", 10, 0
 
 segment readable executable
 
-;does not modifies rbx - rdi reg
+; does not modifies rbx, rcx, rsi, rdi reg
 ;rdi - byte to check, rsi - bytes to cmp with
 is_contain_byte_8b:
     push rbp
@@ -225,6 +225,7 @@ _loop_skip_wt_nt:
     call is_contain_byte_4b
     test eax, eax
     jz _char_check_nt
+    mov rdx, [rbp-32]
     inc rcx
     cmp rcx, rdx
     je _eof_nt
@@ -363,8 +364,16 @@ __check_base8_start_nt:
     jmp __start_loop_inc_scan_digit_nt
 __check_base2_start_nt:
     cmp edi, 'b'
-    jne _err_digit_format
+    jne __check_aux_digit_next
     mov eax, 2
+    jmp __start_loop_inc_scan_digit_nt
+__check_aux_digit_next:
+    call is_aux_sym
+    test rax, rax
+    jz _err_digit_format
+    mov eax, 10
+    xor edi, edi
+    jmp __finish_scan_digit_nt
 __start_loop_inc_scan_digit_nt:
     inc rcx
 __start_loop_scan_digit_nt:
