@@ -1,2 +1,7 @@
+segment readable
+NAME3 db 0, "sdfsdfsf", 0
+dq 0, 12
+dw 60000
+
 segment readable executable
     mov [rax+rsi*8+NAME], NAME1

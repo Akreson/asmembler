@@ -139,7 +139,7 @@ _start:
     mov rdi, TEST_STR
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]
-    add r8, 160
+    add r8, 128
     mov rdi, rax
     mov rsi, [r8]
     mov edx, [r8+8]

@@ -330,6 +330,10 @@ STR_KW_QWORD db "qword"
 
 _STR_SPACE db 0x20
 _STR_TAB db 0x09
+_CONST_DQM equ 0x22
+_CONST_QM equ 0x27
+_CONST_SEMICOLON equ 0x3B
+_CONST_NEW_LINE equ 10
 
 ;START OF AUX STR
 STR_COMMA     db ","
@@ -360,7 +364,7 @@ macro def_symbol_m value, type, str_ptr, str_len
 {   
     ; 0, +8, +12, +13, (+14)
     dq str_ptr; / general prt to struct / digit container
-    dd value
+    dd value ; len for TOKEN_TYPE_STR
     db type
     db str_len
     ;db name type (only for _name_ type token in memory)
