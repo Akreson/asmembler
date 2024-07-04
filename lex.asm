@@ -222,6 +222,17 @@ next_token:
     mov esi, dword [SPACE_CHAR_4B]
 _loop_skip_wt_nt:
     movzx edi, byte [rbx+rcx]
+    cmp edi, _CONST_SEMICOLON
+    jne __loop_skip_check_space 
+__coment_skip_loop:
+    inc rcx
+    cmp rcx, rdx
+    je _eof_nt
+    movzx edi, byte [rbx+rcx]
+    cmp edi, _CONST_NEW_LINE
+    jne __coment_skip_loop
+    jmp _aux_check_nt
+__loop_skip_check_space:
     call is_contain_byte_4b
     test eax, eax
     jz _char_check_nt
@@ -250,6 +261,7 @@ _char_check_nt:
     je _set_str_token
     cmp edi, edx
     je _set_str_token
+_aux_check_nt:
     call is_aux_sym
     test rax, rax
     jz _unrec_char_nt
