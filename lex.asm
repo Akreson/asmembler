@@ -207,7 +207,7 @@ _end_valid_sym_char:
 ;rdi - file entry ptr, rsi - ptr to space for symbol entry
 ; -8 passed rdi, -16 passed rsi, -24 ptr to buff, -32 size of buff
 ; -40 curr read ptr; -48 cahed last read char, -56 ptr to aux token
-; -64 offset for start of token, -72 building digit / hash of token
+; -64 offset for start of token, -72 building digit / hash of token / str quote sym
 next_token:
     push rbp
     mov rbp, rsp
@@ -244,6 +244,12 @@ _char_check_nt:
     test eax, eax
     jnz _scan_digit_nt
     mov edi, [rbp-48]
+    mov ebx, _CONST_DQM
+    mov edx, _CONST_QM
+    cmp edi, ebx
+    je _set_str_token
+    cmp edi, edx
+    je _set_str_token
     call is_aux_sym
     test rax, rax
     jz _unrec_char_nt
@@ -338,7 +344,7 @@ __def_symbol_found_nt:
     mov rsi, r8
     mov rcx, TOKEN_KIND_SIZE
     rep movsb
-    jmp _end_next_token 
+    jmp _end_next_token
 _scan_digit_nt:
     xor rax, rax
     mov [rbp-72], rax
@@ -441,6 +447,33 @@ __finish_scan_digit_nt:
     mov [rdi+13], dl
     mov rax, 1
     jmp _end_next_token
+
+_set_str_token:
+    mov [rbp-72], edi
+    mov r8, [rbp-32]
+    mov rsi, [rbp-40]
+    mov rbx, [rbp-24]
+    mov rcx, rsi
+    inc rsi
+__str_set_loop_start:
+    inc rcx
+    cmp rcx, r8
+    jae _err_string_parsing
+    movzx eax, byte [rbx+rcx]
+    cmp eax, edi
+    jne __str_set_loop_start
+__finish_scan_str:
+    mov r10, rcx
+    sub rcx, rsi
+    mov rdi, [rbp-16]
+    lea r9, [rbx+rsi]
+    mov [rdi], r9
+    mov [rdi+8], rcx
+    mov byte [rdi+12], TOKEN_TYPE_STR
+    inc r10
+    mov [rbp-40], r10
+    jmp _end_next_token
+
 _err_digit_format:
     mov rdi, ERR_LEXER_NUMBER_FORMAT
     jmp __err_digit_end_nt
@@ -482,6 +515,8 @@ _eof_nt:
     mov byte [rdi+13], 0
     mov rax, 1
     jmp _end_next_token
+_err_string_parsing:
+    ;TODO: add error
 _unrec_char_nt:
     mov rdi, ERR_LEXER_INVALID_CHAR
     call print_zero_str
