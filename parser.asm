@@ -1214,6 +1214,7 @@ _begin_kw_sp:
     je __kw_segm_sp
     jmp _err_invalid_expr
 __kw_segm_sp:
+    ;TODO: catch wrong combination?
     xor eax, eax
     mov [rbp-56], eax
 ___kw_segm_loop_sp:
