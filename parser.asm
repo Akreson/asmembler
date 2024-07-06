@@ -46,9 +46,9 @@ NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
 
 ; TODO: complete
-; entry - 0 (entry array, work size 1b) token buf , +20 file array id start,
-; +24 file array id end, +28 mod (4b) (32b total)
-SEG_ENTRY_SIZE equ 32
+; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
+; +40 file array id start, +44 file array id end, +48 mod (4b) (32b total)
+SEG_ENTRY_SIZE equ 52
 SEG_ENTRY_ARRAY dq 0
 dd 0, 0, SEG_ENTRY_SIZE
 
@@ -1247,6 +1247,7 @@ ___kw_segm_next_check:
     mov [rbp-56], edx
     jmp ___kw_segm_loop_sp
 __assign_segment_collate:
+    ;TODO: add file id start and end
     mov eax, [rbp-56]
     test eax, eax
     jz _err_seg_inv_def
@@ -1256,7 +1257,7 @@ __assign_segment_collate:
     mov dword [CURR_SEG_OFFSET], eax
     mov rdx, qword [SEG_ENTRY_ARRAY]
     add rdx, rax
-    mov [rdx+28], ebx
+    mov [rdx+48], ebx
     jmp _new_entry_start_ps
 _next_test_sp:
     jmp _new_entry_start_ps
@@ -1289,8 +1290,15 @@ segment_entry_init:
     push rbp
     mov rbp, rsp
     mov dword [rdi+16], 1
+    mov dword [rdi+36], 1
     mov rsi, 50
     shl rsi, 10
+    push rdi
+    push rsi
+    call init_entry_array
+    pop rsi
+    pop rdi
+    add rdi, ENTRY_ARRAY_DATA_SIZE
     call init_entry_array
     pop rbp
     ret

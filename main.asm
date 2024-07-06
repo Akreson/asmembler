@@ -25,6 +25,7 @@ include 'files.asm'
 include 'symbols.asm'
 include 'lex.asm'
 include 'parser.asm'
+include 'render.asm'
 
 segment readable executable
 entry _start
