@@ -60,6 +60,7 @@ PATCH_LIST dq 0
 dd 0, 0, 0
 dd 0, 0
 
+TOKEN_HEADER_PLUS_DIRECT equ 31 ;16+1+14
 TOKEN_HEADER_SIZE equ 16
 ; token buf
 ; (header)(16b)
@@ -75,49 +76,6 @@ ERR_INV_EXP db "ERR: invalid expresion", 0
 
 segment readable executable
 
-; rdi - ptr to token entry array, esi - size
-; return rax - ptr to start of alloc mem, ebx - offset in buffer
-token_buf_reserve_size:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 32
-    mov [rbp-28], rdi
-    mov [rbp-32], esi
-    call entry_array_check_get
-    test rax, rax
-    jnz _finish_token_brs
-    mov rdi, [rbp-28]
-    mov esi, [rdi+12]
-    shl esi, 1
-    lea rdx, [rbp-20]
-    call entry_array_copy_realloc
-    test rax, rax
-    jnz _success_realloc_token_brs
-    exit_m -9
-_success_realloc_token_brs:
-    mov rdi, [rbp-28]
-    call entry_array_dealloc
-    mov rdx, [rbp-28]
-    mov rdi, rdx
-    lea rsi, [rbp-20]
-    mov ecx, 20
-    rep movsb
-    mov rdi, rdx
-    mov esi, [rbp-32]
-    call entry_array_check_get
-    test rax, rax
-    jnz _finish_token_brs
-    exit_m -9
-_finish_token_brs:
-    mov rbx, rax
-    mov rdi, [rbp-28]
-    mov r8, [rdi]
-    sub rbx, r8
-_end_token_buf_reserve_size:
-    add rsp, 32
-    pop rbp
-    ret
-
 ;rdi - ptr to token entry array, esi - size of push mem, rdx - ptr to push mem
 ;return rax - ptr to start of alloc mem, ebx - offset in buffer
 token_buf_push_size:
@@ -126,7 +84,7 @@ token_buf_push_size:
     sub rsp, 20
     mov [rbp-8], rdx
     mov [rbp-12], esi
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov rdi, rax
     mov rsi, [rbp-8]
     mov ecx, [rbp-12]
@@ -587,7 +545,7 @@ push_direct:
     sub rsp, 8
     mov [rbp-8], rsi
     mov esi, 15
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax
@@ -608,7 +566,7 @@ push_direct_and_read_next:
     mov [rbp-16], rdx
     mov [rbp-24], rcx
     mov esi, 15
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax
@@ -632,7 +590,7 @@ push_name_ptr_offset:
     mov [rbp-8], rsi
     mov [rbp-16], edx
     mov esi, 13; TOKEN_BUF_TYPE + buff ptr + offset
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_PTR_OFFSET
     inc rax
     inc ebx
@@ -720,7 +678,7 @@ __ins_kw_check_sp:
     call curr_seg_ptr
     mov rdi, rax
     mov esi, 17; TOKEN_BUF_TYPE + count + _TYPE + token body
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR 
     inc ebx
     add rax, 2
@@ -752,7 +710,7 @@ __ins_aux_check_sp:
     call curr_seg_ptr
     mov rdi, rax
     mov esi, 2
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR
     inc ebx
     mov [rbp-84], ebx
@@ -1061,7 +1019,7 @@ ___name_data_qul_read:
     call curr_seg_ptr
     mov rdi, rax
     mov esi, 16
-    call token_buf_reserve_size
+    call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax

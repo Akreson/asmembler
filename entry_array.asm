@@ -9,6 +9,50 @@ macro entry_array_data_m size
     dd 0, 0, size
 }
 
+; rdi - ptr to token entry array, esi - size
+; return rax - ptr to start of alloc mem, ebx - offset in buffer
+entry_array_reserve_size:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+    mov [rbp-28], rdi
+    mov [rbp-32], esi
+    call entry_array_check_get
+    test rax, rax
+    jnz _finish_token_brs
+    mov rdi, [rbp-28]
+    mov esi, [rdi+12]
+    shl esi, 1
+    lea rdx, [rbp-20]
+    call entry_array_copy_realloc
+    test rax, rax
+    jnz _success_realloc_token_brs
+    exit_m -9
+_success_realloc_token_brs:
+    mov rdi, [rbp-28]
+    call entry_array_dealloc
+    mov rdx, [rbp-28]
+    mov rdi, rdx
+    lea rsi, [rbp-20]
+    mov ecx, 20
+    rep movsb
+    mov rdi, rdx
+    mov esi, [rbp-32]
+    call entry_array_check_get
+    test rax, rax
+    jnz _finish_token_brs
+    exit_m -9
+_finish_token_brs:
+    mov rbx, rax
+    mov rdi, [rbp-28]
+    mov r8, [rdi]
+    sub rbx, r8
+_end_token_buf_reserve_size:
+    add rsp, 32
+    pop rbp
+    ret
+
+
 ; rdi - ptr to entry array main block, esi - count of entry to check
 entry_array_check_get:
     push rbp
