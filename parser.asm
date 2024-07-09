@@ -60,14 +60,15 @@ PATCH_LIST dq 0
 dd 0, 0, 0
 dd 0, 0
 
-TOKEN_HEADER_PLUS_DIRECT equ 31 ;16+1+14
+TOKEN_HEADER_PLUS_INS_TOKEN equ 32 ;16+1+14+1
 TOKEN_HEADER_SIZE equ 16
 ; token buf
 ; (header)(16b)
 ; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
 ; (2 bytes reseved)
 ; (body) 
-; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body] ... (n times)
+; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
+;TODO: finish format description
 
 CURR_SEG_OFFSET dd 0
 
@@ -538,6 +539,13 @@ _end_set_tbuf_body_size:
     mov word [rax+12], bx
     ret
 
+; edi - offset headr of token group
+inc_ins_argc:
+    call curr_token_buf_start_ptr
+    lea r9, [rax+rdi]
+    inc byte [r9+31]; header + buf type + direct
+    ret
+
 ;rdi - ptr to element buff with elements size of size 1, rsi - push from addr 
 push_direct:
     push rbp
@@ -655,6 +663,11 @@ _begin_ins_sp:
     mov rdi, rax
     lea rsi, [rbp-16]
     call push_direct
+    call curr_seg_ptr
+    mov rdi, rax
+    mov esi, 1
+    call entry_array_reserve_size
+    mov byte [rax], 0
 __get_ins_arg:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
@@ -668,6 +681,8 @@ __get_ins_arg:
     mov rdi, rax
     lea rsi, [rbp-32]
     call push_direct
+    mov edi, [rbp-76]
+    call inc_ins_argc
     jmp __ins_next_arg_check
 __ins_kw_check_sp:
     cmp eax, TOKEN_TYPE_KEYWORD
@@ -677,11 +692,11 @@ __ins_kw_check_sp:
     jne _err_invalid_expr
     call curr_seg_ptr
     mov rdi, rax
-    mov esi, 17; TOKEN_BUF_TYPE + count + _TYPE + token body
+    mov esi, 18; TOKEN_BUF_TYPE + count + size + _TYPE + token body
     call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR 
     inc ebx
-    add rax, 2
+    add rax, 3
     mov [rbp-84], ebx
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
@@ -709,7 +724,7 @@ __ins_aux_check_sp:
     jne _err_invalid_expr
     call curr_seg_ptr
     mov rdi, rax
-    mov esi, 2
+    mov esi, 3
     call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR
     inc ebx
@@ -736,7 +751,7 @@ __ins_name_check_sp:
     mov edx, [rbp-52]
     call push_name_ptr_offset
     jmp __ins_next_arg_check
-__ins_addr_tokens:
+__ins_addr_tokens: ; add size
     xor rax, rax
     mov [rbp-72], rax
     mov rdi, [rbp-40]
@@ -781,6 +796,8 @@ ___ins_addr_def:
     movzx edx, byte [rbp-67]
     mov ecx, [rbp-84]
     mov byte [rax+rcx], dl
+    mov edi, [rbp-76]
+    call inc_ins_argc
     jmp __ins_next_arg_check
 ___ins_addr_def_next_aux:
     movzx ecx, byte [rbp-68]
