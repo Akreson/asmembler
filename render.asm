@@ -1,5 +1,13 @@
 
 
+; ins code struct (32 bytes)
+; 0 (16 bytes) post opcodes bytes, +16 (8 bytes) prefix bytes, +24 len post opcode,
+; +25 prefix bytes, +26(7 byte reserved)
+
+REX equ 0x40
+REX_R equ 0x04
+REX_X equ 0x02
+REX_B equ 0x01
 
 segment readable executable
 
@@ -42,24 +50,79 @@ render_err_first_param:
     pop rbp
     ret
 
-; rdi - ptr to ins param, rsi
+; for r_r version by default used r, r/m version
+; rdi - ptr to ins code struct, rsi - ptr to ins param
+; return eax - 0 if succes 
 process_gen_r_r:
     push rbp
     mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rsi
+    mov r10, rsi
+    xor r9,r9 
+    lea r8, [rdi+15]
+    mov eax, [rdi+9]
+    mov ebx, [r8+9]
+    mov edx, eax
+    mov ecx, ebx
+    and eax, REG_MASK_REG_VAL
+    and ebx, REG_MASK_REG_VAL
+    and edx, REG_MASK_BITS
+    and ecx, REG_MASK_BITS
+    cmp eax, ebx
+    jne _err_gen_r_r_unmatch_size
+    cmp eax, REG_REX_TH
+    jne _gen_r_r_2rex_check
+    or r9b, REX_R
+_gen_r_r_2rex_check:
+    cmp ebx, REG_REX_TH
+    jne _gen_r_r_set_rex
+    or r9b, REX_B
+_gen_r_r_set_rex:
+    test r9b, r9b
+    jz _gen_r_r_check_size
+    or r9b, REX
+_gen_r_r_check_size:
+    cmp edx, REG_MASK_VAL_64B
+    je _gen_r_r64
+    cmp edx, REG_MASK_VAL_32B
+    je _gen_r_r32
+    cmp edx, REG_MASK_VAL_16B
+    je _gen_r_r16
+    cmp edx, REG_MASK_VAL_8B
+    jne _err_invalid_first_param_mov
+_gen_r_r16:
+_gen_r_r32:
+_gen_r_r64:
+_err_gen_r_r_unmatch_size:
+    mov eax, 1
+    jmp _end_process_gen_r_r
+_succes_gen_r_r:
+    xor eax, eax
+_end_process_gen_r_r:
+    add rsp, 16
     pop rbp
     ret
-; -8 passed rdi, - 16 passed rsi, -24 curr ins build ptr
+
+; -8 passed rdi, -16 passed rsi, -38 ins code struct
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_mov:
     push rbp
     mov rbp, rsp
     sub rsp, 128
+    movzx eax, byte [rsi+31]
+    cmp eax, 2
+    jne _err_invalid_argc_mov
+    xor rax, rax
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov [rbp-24], rsp
+    mov [rbp-38], rax; TODO: change to stos?
+    mov [rbp-30], rax
+    mov [rbp-22], eax
+    mov [rbp-18], ax
     mov eax, [rdi+28]
     mov [rsi], eax
-    add rsi, TOKEN_HEADER_PLUS_DIRECT 
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
     je _mov_r
@@ -68,10 +131,6 @@ process_mov:
     jmp _err_invalid_first_param_mov
 _mov_r:
     movzx eax, byte [rsi+14]
-    mov esi, [rsi+9]
-    mov edx, esi
-    and esi, REG_MASK_REG_VAL
-    and edx, REG_MASK_BITS
     cmp eax, TOKEN_TYPE_REG
     jne _err_invalid_first_param_mov
     lea r9, [rsi+15]
@@ -89,24 +148,18 @@ _mov_r:
     je __mov_r_i
     jmp _err_invalid_second_param_mov
 __mov_r_r:
-    cmp edx, REG_MASK_VAL_64B
-    je __mov_r_r64
-    cmp edx, REG_MASK_VAL_32B
-    je __mov_r_r32
-    cmp edx, REG_MASK_VAL_16B
-    je __mov_r_r16
-    cmp edx, REG_MASK_VAL_8B
-    jne _err_invalid_first_param_mov
-___mov_r_r16:
-___mov_r_r32:
-___mov_r_r64:
+    mov rdi, rsi
+    lea rsi, [rbp-38]
+    call process_gen_r_r
+    test eax, eax
+
 __mov_r_a:
     cmp edx, REG_MASK_VAL_64B
-    je __mov_r_a64
+    je ___mov_r_a64
     cmp edx, REG_MASK_VAL_32B
-    je __mov_r_a32
+    je ___mov_r_a32
     cmp edx, REG_MASK_VAL_16B
-    je __mov_r_a16
+    je ___mov_r_a16
     cmp edx, REG_MASK_VAL_8B
     jne _err_invalid_first_param_mov
 ___mov_r_a16:
@@ -114,17 +167,18 @@ ___mov_r_a32:
 ___mov_r_a64:
 __mov_r_i:
     cmp edx, REG_MASK_VAL_64B
-    je __mov_r_r64
+    je ___mov_r_i64
     cmp edx, REG_MASK_VAL_32B
-    je __mov_r_r32
+    je ___mov_r_i32
     cmp edx, REG_MASK_VAL_16B
-    je __mov_r_r16
+    je ___mov_r_i16
     cmp edx, REG_MASK_VAL_8B
     jne _err_invalid_first_param_mov
 ___mov_r_i16:
 ___mov_r_i32:
 ___mov_r_i64:
 _mov_a:
+_err_invalid_argc_mov:
 _err_invalid_second_param_mov:
 _err_invalid_first_param_mov:
     mov rdi, [rbp-16]
