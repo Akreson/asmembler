@@ -11,6 +11,7 @@ DBL_DEF_SYM db "Dubled default symbol: ", 0
 ERR_ADD_HT db "Error on adding entry to hash table", 0
 
 TEST_STR db "./out.bin", 0
+TEST_STR2 db "./ins.bin", 0
 ; hash table: 0 ptr, +8 count, +12 capacity (in 8-byte ptr)
 ; ptr point to array of pointers
 DEF_SYM_HASH_TABLE dq 0
@@ -145,6 +146,17 @@ _start:
     mov rdi, rax
     mov rsi, [r8]
     mov edx, [r8+8]
+    call write
+    add rax, rax; NOTE:just a mark for debug, delete later
+    add rax, rax
+    call start_render
+    mov rdi, TEST_STR2
+    call open_file_w_trunc
+    mov r8, [SEG_ENTRY_ARRAY]
+    add r8, 280
+    mov rdi, rax
+    mov rsi, [r8]
+    mov edx, [r8+28]
     call write
 _end_start:
     add rsp, 40

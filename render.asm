@@ -2,12 +2,21 @@
 
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes, +16 (8 bytes) prefix bytes, +24 len post opcode,
-; +25 prefix bytes, +26(7 byte reserved)
+; +25 prefix bytes, +26 1st arg size, +27 2nd arg size, +28 3rd arg size (3 byte reserved)
 
-REX equ 0x40
+REX   equ 0x40
 REX_R equ 0x04
 REX_X equ 0x02
 REX_B equ 0x01
+
+MOD_ADDR_REG        equ 0
+MOD_ADDR_REG_DISP8  equ 0x40
+MOD_ADDR_REG_DISP32 equ 0x80
+MOD_REG             equ 0xC0
+
+RM_SIB equ 0x04
+
+PREFIX_16BIT equ 0x66
 
 segment readable executable
 
@@ -16,29 +25,60 @@ segment readable executable
 set_collate_seg_ptr:
     push rbp
     mov rbp, rsp
-    mov rdx, SEG_ENTRY_ARRAY
+    xor r9, r9
+    mov r8, [SEG_ENTRY_ARRAY]
     mov ecx, SEG_ENTRY_SIZE
     mov eax, 4
     mul ecx
-    lea rbx, [rdx+rax]
+    lea rbx, [r8+rax]
+    mov esi, [rbx+8]
+    test esi, esi
+    jz _set_collate_sg_check2
+    inc r9d
     mov [rdi], rbx
+    add rdi, 8
+_set_collate_sg_check2:
     mov eax, 6
     mul ecx
-    lea rbx, [rdx+rax]
-    mov [rdi+8], rbx
+    lea rbx, [r8+rax]
+    mov esi, [rbx+8]
+    test esi, esi
+    jz _set_collate_sg_check3
+    inc r9d
+    mov [rdi], rbx
+    add rdi, 8
+_set_collate_sg_check3:
     mov eax, 5
     mul ecx
-    lea rbx, [rdx+rax]
-    mov [rdi+16], rbx
+    lea rbx, [r8+rax]
+    mov esi, [rbx+8]
+    test esi, esi
+    jz _set_collate_sg_check4
+    inc r9d
+    mov [rdi], rbx
+    add rdi, 8
+_set_collate_sg_check4:
     mov eax, 3
     mul ecx
-    lea rbx, [rdx+rax]
-    mov [rdi+24], rbx
+    lea rbx, [r8+rax]
+    mov esi, [rbx+8]
+    test esi, esi
+    jz _set_collate_sg_check5
+    inc r9d
+    mov [rdi], rbx
+    add rdi, 8
+_set_collate_sg_check5:
     mov eax, 1
     mul ecx
-    lea rbx, [rdx+rax]
-    mov [rdi+32], rbx
-    mov eax, 5
+    lea rbx, [r8+rax]
+    mov esi, [rbx+8]
+    test esi, esi
+    jz _end_set_collate_seg_ptr
+    inc r9d
+    mov [rdi], rbx
+    add rdi, 8
+_end_set_collate_seg_ptr:
+    mov eax, r9d
     pop rbp
     ret
 
@@ -69,6 +109,8 @@ process_gen_r_r:
     and ebx, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
     and ecx, REG_MASK_BITS
+    mov [rsi+26], edx
+    mov [rsi+27], ecx
     cmp eax, ebx
     jne _err_gen_r_r_unmatch_size
     cmp eax, REG_REX_TH
@@ -83,28 +125,39 @@ _gen_r_r_set_rex:
     jz _gen_r_r_check_size
     or r9b, REX
 _gen_r_r_check_size:
-    cmp edx, REG_MASK_VAL_64B
-    je _gen_r_r64
-    cmp edx, REG_MASK_VAL_32B
-    je _gen_r_r32
+    xor r12, r12
+    mov r11, r10
+    add r11, 16
+    shl eax, 3
+    or r12b, al
+    or r12b, bl
+    mov byte [r10], r12b
+    inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
-    je _gen_r_r16
-    cmp edx, REG_MASK_VAL_8B
-    jne _err_invalid_first_param_mov
+    jne _gen_r_r16
 _gen_r_r16:
-_gen_r_r32:
-_gen_r_r64:
+    mov byte [r11], PREFIX_16BIT
+    inc byte [r11+25]
+_gen_r_r_set_prefix:
+    test r9b, r9b
+    jz _success_gen_r_r
+    movzx eax, byte [rsi+25]
+    mov byte [r11+rax], r9b
+    inc eax
+    mov byte [rsi+25], al
+    jmp _success_gen_r_r
+_err_gen_r_r_unrec_size:
 _err_gen_r_r_unmatch_size:
     mov eax, 1
     jmp _end_process_gen_r_r
-_succes_gen_r_r:
+_success_gen_r_r:
     xor eax, eax
 _end_process_gen_r_r:
     add rsp, 16
     pop rbp
     ret
 
-; -8 passed rdi, -16 passed rsi, -38 ins code struct
+; -8 passed rdi, -16 passed rsi, -38 ins code struct, -42 opcode
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_mov:
     push rbp
@@ -152,32 +205,43 @@ __mov_r_r:
     lea rsi, [rbp-38]
     call process_gen_r_r
     test eax, eax
-
+    jnz _err_parse_mov
+    movzx ebx, byte [r8+26]
+    cmp ebx, REG_MASK_VAL_8B
+    jne __mov_r_r_non_byte_opcode
+    mov byte [rbp-42], 0x8A
+    jmp _mov_accemble
+__mov_r_r_non_byte_opcode:
+    mov byte [rbp-42], 0x8B
+    jmp _mov_accemble
 __mov_r_a:
-    cmp edx, REG_MASK_VAL_64B
-    je ___mov_r_a64
-    cmp edx, REG_MASK_VAL_32B
-    je ___mov_r_a32
-    cmp edx, REG_MASK_VAL_16B
-    je ___mov_r_a16
-    cmp edx, REG_MASK_VAL_8B
-    jne _err_invalid_first_param_mov
-___mov_r_a16:
-___mov_r_a32:
-___mov_r_a64:
 __mov_r_i:
-    cmp edx, REG_MASK_VAL_64B
-    je ___mov_r_i64
-    cmp edx, REG_MASK_VAL_32B
-    je ___mov_r_i32
-    cmp edx, REG_MASK_VAL_16B
-    je ___mov_r_i16
-    cmp edx, REG_MASK_VAL_8B
-    jne _err_invalid_first_param_mov
-___mov_r_i16:
-___mov_r_i32:
-___mov_r_i64:
 _mov_a:
+__mov_a_r:
+__mov_a_i:
+_mov_accemble:
+    mov rdi, [rbp-8]
+    call entry_array_curr_ptr
+    lea r8, [rbp-38]
+    mov rdi, rax
+    lea rsi, [r8+16]
+    movzx ecx, byte [r8+25]
+    add rax, rcx
+    rep movsb
+    inc rax
+    mov bl, [rbp-42]
+    mov [rax], bl
+    inc rax
+    mov rdi, rax
+    mov rsi, r8
+    movzx ecx, byte [r8+24]
+    add rax, rcx
+    rep movsb
+    mov rdi, [rbp-8]
+    mov rsi, rax
+    call entry_array_commit_size
+    jmp _end_process_mov
+_err_parse_mov:
 _err_invalid_argc_mov:
 _err_invalid_second_param_mov:
 _err_invalid_first_param_mov:
@@ -191,7 +255,7 @@ _end_process_mov:
     ret
 
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
-; -24 curr token buf ptr
+; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
 render_process_segment:
     push rbp
@@ -200,13 +264,19 @@ render_process_segment:
     xor rax, rax
     mov [rbp-8], rdi
     mov [rbp-12], eax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
 _start_loop_process_segment:
+    mov rdi, [rbp-32]
+    mov esi, 32
+    call entry_array_ensure_free_space
     mov ecx, [rbp-12]
     mov r8, [rbp-8]
     mov ebx, [r8+8]
     cmp ecx, ebx
     ja _end_render_process_segment
-    mov r9, [r8+rcx]
+    mov rdx, [r8]
+    mov r9, [rdx+rcx]
     mov [rbp-24], r9
     lea r10, [r9+16]
     movzx ebx, byte [r10]
@@ -247,13 +317,14 @@ _render_seg_grab_loop:
     mov ebx, [rbp-4]
     mov eax, [rbp-8]
     cmp ebx, eax
-    ja _end_start_render
+    jae _end_start_render
     mov ecx, ebx
     inc ecx
     mov [rbp-4], ecx
     shr ebx, 3
-    mov rdi, rsp
-    add rdi, rdx
+    mov rdx, rsp
+    add rdx, rbx
+    mov rdi, [rdx]
     call render_process_segment
     jmp _render_seg_grab_loop    
 _end_start_render:
