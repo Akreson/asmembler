@@ -52,6 +52,70 @@ _end_token_buf_reserve_size:
     pop rbp
     ret
 
+; signed division!
+; rdi - ptr to entry array main block, rsi - curr ptr in entry array
+entry_array_commit_size:
+    push rbp
+    mov rbp, rsp
+    mov r8, [rdi]
+    mov ecx, [rdi+8]
+    mov ebx, [rdi+12]
+    mov r9d, [rdi+16]
+    mov r10, r8
+    add r10, rbx
+    cmp r8, rsi
+    jb _err_ea_commit
+    cmp r10, rsi
+    jae _err_ea_commit
+    mov rax, rsi
+    sub rax, r8
+    xor rdx, rdx
+    idiv r9d
+    add ecx, eax
+    mov [rdi+8], ecx
+_err_ea_commit:
+    exit_m -10
+_end_entry_array_commit_size:
+    pop rbp
+    ret
+
+; rdi - ptr to entry array main block, esi - count of entry to check
+entry_array_ensure_free_space:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+    mov ebx, [rdi+8]
+    mov edx, [rdi+12]
+    sub edx, ebx
+    cmp edx, esi
+    jae _success_eaec
+    mov [rbp-28], rdi
+    mov [rbp-32], esi
+    shl edx, 1
+    lea rdx, [rbp-20]
+    call entry_array_copy_realloc
+    test eax, eax
+    jnz _update_eaefs
+    exit_m -9
+_update_eaefs:
+    mov rdi, [rbp-28]
+    call entry_array_dealloc
+    mov rdi, [rbp-28]
+    lea rsi, [rbp-20]
+    mov ecx, 20
+_success_eaec:
+    mov eax, 1
+_end_entry_array_ensure_free_space:
+    add rsp, 32
+    pop rbp
+    ret
+
+;rdi - ptr to entry array main block
+entry_array_curr_ptr:
+    mov rax, [rdi]
+    mov r8d, [rdi+8]
+    add rax, r8
+    ret
 
 ; rdi - ptr to entry array main block, esi - count of entry to check
 entry_array_check_get:
