@@ -45,9 +45,8 @@ NAME_SYM_REF_HEADER_SIZE equ 32
 NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
 
-; TODO: complete
 ; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
-; +40 file array id start, +44 file array id end, +48 mod (4b) (32b total)
+; +40 file array id start, +44 file array id end, +48 mod (4b) (52b total)
 SEG_ENTRY_SIZE equ 52
 SEG_ENTRY_ARRAY dq 0
 dd 0, 0, SEG_ENTRY_SIZE
@@ -751,9 +750,10 @@ __ins_name_check_sp:
     mov edx, [rbp-52]
     call push_name_ptr_offset
     jmp __ins_next_arg_check
-__ins_addr_tokens: ; add size
+__ins_addr_tokens:
     xor rax, rax
     mov [rbp-72], rax
+    mov byte [rbp-65], 3
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
@@ -767,6 +767,7 @@ __ins_addr_tokens: ; add size
     mov rdi, rax
     lea rsi, [rbp-16]
     call push_direct
+    add byte [rbp-65], 15
     jmp ___ins_addr_def
 ___ins_addr_name_test:
     cmp eax, TOKEN_TYPE_NAME
@@ -776,6 +777,7 @@ ___ins_addr_name_test:
     lea rsi, [rbp-16]
     mov edx, [rbp-52]
     call push_name_ptr_offset
+    add byte [rbp-65], 13
     mov byte [rbp-68], 2
     ;mov byte [rbp-67], 1
     mov eax, PARSER_ADDR_FLAG_NAME
@@ -795,7 +797,9 @@ ___ins_addr_def:
     call curr_token_buf_start_ptr
     movzx edx, byte [rbp-67]
     mov ecx, [rbp-84]
-    mov byte [rax+rcx], dl
+    mov r8b, [rbp-65]
+    mov [rax+rcx], dl
+    mov [rax+rcx+1], r8b
     mov edi, [rbp-76]
     call inc_ins_argc
     jmp __ins_next_arg_check
@@ -839,6 +843,7 @@ ___ins_addr_arith_fetch_next:
     mov rdi, rax
     lea rsi, [rbp-32]
     call push_direct
+    add byte [rbp-65], 15
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
@@ -869,12 +874,14 @@ ___inc_addr_arith_reg_pass:
     mov rdi, rax
     lea rsi, [rbp-16]
     call push_direct
+    add byte [rbp-65], 15
     jmp ___ins_addr_def
 ___inc_addr_arith_digit_offset:
     call curr_seg_ptr
     mov rdi, rax
     lea rsi, [rbp-16]
     call push_direct
+    add byte [rbp-65], 15
     jmp ___inc_addr_arith_offset
 ___inc_addr_arith_name_offset:
     call curr_seg_ptr
@@ -882,6 +889,7 @@ ___inc_addr_arith_name_offset:
     lea rsi, [rbp-16]
     mov edx, [rbp-52]
     call push_name_ptr_offset
+    add byte [rbp-65], 13
 ___inc_addr_arith_offset:
     movzx eax, byte [rbp-68]
     mov byte [rbp-67], al
@@ -905,6 +913,7 @@ ___ins_addr_scale_mul:
     lea rdx, [rbp-32]
     mov rcx, rdx
     call push_direct_and_read_next
+    add byte [rbp-65], 15
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-20]
@@ -924,6 +933,7 @@ ___ins_addr_scale_mul:
     mov rdi, rax
     lea rsi, [rbp-32]
     call push_direct
+    add byte [rbp-65], 15
     jmp ___ins_addr_scale_set
 ___ins_addr_scale_mul_name:
     call curr_seg_ptr
@@ -931,6 +941,7 @@ ___ins_addr_scale_mul_name:
     lea rsi, [rbp-32]
     mov edx, [rbp-52]
     call push_name_ptr_offset
+    add byte [rbp-65], 13
 ___ins_addr_scale_set:
     movzx eax, byte [rbp-67]
     mov edi, PARSER_ADDR_FLAG_BITS

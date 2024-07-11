@@ -4,4 +4,5 @@ dq 0, 12
 dw 60000
 
 segment readable executable
+    mov [rax+rsi*8+123], eax
     mov [rax+rsi*8+NAME], NAME1
