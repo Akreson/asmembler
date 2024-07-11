@@ -1281,11 +1281,11 @@ segment_entry_init:
     mov rsi, 50
     shl rsi, 10
     push rdi
-    push rsi
     call init_entry_array
-    pop rsi
     pop rdi
     add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov rsi, 8
+    shl rsi, 10
     call init_entry_array
     pop rbp
     ret
