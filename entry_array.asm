@@ -63,16 +63,18 @@ entry_array_commit_size:
     mov r9d, [rdi+16]
     mov r10, r8
     add r10, rbx
-    cmp r8, rsi
+    cmp rsi, r8
     jb _err_ea_commit
-    cmp r10, rsi
+    cmp rsi, r10
     jae _err_ea_commit
     mov rax, rsi
     sub rax, r8
-    xor rdx, rdx
+    xor edx, edx
     idiv r9d
-    add ecx, eax
-    mov [rdi+8], ecx
+    test edx, edx
+    jnz _err_ea_commit
+    mov [rdi+8], eax
+    jmp _end_entry_array_commit_size
 _err_ea_commit:
     exit_m -10
 _end_entry_array_commit_size:
