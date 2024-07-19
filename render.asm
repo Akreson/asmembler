@@ -2,7 +2,8 @@
 
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes, +16 (8 bytes) prefix bytes, +24 len post opcode,
-; +25 prefix bytes, +26 1st arg size, +27 2nd arg size, +28 3rd arg size (3 byte reserved)
+; +25 prefix bytes, +26 1st arg size, +27 2nd arg size, +28 3rd arg size (3 bytes reserved)
+INS_CODE_STRUCT_SIZE equ 32
 
 REX   equ 0x40
 REX_R equ 0x04
@@ -91,7 +92,7 @@ render_err_first_param:
     ret
 
 ; for r_r version by default used r, r/m version
-; rdi - ptr to ins code struct, rsi - ptr to ins param
+; rdi - ptr to ins param, rsi - ptr to ins code struct 
 ; return eax - 0 if succes 
 process_gen_r_r:
     push rbp
@@ -111,7 +112,7 @@ process_gen_r_r:
     and ecx, REG_MASK_BITS
     mov [rsi+26], edx
     mov [rsi+27], ecx
-    cmp eax, ebx
+    cmp ecx, edx
     jne _err_gen_r_r_unmatch_size
     cmp eax, REG_REX_TH
     jne _gen_r_r_2rex_check
@@ -122,22 +123,22 @@ _gen_r_r_2rex_check:
     or r9b, REX_B
 _gen_r_r_set_rex:
     test r9b, r9b
-    jz _gen_r_r_check_size
+    jz _gen_r_r_set_arg
     or r9b, REX
-_gen_r_r_check_size:
+_gen_r_r_set_arg:
     xor r12, r12
-    mov r11, r10
-    add r11, 16
+    lea r11, [r10+16]
     shl eax, 3
     or r12b, al
     or r12b, bl
+    or r12b, MOD_REG
     mov byte [r10], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
-    jne _gen_r_r16
+    jne _gen_r_r_set_prefix
 _gen_r_r16:
     mov byte [r11], PREFIX_16BIT
-    inc byte [r11+25]
+    inc byte [rsi+25]
 _gen_r_r_set_prefix:
     test r9b, r9b
     jz _success_gen_r_r
@@ -157,7 +158,8 @@ _end_process_gen_r_r:
     pop rbp
     ret
 
-; -8 passed rdi, -16 passed rsi, -38 ins code struct, -42 opcode
+; -8 passed rdi, -16 passed rsi, -24 render entry array, -32-38 (reserved), -42 (4b) opcode
+; -128 ins code struct,
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_mov:
     push rbp
@@ -169,10 +171,11 @@ process_mov:
     xor rax, rax
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov [rbp-38], rax; TODO: change to stos?
-    mov [rbp-30], rax
-    mov [rbp-22], eax
-    mov [rbp-18], ax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-24], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    lea rdi, [rbp-128]
+    rep stosb
     mov eax, [rdi+28]
     mov [rsi], eax
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
@@ -183,7 +186,7 @@ process_mov:
     je _mov_a
     jmp _err_invalid_first_param_mov
 _mov_r:
-    movzx eax, byte [rsi+14]
+    movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
     jne _err_invalid_first_param_mov
     lea r9, [rsi+15]
@@ -194,7 +197,7 @@ _mov_r:
     je __mov_r_i
     cmp ecx, TOKEN_BUF_DIRECT
     jne _err_invalid_second_param_mov
-    movzx ebx, byte [r9+14]
+    movzx ebx, byte [r9+13]
     cmp ebx, TOKEN_TYPE_REG
     je __mov_r_r
     cmp ebx, TOKEN_TYPE_DIGIT
@@ -202,16 +205,17 @@ _mov_r:
     jmp _err_invalid_second_param_mov
 __mov_r_r:
     mov rdi, rsi
-    lea rsi, [rbp-38]
+    lea rsi, [rbp-128]
     call process_gen_r_r
     test eax, eax
     jnz _err_parse_mov
+    lea r8, [rbp-128]
     movzx ebx, byte [r8+26]
     cmp ebx, REG_MASK_VAL_8B
-    jne __mov_r_r_non_byte_opcode
+    jne ___mov_r_r_non_byte_opcode
     mov byte [rbp-42], 0x8A
     jmp _mov_accemble
-__mov_r_r_non_byte_opcode:
+___mov_r_r_non_byte_opcode:
     mov byte [rbp-42], 0x8B
     jmp _mov_accemble
 __mov_r_a:
@@ -220,15 +224,14 @@ _mov_a:
 __mov_a_r:
 __mov_a_i:
 _mov_accemble:
-    mov rdi, [rbp-8]
+    mov rdi, [rbp-24]
     call entry_array_curr_ptr
-    lea r8, [rbp-38]
     mov rdi, rax
+    lea r8, [rbp-128]
     lea rsi, [r8+16]
     movzx ecx, byte [r8+25]
     add rax, rcx
     rep movsb
-    inc rax
     mov bl, [rbp-42]
     mov [rax], bl
     inc rax
@@ -237,7 +240,7 @@ _mov_accemble:
     movzx ecx, byte [r8+24]
     add rax, rcx
     rep movsb
-    mov rdi, [rbp-8]
+    mov rdi, [rbp-24]
     mov rsi, rax
     call entry_array_commit_size
     jmp _end_process_mov
@@ -274,15 +277,18 @@ _start_loop_process_segment:
     mov r8, [rbp-8]
     mov ebx, [r8+8]
     cmp ecx, ebx
-    ja _end_render_process_segment
+    jae _end_render_process_segment
     mov rdx, [r8]
-    mov r9, [rdx+rcx]
+    lea r9, [rdx+rcx]
     mov [rbp-24], r9
+    movzx esi, word [r9+12]
+    add ecx, esi
+    mov [rbp-12], ecx
     lea r10, [r9+16]
     movzx ebx, byte [r10]
     cmp ebx, TOKEN_BUF_DIRECT
     jne _err_processing_start_token
-    movzx eax, byte [r10+14]
+    movzx eax, byte [r10+13]
     cmp eax, TOKEN_TYPE_INS
     je _check_ins_rps
     cmp eax, TOKEN_TYPE_KEYWORD

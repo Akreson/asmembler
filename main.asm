@@ -156,7 +156,7 @@ _start:
     add r8, 280
     mov rdi, rax
     mov rsi, [r8]
-    mov edx, [r8+28]
+    mov edx, [r8+8]
     call write
 _end_start:
     add rsp, 40
