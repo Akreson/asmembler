@@ -529,7 +529,7 @@ set_tbuf_body_size:
     call curr_token_buf_ptr
     sub ebx, edi
     sub rax, rbx
-    sub ebx, 16
+    ;sub ebx, 16
     mov ecx, 65535
     cmp ebx, ecx
     jbe _end_set_tbuf_body_size
