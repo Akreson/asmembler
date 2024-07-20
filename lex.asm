@@ -224,13 +224,14 @@ _loop_skip_wt_nt:
     movzx edi, byte [rbx+rcx]
     cmp edi, _CONST_SEMICOLON
     jne __loop_skip_check_space 
-__coment_skip_loop:
+__comment_skip_loop:
     inc rcx
     cmp rcx, rdx
     je _eof_nt
     movzx edi, byte [rbx+rcx]
     cmp edi, _CONST_NEW_LINE
-    jne __coment_skip_loop
+    jne __comment_skip_loop
+    mov [rbp-40], rcx
     jmp _aux_check_nt
 __loop_skip_check_space:
     call is_contain_byte_4b
@@ -286,8 +287,10 @@ _loop_collate_nl_nt:
     cmp rcx, rdx
     je _eof_nt
     movzx edi, byte [rbx+rcx]
-    cmp edi, 10
+    cmp edi, _CONST_NEW_LINE
     je _loop_new_line_collate_nl_nt
+    cmp edi, _CONST_SEMICOLON
+    je __comment_skip_loop
     call is_contain_byte_4b
     test eax, eax
     jnz _loop_collate_nl_nt
