@@ -6,6 +6,7 @@
 INS_CODE_STRUCT_SIZE equ 32
 
 REX   equ 0x40
+REX_W equ 0x08
 REX_R equ 0x04
 REX_X equ 0x02
 REX_B equ 0x01
@@ -114,13 +115,19 @@ process_gen_r_r:
     mov [rsi+27], ecx
     cmp ecx, edx
     jne _err_gen_r_r_unmatch_size
+    cmp ecx, REG_MASK_VAL_64B
+    jne _gen_r_r_check_arg_th
+    or r9b, REX_W
+_gen_r_r_check_arg_th:
     cmp eax, REG_REX_TH
-    jne _gen_r_r_2rex_check
+    jb _gen_r_r_2rex_check
     or r9b, REX_R
+    and eax, REG_MASK_REG_IDX
 _gen_r_r_2rex_check:
     cmp ebx, REG_REX_TH
-    jne _gen_r_r_set_rex
+    jb _gen_r_r_set_rex
     or r9b, REX_B
+    and ebx, REG_MASK_REG_IDX
 _gen_r_r_set_rex:
     test r9b, r9b
     jz _gen_r_r_set_arg

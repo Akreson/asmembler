@@ -8,3 +8,4 @@ segment readable executable
     mov esi, r12d
     mov rax, rcx
     mov r8, rdi
+    mov rsp, r10
