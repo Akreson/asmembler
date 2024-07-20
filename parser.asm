@@ -538,12 +538,18 @@ _end_set_tbuf_body_size:
     mov word [rax+12], bx
     ret
 
-; edi - offset headr of token group
+; edi - offset of header of token group
 inc_ins_argc:
     call curr_token_buf_start_ptr
-    lea r9, [rax+rdi]
-    inc byte [r9+31]; header + buf type + direct
+    inc byte [rax+rdi+31]; header + buf type + direct
     ret
+
+; edi - offset of header of token group
+get_ins_argc:
+    call curr_token_buf_start_ptr
+    movzx eax, byte [rax+rdi+31]
+    ret
+   
 
 ;rdi - ptr to element buff with elements size of size 1, rsi - push from addr 
 push_direct:
@@ -743,12 +749,25 @@ __ins_pref_check_sp:
     jmp __get_ins_arg
 __ins_name_check_sp:
     cmp eax, TOKEN_TYPE_NAME
-    jne _err_invalid_expr
+    jne __ins_digit_check_sp
     call curr_seg_ptr
     mov rdi, rax
     lea rsi, [rbp-32]
     mov edx, [rbp-52]
     call push_name_ptr_offset
+    mov edi, [rbp-76]
+    call inc_ins_argc
+    jmp __ins_next_arg_check
+__ins_digit_check_sp:
+    cmp eax, TOKEN_TYPE_DIGIT
+    jne _err_invalid_expr
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    mov edx, [rbp-52]
+    call push_direct
+    mov edi, [rbp-76]
+    call inc_ins_argc
     jmp __ins_next_arg_check
 __ins_addr_tokens:
     xor rax, rax
