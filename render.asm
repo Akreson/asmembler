@@ -284,10 +284,10 @@ render_process_addr:
     lea r8, [rdi+3]
     movzx eax, byte [r8]
     cmp eax, TOKEN_BUF_DIRECT
-    jne _rproc_addr_start_check
+    jne _rproc_addr_start_pre_check
     movzx ebx, byte [rdi+16]
     cmp ebx, TOKEN_TYPE_KEYWORD
-    jne _rproc_addr_start_check
+    jne _rproc_addr_start_pre_check
     mov eax, [rdi+12]
     mov r12b, REG_MASK_VAL_8B 
     mov r13b, REG_MASK_VAL_16B
@@ -303,6 +303,10 @@ render_process_addr:
     cmove ecx, r15d 
     mov [rsi+27], cl
     add r8, 15
+    jmp _rproc_addr_start_check
+_rproc_addr_start_pre_check:
+    mov cl, [rsi+26]
+    mov [rsi+27], cl
 _rproc_addr_start_check:
     movzx ebx, byte [r8] 
     movzx eax, byte [rdi+1]
@@ -335,25 +339,25 @@ _rproc_addr_1p:
     mov [rbp-20], r10b
     and ecx, REG_MASK_REG_IDX
  __rproc_addr_1p_reg:
-    and r9b, MOD_ADDR_REG
-    and r9b, cl
+    or r9b, MOD_ADDR_REG
+    or r9b, cl
     mov [rsi], r9b
     jmp _success_render_process_addr
 _rproc_addr_1p_rbp:
-    and r9b, MOD_ADDR_REG_DISP8
-    and r9b, cl
+    or r9b, MOD_ADDR_REG_DISP8
+    or r9b, cl
     mov [rsi], r9b
     mov byte [rsi+1], 0
     inc byte [rsi+24]
     jmp _success_render_process_addr
 _rproc_addr_1p_rsp:
-    or r9b, MOD_ADDR_REG_DISP8
+    or r9b, MOD_ADDR_REG
     or r9b, cl
     mov [rsi], r9b
     xor r10, r10
     or r10b, cl
     shl r10b, 3
-    or r10b, 3
+    or r10b, cl
     mov [rsi+1], r10b
     inc byte [rsi+24]
     jmp _success_render_process_addr
@@ -415,6 +419,7 @@ _gen_r_a_addr_check:
     mov r9d, ebx
     test r9b, r9b
     jz _success_gen_r_a
+    or r9b, REX
     mov rsi, [rbp-16]
     lea r11, [rsi+16]
     movzx eax, byte [rsi+25]
@@ -497,8 +502,8 @@ __mov_r_a:
     test eax, eax
     jnz _err_parse_mov
     lea rsi, [rbp-128]
-    movzx eax, byte [rbp+26]
-    movzx ebx, byte [rbp+27]
+    movzx eax, byte [rsi+26]
+    movzx ebx, byte [rsi+27]
     cmp eax, ebx
     jne _err_arg_size_mov
     cmp eax, REG_MASK_VAL_8B
