@@ -700,6 +700,8 @@ __ins_kw_check_sp:
     mov esi, 18; TOKEN_BUF_TYPE + count + size + _TYPE + token body
     call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR 
+    mov byte [rax+1], 0
+    mov byte [rax+2], 15
     inc ebx
     add rax, 3
     mov [rbp-84], ebx
@@ -732,6 +734,7 @@ __ins_aux_check_sp:
     mov esi, 3
     call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR
+    mov byte [rax+1], 0
     inc ebx
     mov [rbp-84], ebx
     jmp __ins_addr_tokens
@@ -759,6 +762,7 @@ __ins_name_check_sp:
     call inc_ins_argc
     jmp __ins_next_arg_check
 __ins_digit_check_sp:
+    ;TODO: support neg digit
     cmp eax, TOKEN_TYPE_DIGIT
     jne _err_invalid_expr
     call curr_seg_ptr
@@ -814,11 +818,14 @@ ___ins_addr_def:
     cmp ebx, AUX_RBRACKET
     jne ___ins_addr_def_next_aux
     call curr_token_buf_start_ptr
-    mov dl, [rbp-67]
+    movzx edx, byte [rbp-67]
+    mov esi, 1
+    cmp edx, 0
+    cmove edx, esi
     mov ecx, [rbp-84]
     mov r8b, [rbp-65]
     mov [rax+rcx], dl
-    mov [rax+rcx+1], r8b
+    add [rax+rcx+1], r8b
     mov edi, [rbp-76]
     call inc_ins_argc
     jmp __ins_next_arg_check
