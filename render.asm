@@ -334,6 +334,7 @@ ___mov_r_r_non_byte_opcode:
     jmp _mov_accemble
 __mov_r_a:
 __mov_r_i:
+    ;TODO: handle name val or name absolute addr
     mov rdi, rsi
     lea rsi, [rbp-128]
     call process_gen_rm_i

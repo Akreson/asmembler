@@ -814,7 +814,7 @@ ___ins_addr_def:
     cmp ebx, AUX_RBRACKET
     jne ___ins_addr_def_next_aux
     call curr_token_buf_start_ptr
-    movzx edx, byte [rbp-67]
+    mov dl, [rbp-67]
     mov ecx, [rbp-84]
     mov r8b, [rbp-65]
     mov [rax+rcx], dl
@@ -847,17 +847,16 @@ ___ins_addr_arith_check:
     and ebx, edi
     test ebx, ebx
     jnz ___ins_addr_arith_check_set_curr
-    mov edx, PARSER_ADDR_FLAG_REG
-    shl edx, cl
-    or r9d, edx
+    mov ebx, PARSER_ADDR_FLAG_REG
+    shl ebx, cl
+    or r9d, ebx
     mov [rbp-72], r9d
-    jmp ___ins_addr_arith_fetch_next
 ___ins_addr_arith_check_set_curr:
     mov edx, ebx
 ___ins_addr_arith_fetch_next:
     inc esi
-    mov byte [rbp-67], sil
-    mov byte [rbp-66], dl
+    mov [rbp-67], sil
+    mov [rbp-66], dl
     call curr_seg_ptr
     mov rdi, rax
     lea rsi, [rbp-32]
@@ -894,6 +893,7 @@ ___inc_addr_arith_reg_pass:
     lea rsi, [rbp-16]
     call push_direct
     add byte [rbp-65], 15
+    inc byte [rbp-67]
     jmp ___ins_addr_def
 ___inc_addr_arith_digit_offset:
     call curr_seg_ptr
@@ -910,8 +910,10 @@ ___inc_addr_arith_name_offset:
     call push_name_ptr_offset
     add byte [rbp-65], 13
 ___inc_addr_arith_offset:
-    movzx eax, byte [rbp-68]
-    mov byte [rbp-67], al
+    mov al, [rbp-67]
+    inc al
+    mov [rbp-67], al
+    mov [rbp-68], al
     jmp ___ins_addr_def
 ___ins_addr_scale_check:
     movzx edx, byte [rbp-67]
