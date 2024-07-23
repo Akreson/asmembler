@@ -118,6 +118,7 @@ process_gen_r_r:
     and ecx, REG_MASK_BITS
     mov [rsi+26], edx
     mov [rsi+27], ecx
+    ;TODO: remove match size check?
     cmp ecx, edx
     jne _err_gen_r_r_unmatch_size
     cmp ecx, REG_MASK_VAL_64B
@@ -133,7 +134,7 @@ _gen_r_r_2rex_check:
     jb _gen_r_r_set_rex
     or r9b, REX_B
     and ebx, REG_MASK_REG_IDX
-_gen_r_r_set_rex:
+_gen_r_r_set_rex:;TODO: remove
     test r9b, r9b
     jz _gen_r_r_set_arg
     or r9b, REX
@@ -144,7 +145,7 @@ _gen_r_r_set_arg:
     or r12b, al
     or r12b, bl
     or r12b, MOD_REG
-    mov byte [r10], r12b
+    mov [r10], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_r_r_set_prefix
@@ -155,7 +156,7 @@ _gen_r_r_set_prefix:
     test r9b, r9b
     jz _success_gen_r_r
     movzx eax, byte [rsi+25]
-    mov byte [r11+rax], r9b
+    mov [r11+rax], r9b
     inc eax
     mov [rsi+25], al
     jmp _success_gen_r_r
@@ -195,7 +196,7 @@ _gen_rm_i_check_arg_th:
     jb _gen_rm_i_set_rex
     or r9b, REX_B
     and eax, REG_MASK_REG_IDX
-_gen_rm_i_set_rex:
+_gen_rm_i_set_rex:;TOOD: remove
     test r9b, r9b
     jz _gen_rm_i_set_arg
     or r9b, REX
@@ -204,7 +205,7 @@ _gen_rm_i_set_arg:
     lea r11, [r10+16]
     or r12b, MOD_REG
     or r12b, al
-    mov byte [r10], r12b
+    mov [r10], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_rm_i_set_prefix
@@ -214,7 +215,7 @@ _gen_rm_i_set_prefix:
     test r9b, r9b
     jz _gen_rm_i_set_postfix
     movzx eax, byte [rsi+25]
-    mov byte [r11+rax], r9b
+    mov [r11+rax], r9b
     inc eax
     mov byte [rsi+25], al
 _gen_rm_i_set_postfix:
@@ -268,6 +269,163 @@ _err_gen_rm_i_imm_overflow:
 _success_gen_rm_i:
     xor eax, eax
 _end_process_gen_rm_i:
+    add rsp, 16
+    pop rbp
+    ret
+
+; rdi - ptr to addr token group, rsi - ptr to inc code struct, edx - rex preffix
+render_process_addr:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-20], edx
+    lea r8, [rdi+3]
+    movzx eax, byte [r8]
+    cmp eax, TOKEN_BUF_DIRECT
+    jne _rproc_addr_start_check
+    movzx ebx, byte [rdi+16]
+    cmp ebx, TOKEN_TYPE_KEYWORD
+    jne _rproc_addr_start_check
+    mov eax, [rdi+12]
+    mov r12b, REG_MASK_VAL_8B 
+    mov r13b, REG_MASK_VAL_16B
+    mov r14b, REG_MASK_VAL_32B
+    mov r15b, REG_MASK_VAL_64B
+    cmp eax, KW_BYTE
+    cmove ecx, r12d 
+    cmp eax, KW_WORD
+    cmove ecx, r13d 
+    cmp eax, KW_DWORD
+    cmove ecx, r14d 
+    cmp eax, KW_QWORD
+    cmove ecx, r15d 
+    mov [rsi+27], cl
+    add r8, 15
+_rproc_addr_start_check:
+    movzx ebx, byte [r8] 
+    movzx eax, byte [rdi+1]
+    cmp eax, 1
+    je _rproc_addr_1p
+    cmp eax, 2
+    je _rproc_addr_2p
+    cmp eax, 3
+    je _rproc_addr_3p
+    jmp _rproc_count_err
+_rproc_addr_1p:
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne __rproc_addr_1p_ref_check
+    mov r9b, [rsi]
+    mov eax, [r8+9]
+    mov ecx, eax
+    mov edx, eax
+    and ecx, REG_MASK_REG_VAL
+    and edx, REG_MASK_BITS
+    cmp edx, REG_MASK_VAL_64B
+    jne _rproc_addr_invalid_reg_size
+    cmp eax, REG_RBP
+    je _rproc_addr_1p_rbp
+    cmp eax, REG_RSP
+    je _rproc_addr_1p_rsp
+    cmp ecx, REG_REX_TH
+    jb __rproc_addr_1p_reg
+    mov r10b, [rbp-20]
+    or r10b, REX_B
+    mov [rbp-20], r10b
+    and ecx, REG_MASK_REG_IDX
+ __rproc_addr_1p_reg:
+    and r9b, MOD_ADDR_REG
+    and r9b, cl
+    mov [rsi], r9b
+    jmp _success_render_process_addr
+_rproc_addr_1p_rbp:
+    and r9b, MOD_ADDR_REG_DISP8
+    and r9b, cl
+    mov [rsi], r9b
+    mov byte [rsi+1], 0
+    inc byte [rsi+24]
+    jmp _success_render_process_addr
+_rproc_addr_1p_rsp:
+    or r9b, MOD_ADDR_REG_DISP8
+    or r9b, cl
+    mov [rsi], r9b
+    xor r10, r10
+    or r10b, cl
+    shl r10b, 3
+    or r10b, 3
+    mov [rsi+1], r10b
+    inc byte [rsi+24]
+    jmp _success_render_process_addr
+__rproc_addr_1p_ref_check:
+    cmp ebx, TOKEN_BUF_PTR_OFFSET
+    ;TODO: add to patch list of offset still unknown
+_rproc_addr_2p:
+_rproc_addr_3p:
+_rproc_addr_invalid_reg_size:
+_rproc_count_err:
+    exit_m -1
+_success_render_process_addr:
+    xor rax, rax
+    mov ebx, [rbp-20]
+_end_render_process_addr:
+    add rsp, 64
+    pop rbp
+    ret
+
+; rdi - ptr to ins param, rsi - ptr to inc code struct
+process_gen_r_a:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov r10, rsi
+    xor r9, r9
+    mov eax, [rdi+9]
+    mov edx, eax
+    and eax, REG_MASK_REG_VAL
+    and edx, REG_MASK_BITS
+    mov [rsi+26], edx
+    cmp edx, REG_MASK_VAL_64B
+    jne _gen_r_a_arg_th
+    or r9b, REX_W
+_gen_r_a_arg_th:
+    cmp eax, REG_REX_TH
+    jb _gen_r_a_init_rm
+    or r9b, REX_R
+    and eax, REG_MASK_REG_IDX
+_gen_r_a_init_rm:
+    xor r12, r12
+    shl eax, 3
+    or r12b, al
+    mov byte [r10], r12b
+    inc byte [rsi+24]
+    cmp edx, REG_MASK_VAL_16B
+    jne _gen_r_a_addr_check
+    lea r11, [r10+16]
+    mov byte [r11], PREFIX_16BIT
+    inc byte [rsi+25]
+_gen_r_a_addr_check:
+    add rdi, 15
+    mov edx, r9d
+    call render_process_addr
+    test rax, rax
+    jnz _err_process_gen_r_a
+    mov r9d, ebx
+    test r9b, r9b
+    jz _success_gen_r_a
+    mov rsi, [rbp-16]
+    lea r11, [rsi+16]
+    movzx eax, byte [rsi+25]
+    mov [r11+rax], r9b
+    inc eax
+    mov [rsi+25], al
+    jmp _success_gen_r_a
+_err_process_gen_r_a:
+_success_gen_r_a:
+    xor rax, rax
+_end_process_gen_r_a:
     add rsp, 16
     pop rbp
     ret
@@ -333,6 +491,23 @@ ___mov_r_r_non_byte_opcode:
     mov byte [rbp-42], 0x8B
     jmp _mov_accemble
 __mov_r_a:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_mov
+    lea rsi, [rbp-128]
+    movzx eax, byte [rbp+26]
+    movzx ebx, byte [rbp+27]
+    cmp eax, ebx
+    jne _err_arg_size_mov
+    cmp eax, REG_MASK_VAL_8B
+    jne ___mov_r_a_non_byte_opcode
+    mov byte [rbp-42], 0x8A
+    jmp _mov_accemble
+___mov_r_a_non_byte_opcode:
+    mov byte [rbp-42], 0x8B
+    jmp _mov_accemble
 __mov_r_i:
     ;TODO: handle name val or name absolute addr
     mov rdi, rsi
@@ -427,6 +602,7 @@ _mov_accemble:
     call entry_array_commit_size
     jmp _end_process_mov
 _err_parse_mov:
+_err_arg_size_mov:
 _err_invalid_argc_mov:
 _err_invalid_second_param_mov:
 _err_invalid_first_param_mov:
