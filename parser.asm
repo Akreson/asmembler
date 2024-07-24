@@ -1034,7 +1034,7 @@ __name_sp_check_name:
     jmp _err_defined_symbol
 __name_sp_set_def:
     mov rdi, rax
-    lea rsi, [rbp-16]
+    mov rsi, [rbp-16]
     mov edx, [rbp-52]
     call push_name_to_defined
     mov [rbp-84], rax
@@ -1055,6 +1055,9 @@ __name_sp_kw:
     je ___name_const_def
     jmp _err_invalid_expr
 ___name_data_def:
+    mov r9d, dword [CURR_SEG_OFFSET]
+    test r9b, r9b
+    jz _err_segment_not_set
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_DATA
@@ -1125,9 +1128,7 @@ ___name_data_read_digit_check:
     cmp esi, ebx
     ja _err_out_of_range_value
 ___name_data_read_next:
-    movzx eax, byte [rbp-67]
-    inc eax
-    mov [rbp-67], al
+    inc byte [rbp-67]
     call curr_seg_ptr
     mov rdi, rax
     mov rsi, [rbp-40]
@@ -1135,6 +1136,8 @@ ___name_data_read_next:
     mov rcx, rdx
     call push_direct_and_read_next
     movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_EOF
+    je ___name_data_read_finish 
     cmp eax, TOKEN_TYPE_AUX
     jne _err_invalid_expr
     mov ebx, [rbp-8]
@@ -1173,6 +1176,7 @@ ___name_data_read_finish:
 ___name_const_def:
     mov r8, [rbp-84]
     mov dword [r8], NAME_CONST_ENTRY_SIZE
+    mov byte [r8+30], TOKEN_NAME_CONST
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
@@ -1277,6 +1281,7 @@ __assign_segment_collate:
 _next_test_sp:
     jmp _new_entry_start_ps
 
+_err_segment_not_set:
 _err_out_of_range_value:
 _err_invalid_const_value:
 _err_defined_symbol:
