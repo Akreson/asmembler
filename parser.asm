@@ -1021,9 +1021,9 @@ _begin_name_sp:
     jmp _err_invalid_expr
 __name_sp_check_name:
     mov rdi, NAME_SYM_HASH_TABLE
-    lea rsi, [rbp-16]
-    movzx edx, byte [rsi+13]
-    mov ecx, [rsi+8]
+    mov rsi, [rbp-16]
+    movzx edx, byte [rbp-3]
+    mov ecx, [rbp-8]
     call hash_table_find_entry
     mov rbx, [rax]
     test rbx, rbx
@@ -1034,7 +1034,7 @@ __name_sp_check_name:
     jmp _err_defined_symbol
 __name_sp_set_def:
     mov rdi, rax
-    mov rsi, [rbp-16]
+    lea rsi, [rbp-16]
     mov edx, [rbp-52]
     call push_name_to_defined
     mov [rbp-84], rax
