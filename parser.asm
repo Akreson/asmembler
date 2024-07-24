@@ -284,7 +284,7 @@ _end_push_link_to_unk:
     pop rbp
     ret
 
-;TODO: complete
+;TODO: free node 
 ;rdi - ptr to unk symbol, rsi - new buf to offset from, edx - new offset
 patch_unk_ref:
     push rbp
@@ -303,13 +303,10 @@ _loop_patch_ur:
     jnz _valid_list_entry_patch_ur
     exit_m -7
 _valid_list_entry_patch_ur:
-    mov ebx, [rax]
-    test ebx, ebx
-    jz _end_patch_unk_ref
-    mov esi, ebx
-    mov r8, [rax+8]
+    mov r11, [rax+8]
     mov edx, [rax+16]
     mov ecx, [rax+20]
+    mov r8, [r11]
     add r8, rdx
     test ecx, ecx
     jz _no_indrct_patch_ur
@@ -317,11 +314,13 @@ _valid_list_entry_patch_ur:
     add r9, rcx
     mov r8, r9
 _no_indrct_patch_ur:
-    mov rax, [rbp-16]
-    mov ebx, [rbp-20]
-    mov [r8], rax
-    mov [r8+8], ebx
-    jmp _loop_patch_ur
+    mov r10, [rbp-16]
+    mov edx, [rbp-20]
+    mov [r8], r10
+    mov [r8+8], edx
+    mov esi, [rax]
+    test esi, esi
+    jnz _loop_patch_ur
 _end_patch_unk_ref:
     add rsp, 20
     pop rbp
