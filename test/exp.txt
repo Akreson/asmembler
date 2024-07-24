@@ -21,7 +21,15 @@ segment readable executable
 ;    mov rax, rcx
 ;    mov r8, rdi
 ;    mov rsp, r10
+mov eax, [NAME_D]
 mov eax, [rbp]
 mov eax, [rsp]
 mov eax, [r8]
 mov r8, [r9]
+
+segment readable
+NAME_C equ 1
+NAME_D db 0
+
+
+

@@ -273,6 +273,25 @@ _end_process_gen_rm_i:
     pop rbp
     ret
 
+; rdi - ptr to TOKEN_BUF_PTR_OFFSET entry body
+is_name_rip_ref:
+    push rbp
+    mov rbp, rsp
+    mov rax, [rdi]
+    mov ecx, [rdi+8]
+    mov rdx, [rax]
+    lea rbx, [rdx+rcx]
+    mov eax, 1
+    movzx ecx, byte [rbx+14]
+    cmp ecx, TOKEN_NAME_DATA
+    je _end_is_name_rip_ref
+    cmp ecx, TOKEN_NAME_JMP
+    je _end_is_name_rip_ref
+    xor eax, eax
+_end_is_name_rip_ref:
+    pop rbp
+    ret
+
 ; rdi - ptr to addr token group, rsi - ptr to inc code struct, edx - rex preffix
 render_process_addr:
     push rbp
@@ -363,10 +382,25 @@ _rproc_addr_1p_rsp:
     jmp _success_render_process_addr
 __rproc_addr_1p_ref_check:
     cmp ebx, TOKEN_BUF_PTR_OFFSET
-    ;TODO: add to patch list of offset still unknown
+    jne _rproc_1param_invalid
+    lea rdi, [r8+1]
+    call is_name_rip_ref
+    test eax, eax
+    jz _rproc_invalid_ref_name
+    ;TODO: add to patch list of offset
+    mov rsi, [rbp-16]
+    mov r9b, [rsi]
+    or r9b, MOD_ADDR_REG
+    or r9b, 0x5
+    mov [rsi], r9b
+    mov dword [rsi+1], 0
+    add byte [rsi+24], 4
+    jmp _success_render_process_addr
 _rproc_addr_2p:
 _rproc_addr_3p:
 _rproc_addr_invalid_reg_size:
+_rproc_1param_invalid:
+_rproc_invalid_ref_name:
 _rproc_count_err:
     exit_m -1
 _success_render_process_addr:
@@ -655,7 +689,7 @@ _start_loop_process_segment:
     cmp eax, TOKEN_TYPE_INS
     je _check_ins_rps
     cmp eax, TOKEN_TYPE_KEYWORD
-    jmp _err_processing_start_token
+    jmp _end_render_process_segment
 _check_ins_rps:
     mov ebx, [r10+9]
     cmp ebx, INS_MOV
@@ -690,7 +724,7 @@ _render_seg_grab_loop:
     mov ecx, ebx
     inc ecx
     mov [rbp-4], ecx
-    shr ebx, 3
+    shl ebx, 3
     mov rdx, rsp
     add rdx, rbx
     mov rdi, [rdx]
