@@ -21,15 +21,22 @@ segment readable executable
 ;    mov rax, rcx
 ;    mov r8, rdi
 ;    mov rsp, r10
-mov eax, [NAME_D]
-mov eax, [rbp]
-mov eax, [rsp]
-mov r10b, [r11]
-mov eax, [r8]
-mov r8, [r9]
+    mov eax, [rsp+NAME_C]
+    mov eax, [rcx+12]
+    mov eax, [rcx-1]
+    mov eax, [rbp+8]
+    mov eax, [rbp-8]
+    mov eax, [rsp+123]
+;    mov eax, [NAME_D]
+;    mov eax, [rbp]
+;    mov eax, [rsp]
+;    mov r10b, [r11]
+;    mov eax, [r8]
+;    mov r8, [r9]
 
 segment readable
-NAME_C equ 1
+NAME_C equ 0xffffff
+NAME_C2 equ 1
 NAME_D db 0
 
 
