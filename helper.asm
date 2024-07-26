@@ -4,6 +4,18 @@ PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
 segment readable executable
 
+log2_val_ceil:
+    xor rax, rax
+    test rdi, rdi
+    jz _end_log2_val_ceil
+    cmp rdi, 1
+    je _end_log2_val_ceil
+    dec rdi
+    bsr rax, rdi
+    inc rax
+_end_log2_val_ceil:
+    ret
+
 print_new_line:
     push rbp
     mov rsi, NEW_LINE

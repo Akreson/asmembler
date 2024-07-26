@@ -21,21 +21,31 @@ segment readable executable
 ;    mov rax, rcx
 ;    mov r8, rdi
 ;    mov rsp, r10
+    mov ah, [rax+rdx]
+    mov r10d, [r8+r10*8]
+    mov eax, [rax+rcx*2+14]
+    mov edx, [rax+rdx*2-NAME_C]
+    mov r12, [rbx+rdi]
+    mov eax, [rbp+rax*NAME_C]
+    mov eax, [rsp+rbp]
+    mov al, [rdx+rcx*2]
+;    mov eax, [NAME_D+22]
+;    mov eax, [NAME_D-0xffffff]
     mov eax, [rsp+NAME_C]
     mov eax, [rcx+12]
     mov eax, [rcx-1]
     mov eax, [rbp+8]
     mov eax, [rbp-8]
     mov eax, [rsp+123]
-;    mov eax, [NAME_D]
-;    mov eax, [rbp]
-;    mov eax, [rsp]
-;    mov r10b, [r11]
-;    mov eax, [r8]
-;    mov r8, [r9]
+    mov eax, [NAME_D]
+    mov eax, [rbp]
+    mov eax, [rsp]
+    mov r10b, [r11]
+    mov eax, [r8]
+    mov r8, [r9]
 
 segment readable
-NAME_C equ 0xffffff
+NAME_C equ 0x4
 NAME_C2 equ 1
 NAME_D db 0
 
