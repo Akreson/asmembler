@@ -934,13 +934,9 @@ ___ins_addr_scale_check:
     cmp ecx, PARSER_ADDR_FLAG_NAME
     je _err_invalid_addr_expr
 ___ins_addr_scale_mul:
-    call curr_seg_ptr
-    mov rdi, rax
-    mov rsi, [rbp-40]
-    lea rdx, [rbp-32]
-    mov rcx, rdx
-    call push_direct_and_read_next
-    add byte [rbp-65], 15
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-20]
