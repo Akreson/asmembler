@@ -306,6 +306,17 @@ is_name_const:
 _end_is_name_const:
     ret
 
+; rdi - ptr to TOKEN_BUF_PTR_OFFSET entrh body
+; return rax - ptr to symbol, ebx - type
+get_name_ref_type:
+    mov r8, [rdi]
+    mov r9d, [rdi+8]
+    mov r10, [r8]
+    lea r11, [r10+r9]
+    lea rax, [r10+r9+16]
+    movzx ebx, byte [r11+14]
+    ret
+
 ; -8 passed rdi, -16 passed rsi, -20 passed edx, -24 1st reg token val, -28 1st reg masked val
 ; -32 2nd reg token val, -40 ptr to aux token, -48 ptr to 2nd param, -56 ptr to and of addr token group
 ; (3 reserved) -60 temp sib byte, -128 temp token storage
@@ -588,11 +599,11 @@ __rproc_addr_2p_r_r_set:
     inc byte [rsi+24]
     mov al, MOD_ADDR_REG
     cmp edx, REG_RBP
-    jne __rproc_addr_2p_r_r_skip_rbp
+    jne ___rproc_addr_2p_r_r_skip_rbp
     mov al, MOD_ADDR_REG_DISP8
     mov byte [rsi+2], 0
     inc byte [rsi+24]
-__rproc_addr_2p_r_r_skip_rbp:
+___rproc_addr_2p_r_r_skip_rbp:
     or bl, al
     or bl, 0x4
     mov [rsi], bl
@@ -617,9 +628,9 @@ __rproc_addr_3p_disp:
 __rproc_addr_3p_disp_digit:
     mov ebx, [r8+9]
     cmp ebx, AUX_SUB
-    jne __rproc_addr_3p_skip_neg
+    jne ___rproc_addr_3p_skip_neg
     neg qword [r9]
-__rproc_addr_3p_skip_neg:
+___rproc_addr_3p_skip_neg:
     mov rsi, [rbp-16]
     mov bl, [rbp-60]
     mov [rsi+1], bl
@@ -627,14 +638,14 @@ __rproc_addr_3p_skip_neg:
     mov al, [r9+13]
     cmp al, 8
     mov dl, 0x4
-    ja __rprc_addr_3p_disp32
+    ja ___rprc_addr_3p_disp32
     or dl, MOD_ADDR_REG_DISP8
     or byte [rsi], dl
     mov cl, [r9]
     mov [rsi+2], cl
     inc byte [rsi+24]
     jmp _success_render_process_addr
-__rprc_addr_3p_disp32:
+___rprc_addr_3p_disp32:
     or dl, MOD_ADDR_REG_DISP32
     or byte [rsi], dl
     mov ecx, [r9]
@@ -642,8 +653,48 @@ __rprc_addr_3p_disp32:
     add byte [rsi+24], 4
     jmp _success_render_process_addr
 __rproc_addr_2p_ref_check:
-    cmp eax, TOKEN_BUF_PTR_OFFSET
+    ; Add to patch list
+    cmp ebx, TOKEN_BUF_PTR_OFFSET
     jne _err_rproc_1param_invalid
+    mov [rbp-40], r8
+    lea rdi, [r8+1]
+    call is_name_rip_ref
+    test rax, rax
+    jz _err_rproc_invalid_ref_name
+    mov r8, [rbp-40]
+    lea r9, [r8+13]
+    lea r8, [r9+15]
+    mov [rbp-40], r8
+    mov [rbp-48], r9
+    lea r15, [r8+1]
+    movzx eax, byte [r8]
+    cmp eax, TOKEN_BUF_PTR_OFFSET
+    jne __rproc_addr_2p_ref_neg_check
+    mov rdi, r15
+    call is_name_const
+    test rax, rax
+    jz _err_rproc_invalid_ref_name
+    lea rdi, [rbp-128]
+    mov r15, rdi
+    mov rsi, rax
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+    mov r8, [rbp-40]
+    mov r9, [rbp-48]
+__rproc_addr_2p_ref_neg_check:
+    mov ebx, [r9+9]
+    cmp ebx, AUX_SUB
+    jne __rproc_addr_2p_ref_set
+    neg qword [r15]
+__rproc_addr_2p_ref_set:
+    mov rsi, [rbp-16]
+    mov r10b, [rsi]
+    or r10b, MOD_ADDR_REG
+    or r10b, 0x5
+    mov [rsi], r10b
+    mov edx, [r15]
+    mov [rsi+1], edx
+    add byte [rsi+24], 4
     jmp _success_render_process_addr
 _err_rproc_addr_invalid_scale:
 _err_rproc_addr_invalid_const:
