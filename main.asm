@@ -7,7 +7,7 @@ NEW_LINE db 10, 0
 INVALID_HASH db "Invalid hash for: ", 0
 MMAP_FAILED db "mmap have failed", 0
 MUNMAP_FAILED db "munmap have failed", 0
-DBL_DEF_SYM db "Dubled default symbol: ", 0
+DBL_DEF_SYM db "Doubled default symbol: ", 0
 ERR_ADD_HT db "Error on adding entry to hash table", 0
 
 TEST_STR db "./out.bin", 0

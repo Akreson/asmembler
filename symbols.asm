@@ -16,9 +16,10 @@ TOKEN_NAME_DATA      equ 0x08
 TOKEN_NAME_MACRO     equ 0x10
 
 REG_REX_TH       equ 0x08
+REG_REX_MASK     equ 0x80
 REG_MASK_REG_VAL equ 0x0F
 REG_MASK_REG_IDX equ 0x07
-REG_MASK_BITS    equ 0xF0
+REG_MASK_BITS    equ 0x70
 REG_MASK_VAL_8B  equ 0
 REG_MASK_VAL_16B equ 0x10
 REG_MASK_VAL_32B equ 0x20
@@ -32,14 +33,18 @@ REG_AH   equ 0x04
 REG_CH   equ 0x05
 REG_DH   equ 0x06
 REG_BH   equ 0x07
-REG_R8B  equ 0x08
-REG_R9B  equ 0x09
-REG_R10B equ 0x0A
-REG_R11B equ 0x0B
-REG_R12B equ 0x0C
-REG_R13B equ 0x0D
-REG_R14B equ 0x0E
-REG_R15B equ 0x0F
+REG_SPL  equ 0x84
+REG_BPL  equ 0x85
+REG_SIL  equ 0x86
+REG_DIL  equ 0x87
+REG_R8B  equ 0x88
+REG_R9B  equ 0x89
+REG_R10B equ 0x8A
+REG_R11B equ 0x8B
+REG_R12B equ 0x8C
+REG_R13B equ 0x8D
+REG_R14B equ 0x8E
+REG_R15B equ 0x8F
 
 REG_AX   equ 0x10
 REG_CX   equ 0x11
@@ -49,14 +54,14 @@ REG_SP   equ 0x14
 REG_BP   equ 0x15
 REG_SI   equ 0x16
 REG_DI   equ 0x17
-REG_R8W  equ 0x18
-REG_R9W  equ 0x19
-REG_R10W equ 0x1A
-REG_R11W equ 0x1B
-REG_R12W equ 0x1C
-REG_R13W equ 0x1D
-REG_R14W equ 0x1E
-REG_R15W equ 0x1F
+REG_R8W  equ 0x98
+REG_R9W  equ 0x99
+REG_R10W equ 0x9A
+REG_R11W equ 0x9B
+REG_R12W equ 0x9C
+REG_R13W equ 0x9D
+REG_R14W equ 0x9E
+REG_R15W equ 0x9F
 
 REG_EAX  equ 0x20
 REG_ECX  equ 0x21
@@ -66,31 +71,31 @@ REG_ESP  equ 0x24
 REG_EBP  equ 0x25
 REG_ESI  equ 0x26
 REG_EDI  equ 0x27
-REG_R8D  equ 0x28
-REG_R9D  equ 0x29
-REG_R10D equ 0x2A
-REG_R11D equ 0x2B
-REG_R12D equ 0x2C
-REG_R13D equ 0x2D
-REG_R14D equ 0x2E
-REG_R15D equ 0x2F
+REG_R8D  equ 0xA8
+REG_R9D  equ 0xA9
+REG_R10D equ 0xAA
+REG_R11D equ 0xAB
+REG_R12D equ 0xAC
+REG_R13D equ 0xAD
+REG_R14D equ 0xAE
+REG_R15D equ 0xAF
 
-REG_RAX equ 0x40
-REG_RCX equ 0x41
-REG_RDX equ 0x42
-REG_RBX equ 0x43
-REG_RSP equ 0x44
-REG_RBP equ 0x45
-REG_RSI equ 0x46
-REG_RDI equ 0x47
-REG_R8  equ 0x48
-REG_R9  equ 0x49
-REG_R10 equ 0x4A
-REG_R11 equ 0x4B
-REG_R12 equ 0x4C
-REG_R13 equ 0x4D
-REG_R14 equ 0x4E
-REG_R15 equ 0x4F
+REG_RAX equ 0xC0
+REG_RCX equ 0xC1
+REG_RDX equ 0xC2
+REG_RBX equ 0xC3
+REG_RSP equ 0xC4
+REG_RBP equ 0xC5
+REG_RSI equ 0xC6
+REG_RDI equ 0xC7
+REG_R8  equ 0xC8
+REG_R9  equ 0xC9
+REG_R10 equ 0xCA
+REG_R11 equ 0xCB
+REG_R12 equ 0xCC
+REG_R13 equ 0xCD
+REG_R14 equ 0xCE
+REG_R15 equ 0xCF
 
 
 PREF_INS_TYPE_MASK equ 0x80000000
@@ -205,6 +210,10 @@ STR_AH   db "ah"
 STR_CH   db "ch"
 STR_DH   db "dh"
 STR_BH   db "bh"
+STR_SPL  db "spl"
+STR_BPL  db "bpl"
+STR_SIL  db "sil"
+STR_DIL  db "dil"
 STR_R8B  db "r8b"
 STR_R9B  db "r9b"
 STR_R10B db "r10b"
@@ -390,6 +399,10 @@ def_symbol_m REG_AH, TOKEN_TYPE_REG, STR_AH, 2
 def_symbol_m REG_CH, TOKEN_TYPE_REG, STR_CH, 2
 def_symbol_m REG_DH, TOKEN_TYPE_REG, STR_DH, 2
 def_symbol_m REG_BH, TOKEN_TYPE_REG, STR_BH, 2
+def_symbol_m REG_SPL, TOKEN_TYPE_REG, STR_SPL, 3
+def_symbol_m REG_BPL, TOKEN_TYPE_REG, STR_BPL, 3
+def_symbol_m REG_SIL, TOKEN_TYPE_REG, STR_SIL, 3
+def_symbol_m REG_DIL, TOKEN_TYPE_REG, STR_DIL, 3
 def_symbol_m REG_R8B, TOKEN_TYPE_REG, STR_R8B, 3
 def_symbol_m REG_R9B, TOKEN_TYPE_REG, STR_R9B, 3
 def_symbol_m REG_R10B, TOKEN_TYPE_REG, STR_R10B, 4

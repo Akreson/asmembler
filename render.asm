@@ -110,6 +110,14 @@ process_gen_r_r:
     lea r8, [rdi+15]
     mov eax, [rdi+9]
     mov ebx, [r8+9]
+    mov r12d, eax
+    mov r13d, ebx
+    and r12b, REG_REX_MASK
+    and r13b, REG_REX_MASK
+    shr r12b, 1
+    shr r13b, 1
+    or r12b, r13b
+    mov r9b, r12b
     mov edx, eax
     mov ecx, ebx
     and eax, REG_MASK_REG_VAL
@@ -131,13 +139,9 @@ _gen_r_r_check_arg_th:
     and eax, REG_MASK_REG_IDX
 _gen_r_r_2rex_check:
     cmp ebx, REG_REX_TH
-    jb _gen_r_r_set_rex
+    jb _gen_r_r_set_arg
     or r9b, REX_B
     and ebx, REG_MASK_REG_IDX
-_gen_r_r_set_rex:;TODO: remove
-    test r9b, r9b
-    jz _gen_r_r_set_arg
-    or r9b, REX
 _gen_r_r_set_arg:
     xor r12, r12
     lea r11, [r10+16]
@@ -184,6 +188,10 @@ process_gen_rm_i:
     lea r8, [rdi+15]
     mov eax, [rdi+9]
     mov ebx, [r8+14]
+    mov r12d, eax
+    and r12b, REG_REX_MASK
+    shr r12b, 1
+    mov r9b, r12b
     mov edx, eax
     and eax, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
@@ -193,13 +201,9 @@ process_gen_rm_i:
     or r9b, REX_W
 _gen_rm_i_check_arg_th:
     cmp eax, REG_REX_TH
-    jb _gen_rm_i_set_rex
+    jb _gen_rm_i_set_arg
     or r9b, REX_B
     and eax, REG_MASK_REG_IDX
-_gen_rm_i_set_rex:;TOOD: remove
-    test r9b, r9b
-    jz _gen_rm_i_set_arg
-    or r9b, REX
 _gen_rm_i_set_arg:
     xor r12, r12
     lea r11, [r10+16]
@@ -672,6 +676,10 @@ process_gen_r_a:
     mov r10, rsi
     xor r9, r9
     mov eax, [rdi+9]
+    mov r12d, eax
+    and r12b, REG_REX_MASK
+    shr r12b, 1
+    mov r9b, r12b
     mov edx, eax
     and eax, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
