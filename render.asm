@@ -86,6 +86,49 @@ _end_set_collate_seg_ptr:
     pop rbp
     ret
 
+; rdi - ptr to TOKEN_BUF_PTR_OFFSET entry body
+is_name_rip_ref:
+    mov r8, [rdi]
+    mov r9d, [rdi+8]
+    mov r10, [r8]
+    lea r11, [r10+r9]
+    lea rax, [r10+r9+16]
+    movzx edi, byte [r11+14]
+    cmp edi, TOKEN_NAME_DATA
+    je _end_is_name_rip_ref
+    cmp edi, TOKEN_NAME_JMP
+    je _end_is_name_rip_ref
+    xor rax, rax
+_end_is_name_rip_ref:
+    ret
+
+; rdi - ptr to TOKEN_BUF_PTR_OFFSET entry body
+is_name_const:
+    mov r8, [rdi]
+    mov r9d, [rdi+8]
+    mov r10, [r8]
+    lea r11, [r10+r9]
+    lea rax, [r10+r9+16]
+    movzx edi, byte [r11+14]
+    cmp edi, TOKEN_NAME_CONST
+    je _end_is_name_const
+    cmp edi, TOKEN_NAME_CONST_MUT
+    je _end_is_name_const
+    xor rax, rax
+_end_is_name_const:
+    ret
+
+; rdi - ptr to TOKEN_BUF_PTR_OFFSET entrh body
+; return rax - ptr to symbol, ebx - type
+get_name_ref_type:
+    mov r8, [rdi]
+    mov r9d, [rdi+8]
+    mov r10, [r8]
+    lea r11, [r10+r9]
+    lea rax, [r10+r9+16]
+    movzx ebx, byte [r11+14]
+    ret
+
 ; TODO: complete
 ; rdi - ptr to token entry
 render_err_first_param:
@@ -172,6 +215,91 @@ _end_process_gen_r_r:
     pop rbp
     ret
 
+; rdi - ptr to imm token, rsi - ptr to ins code struct,
+; edx - imm arg order in ins (0 based), ecx - dest bits size (for overflow check) 
+render_process_imm:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-16], rsi
+    mov [rbp-28], ecx
+    lea rax, [rsi+rdx+26]
+    mov [rbp-24], rax
+    mov cl, [rdi]
+    inc rdi
+    mov [rbp-8], rdi
+    cmp cl, TOKEN_BUF_PTR_OFFSET
+    jne _rproc_imm
+    call get_name_ref_type
+    cmp ebx, TOKEN_NAME_DATA
+    jne _rproc_imm_const
+    ;TODO: add to patch list
+_rproc_imm_const:
+    lea rdi, [rbp-64]
+    mov [rbp-8], rdi
+    mov rsi, rax
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+_rproc_imm:
+    mov r8, [rbp-8]
+    mov rsi, [rbp-16]
+    mov r9, [rbp-24]
+    mov edx, [rbp-28]
+    movzx eax, byte [rsi+24]
+    movzx ebx, byte [r8+13]
+    cmp ebx, 8
+    ja __rproc_imm64
+    mov byte [r9], REG_MASK_VAL_8B
+    mov cl, [r8]
+    mov [rsi+rax], cl
+    inc eax
+    mov [rsi+24], al
+    jmp _success_rproc_imm
+__rproc_imm64:
+    cmp edx, REG_MASK_VAL_64B
+    jne __rproc_imm32
+    cmp ebx, 33
+    jb ___rproc_imm64_32
+    mov byte [r9], REG_MASK_VAL_64B
+    mov rcx, [r8]
+    mov [rsi+rax], rcx
+    add eax, 8
+    mov [rsi+24], al
+    jmp _success_rproc_imm
+___rproc_imm64_32:
+    mov byte [r9], REG_MASK_VAL_32B
+    mov ecx, [r8]
+    mov [rsi+rax], ecx
+    add eax, 4
+    mov [rsi+24], al
+    jmp _success_rproc_imm
+__rproc_imm32:
+    cmp edx, REG_MASK_VAL_32B
+    jne __rproc_imm16
+    cmp ebx, 32
+    ja _err_rproc_imm_overflow
+    jmp ___rproc_imm64_32
+__rproc_imm16:
+    cmp edx, REG_MASK_VAL_16B
+    jne _err_rproc_imm_overflow
+    cmp ebx, 16
+    ja _err_rproc_imm_overflow
+    mov byte [r9], REG_MASK_VAL_16B
+    mov cx, [r8]
+    mov [rsi+rax], cx
+    add eax, 2
+    mov [rsi+24], al
+    jmp _success_rproc_imm
+_err_rproc_imm_overflow:
+    mov eax, 1
+    jmp _end_render_process_imm
+_success_rproc_imm:
+    xor eax, eax
+_end_render_process_imm:
+    add rsp, 64
+    pop rbp
+    ret
+
 ; for r_i version by default used r/m, imm version
 ; rdi - ptr to ins param, rsi - ptr to inc code struct
 ; return eax - 0 if succes, 1 if imm less then reg
@@ -184,7 +312,6 @@ process_gen_rm_i:
     xor r9, r9
     lea r8, [rdi+15]
     mov eax, [rdi+9]
-    mov ebx, [r8+14]
     mov r12d, eax
     and r12b, REG_REX_MASK
     shr r12b, 1
@@ -220,107 +347,20 @@ _gen_rm_i_set_prefix:
     inc eax
     mov byte [rsi+25], al
 _gen_rm_i_set_postfix:
-    movzx eax, byte [rsi+24]
-    cmp ebx, 8
-    ja __gen_rm_i_check_imm64
-    mov byte [rsi+27], REG_MASK_VAL_8B
-    mov cl, [r8+1]
-    mov [rsi+rax], cl
-    inc eax
-    mov [rsi+24], al
-    jmp _success_gen_rm_i
-__gen_rm_i_check_imm64:
-    cmp edx, REG_MASK_VAL_64B
-    jne __gen_rm_i_check_imm32
-    cmp ebx, 33
-    jb ___gen_rm_i_check_imm64_32
-    mov byte [rsi+27], REG_MASK_VAL_64B
-    mov rcx, [r8+1]
-    mov [rsi+rax], rcx
-    add eax, 8
-    mov [rsi+24], al
-    jmp _success_gen_rm_i
-___gen_rm_i_check_imm64_32:
-    mov byte [rsi+27], REG_MASK_VAL_32B
-    mov ecx, [r8+1]
-    mov [rsi+rax], ecx
-    add eax, 4
-    mov [rsi+24], al
-    jmp _success_gen_rm_i
-__gen_rm_i_check_imm32:
-    cmp edx, REG_MASK_VAL_32B
-    jne __gen_rm_i_check_imm16
-    cmp ebx, 32
-    ja _err_gen_rm_i_imm_overflow
-    jmp ___gen_rm_i_check_imm64_32
-__gen_rm_i_check_imm16:
-    cmp edx, REG_MASK_VAL_16B
-    jne _err_gen_rm_i_imm_overflow
-    cmp ebx, 16
-    ja _err_gen_rm_i_imm_overflow
-    mov byte [rsi+27], REG_MASK_VAL_16B
-    mov cx, [r8+1]
-    mov [rsi+rax], cx
-    add eax, 2
-    mov [rsi+24], al
-    jmp _success_gen_rm_i
-_err_gen_rm_i_imm_overflow:
-    mov eax, 1
-    jmp _end_process_gen_rm_i
-_success_gen_rm_i:
-    xor eax, eax
+    mov rdi, r8
+    mov ecx, edx
+    mov edx, 1
+    call render_process_imm
 _end_process_gen_rm_i:
     add rsp, 16
     pop rbp
     ret
 
-; rdi - ptr to TOKEN_BUF_PTR_OFFSET entry body
-is_name_rip_ref:
-    mov r8, [rdi]
-    mov r9d, [rdi+8]
-    mov r10, [r8]
-    lea r11, [r10+r9]
-    lea rax, [r10+r9+16]
-    movzx edi, byte [r11+14]
-    cmp edi, TOKEN_NAME_DATA
-    je _end_is_name_rip_ref
-    cmp edi, TOKEN_NAME_JMP
-    je _end_is_name_rip_ref
-    xor rax, rax
-_end_is_name_rip_ref:
-    ret
-
-; rdi - ptr to TOKEN_BUF_PTR_OFFSET entry body
-is_name_const:
-    mov r8, [rdi]
-    mov r9d, [rdi+8]
-    mov r10, [r8]
-    lea r11, [r10+r9]
-    lea rax, [r10+r9+16]
-    movzx edi, byte [r11+14]
-    cmp edi, TOKEN_NAME_CONST
-    je _end_is_name_const
-    cmp edi, TOKEN_NAME_CONST_MUT
-    je _end_is_name_const
-    xor rax, rax
-_end_is_name_const:
-    ret
-
-; rdi - ptr to TOKEN_BUF_PTR_OFFSET entrh body
-; return rax - ptr to symbol, ebx - type
-get_name_ref_type:
-    mov r8, [rdi]
-    mov r9d, [rdi+8]
-    mov r10, [r8]
-    lea r11, [r10+r9]
-    lea rax, [r10+r9+16]
-    movzx ebx, byte [r11+14]
-    ret
 
 ; -8 passed rdi, -16 passed rsi, -20 passed edx, -24 1st reg token val, -28 1st reg masked val
 ; -32 2nd reg token val, -40 ptr to aux token, -48 ptr to 2nd param, -56 ptr to and of addr token group
 ; (3 reserved) -60 temp sib byte, -128 temp token storage
-; rdi - ptr to addr token group, rsi - ptr to inc code struct, edx - rex preffix
+; rdi - ptr to addr token group, rsi - ptr to ins code struct, edx - rex preffix
 render_process_addr:
     push rbp
     mov rbp, rsp
