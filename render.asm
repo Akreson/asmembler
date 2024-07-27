@@ -126,9 +126,6 @@ process_gen_r_r:
     and ecx, REG_MASK_BITS
     mov [rsi+26], edx
     mov [rsi+27], ecx
-    ;TODO: remove match size check?
-    cmp ecx, edx
-    jne _err_gen_r_r_unmatch_size
     cmp ecx, REG_MASK_VAL_64B
     jne _gen_r_r_check_arg_th
     or r9b, REX_W
@@ -779,6 +776,10 @@ __mov_r_r:
     call process_gen_r_r
     test eax, eax
     jnz _err_parse_mov
+    movzx eax, byte [rsi+26]
+    movzx ebx, byte [rsi+27]
+    cmp eax, ebx
+    jne _err_arg_size_mov
     lea r8, [rbp-128]
     movzx ebx, byte [r8+26]
     cmp ebx, REG_MASK_VAL_8B
