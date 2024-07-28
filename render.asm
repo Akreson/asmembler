@@ -505,10 +505,7 @@ __rproc_addr_2p_check_arith1:
     jne __rproc_addr_2p_2nd_reg
     lea r15, [r9+1]
     mov ecx, [r8+9]
-    cmp ecx, AUX_SUB
-    jne __rproc_addr_2p_r_d
-    neg qword [r15]
-    jmp __rproc_addr_2p_r_d
+    jmp __rproc_addr_2p_ptr_digit_neg_chech 
 __rproc_addr_2p_ptr_offset_check:
     cmp dl, TOKEN_BUF_PTR_OFFSET
     jne __rproc_addr_2p_2nd_reg
@@ -524,6 +521,7 @@ __rproc_addr_2p_ptr_offset_check:
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
     mov ecx, [r8+9]
+__rproc_addr_2p_ptr_digit_neg_chech:
     cmp ecx, AUX_SUB
     jne __rproc_addr_2p_r_d
     mov r12, [r15]
