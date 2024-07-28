@@ -1,5 +1,3 @@
-; TODO: add support for sil, dil, bpl, spl reg
-
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size (3 bytes reserved)
