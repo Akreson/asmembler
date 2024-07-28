@@ -899,6 +899,66 @@ _end_process_gen_a_r:
     pop rbp
     ret
 
+; rdi - ptr to ins param, rsi - ptr to inc cod struct
+process_gen_a_i:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 20
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    lea r9, [rdi+3]
+    movzx eax, byte [r9]
+    cmp eax, TOKEN_BUF_DIRECT
+    jne _err_gen_a_i_size_unspec
+    mov bl, [r9+13]
+    cmp bl, TOKEN_TYPE_KEYWORD
+    jne _err_gen_a_i_size_unspec
+    inc byte [rsi+24]
+    xor ecx, ecx
+    xor edx, edx
+    xor r8, r8
+    call render_process_addr
+    test rax, rax
+    jnz _err_process_gen_a_i
+    mov rsi, [rbp-16]
+    mov al, [rsi+26]
+    cmp al, REG_MASK_VAL_16B
+    jne _gen_a_i_test_64
+    mov byte [rsi+16], PREFIX_16BIT
+    inc byte [rsi+25]
+_gen_a_i_test_64:
+    cmp al, REG_MASK_VAL_64B
+    jne _gen_a_i_test_rex
+    or bl, REX
+    or bl, REX_W
+    jmp _gen_a_i_set_rex
+_gen_a_i_test_rex:
+    test ebx, ebx
+    jz _gen_a_i_skip_rex
+_gen_a_i_set_rex:
+    movzx eax, byte [rsi+25]
+    mov [rsi+rax+16], bl
+    inc al
+    mov [rsi+25], al
+_gen_a_i_skip_rex:
+    mov rbx, [rbp-8]
+    movzx eax, byte [rbx+2]
+    lea rdi, [rbx+rax]
+    mov edx, 1
+    movzx ecx, byte [rsi+26]
+    call render_process_imm
+    jmp _end_process_gen_a_i
+_err_gen_a_i_size_unspec:
+_err_process_gen_a_i:
+    mov eax, 1
+    jmp _end_process_gen_a_i
+_success_gen_a_i:
+    xor eax, eax
+_end_process_gen_a_i:
+    add rsp, 20
+    pop rbp
+    ret
+
 ; -8 passed rdi, -16 passed rsi, -24 render entry array, -32-38 (reserved), -42 (4b) opcode
 ; -128 ins code struct,
 ; rdi - segment ptr, rsi - ptr to token entry to process
@@ -1082,6 +1142,41 @@ ___mov_a_r_non_byte_opcode:
     mov byte [rbp-42], 0x89
     jmp _mov_accemble
 __mov_a_i:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    call process_gen_a_i
+    test eax, eax
+    jnz _err_parse_mov
+    lea r8, [rbp-128]
+    movzx ebx, byte [r8+26]
+    movzx eax, byte [r8+27]
+    cmp ebx, REG_MASK_VAL_8B
+    jne ___mov_a_i_non_byte_opcode
+    mov byte [rbp-42], 0xC6
+    jmp _mov_accemble
+___mov_a_i_non_byte_opcode:
+    mov byte [rbp-42], 0xC7
+    cmp ebx, REG_MASK_VAL_64B
+    jne ___mov_a_i_check
+    cmp eax, REG_MASK_VAL_64B
+    je _err_invalid_second_param_mov
+    mov ebx, REG_MASK_VAL_32B
+___mov_a_i_check:
+    cmp ebx, eax
+    je _mov_accemble
+    shr ebx, REG_MASK_VAL_SHIFT_NORM
+    shr eax, REG_MASK_VAL_SHIFT_NORM
+    mov ecx, ebx
+    xor edx, edx
+    inc edx
+    mov esi, edx
+    shl edx, cl
+    mov ebx, edx
+    mov edx, esi
+    mov ecx, eax
+    shl edx, cl
+    sub ebx, edx
+    add [r8+24], bl
 _mov_accemble:
     mov rdi, [rbp-24]
     call entry_array_curr_ptr

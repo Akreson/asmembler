@@ -1,9 +1,36 @@
 segment readable executable
-    mov r10d, [r8+r10*8]
+    mov word [r8+r11], 22
+    mov word [r8+r11], 322
+    mov word [NAME_D+12], 2134 
+    mov dword [NAME_D-NAME_C], 0xffffff 
+    mov byte [rax+rdx], 200 
+    mov byte [rax+rdx], 3
+    mov dword [r8+r10*8], 1
+    mov dword [rax+rcx*2+14], 0xffff 
+    mov qword [rax+rdx*4-NAME_C], 0xff
+    mov qword [rbx+rdi], 11111111 
+    mov dword [rbp+rax*NAME_C], 0x12345623 
+    mov word [rsp+rbp], 0xaaaa 
+    mov byte [rdx+rcx*2], 0x2 
+    mov dword [NAME_D+22], 0x12 
+    mov byte [NAME_D-0xffffff], 0xc
+    mov dword [rsp+NAME_C], 0xffffffff 
+    mov byte [rcx+12], 111 
+    mov byte [rcx-1], 1
+    mov byte [rbp+8], 1 
+    mov byte [rbp-8], 1 
+    mov byte [rsp+123], 1 
+    mov byte [NAME_D], 1
+    mov byte [rbp], 1 
+    mov byte [rsp], 1 
+    mov byte [r11], 1 
+    mov byte [r8], 1 
+    mov byte [r9], 1 
     mov sil, al
     mov bpl, dil
     mov bl, dil
     mov rax, NADE_D
+    mov r8d, 123
     mov al, 123
     mov bx, 30121
     mov esi, 0xFFFFFF
@@ -13,7 +40,6 @@ segment readable executable
     mov esi, 0x1FFFF
     mov rax, 0x100000000
     mov r9, 123
-    mov r8d, 123
     mov r8w, 9000
     mov r14b, 255
     mov al, bl
