@@ -233,7 +233,20 @@ render_process_imm:
     call get_name_ref_type
     cmp ebx, TOKEN_NAME_DATA
     jne _rproc_imm_const
+    mov rsi, [rbp-16]
+    mov r9, [rbp-24]
+    mov edx, [rbp-28]
+    cmp edx, REG_MASK_VAL_32B
+    jb _err_rproc_imm_overflow
+    mov r10, rax
+    xor ecx, ecx
+    mov byte [r9], REG_MASK_VAL_32B
+    movzx eax, byte [rsi+24]
+    mov [rsi+rax], ecx
+    add eax, 4
+    mov [rsi+24], al
     ;TODO: add to patch list
+    jmp _success_rproc_imm
 _rproc_imm_const:
     lea rdi, [rbp-64]
     mov [rbp-8], rdi
@@ -252,7 +265,7 @@ _rproc_imm:
     mov byte [r9], REG_MASK_VAL_8B
     mov cl, [r8]
     mov [rsi+rax], cl
-    inc eax
+    inc al
     mov [rsi+24], al
     jmp _success_rproc_imm
 __rproc_imm64:
@@ -263,14 +276,14 @@ __rproc_imm64:
     mov byte [r9], REG_MASK_VAL_64B
     mov rcx, [r8]
     mov [rsi+rax], rcx
-    add eax, 8
+    add al, 8
     mov [rsi+24], al
     jmp _success_rproc_imm
 ___rproc_imm64_32:
     mov byte [r9], REG_MASK_VAL_32B
     mov ecx, [r8]
     mov [rsi+rax], ecx
-    add eax, 4
+    add al, 4
     mov [rsi+24], al
     jmp _success_rproc_imm
 __rproc_imm32:
@@ -287,7 +300,7 @@ __rproc_imm16:
     mov byte [r9], REG_MASK_VAL_16B
     mov cx, [r8]
     mov [rsi+rax], cx
-    add eax, 2
+    add al, 2
     mov [rsi+24], al
     jmp _success_rproc_imm
 _err_rproc_imm_overflow:
