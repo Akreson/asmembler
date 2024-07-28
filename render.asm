@@ -1,3 +1,5 @@
+;TODO: move remove mod/rm byte to sep. func.
+
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size (3 bytes reserved)
@@ -366,7 +368,6 @@ _end_process_gen_rm_i:
     add rsp, 16
     pop rbp
     ret
-
 
 ; -8 passed rdi, -16 passed rsi, -20 passed edx, -24 1st reg token val, -28 1st reg masked val
 ; -32 2nd reg token val, -40 ptr to aux token, -48 ptr to 2nd param, -56 ptr to and of addr token group
@@ -825,7 +826,7 @@ _gen_r_a_addr_check:
     lea r11, [rsi+16]
     movzx eax, byte [rsi+25]
     mov [r11+rax], r9b
-    inc eax
+    inc al
     mov [rsi+25], al
     jmp _success_gen_r_a
 _err_process_gen_r_a:
@@ -981,7 +982,6 @@ ___mov_r_a_non_byte_opcode:
     mov byte [rbp-42], 0x8B
     jmp _mov_accemble
 __mov_r_i:
-    ;TODO: handle name val or name absolute addr
     mov rdi, rsi
     lea rsi, [rbp-128]
     call process_gen_rm_i
@@ -992,20 +992,19 @@ __mov_r_i:
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_r_i_non_byte_opcode
     mov byte [rbp-42], 0xB0
-    jmp ___mov_r_i_reg_opc_ext 
+    jmp ___mov_r_i_reg_opc_remove_modrm 
 ___mov_r_i_non_byte_opcode:
     mov byte [rbp-42], 0xB8
     cmp ebx, REG_MASK_VAL_64B
-    jne ___mov_r_i_reg_opc_ext
+    jne ___mov_r_i_reg_opc_remove_modrm
     movzx eax, byte [r8+27]
     cmp eax, REG_MASK_VAL_32B
-    ja ___mov_r_i_reg_opc_ext
+    ja ___mov_r_i_reg_opc_remove_modrm
     mov byte [rbp-42], 0xC7
     cmp eax, REG_MASK_VAL_32B
     je _mov_accemble
     mov r10d, 3
     mov r11d, 2
-    xor eax, eax
     cmp eax, REG_MASK_VAL_8B
     cmove ecx, r10d
     cmp eax, REG_MASK_VAL_16B
@@ -1013,15 +1012,16 @@ ___mov_r_i_non_byte_opcode:
     movzx edx, byte [r8+24]
     lea r9, [r8+rdx]
     jmp ___mov_r_i_reg_opc_ext_mod 
-___mov_r_i_reg_opc_ext:
-    movzx ebx, byte [rbp-42] 
-    movzx eax, byte [r8]
-    and eax, MOD_RM_RM_MASK
-    or ebx, eax
+___mov_r_i_reg_opc_remove_modrm:
+    mov bl, [rbp-42] 
+    mov al, [r8]
+    and al, MOD_RM_RM_MASK
+    or bl, al
     mov [rbp-42], bl
+    ;TODO: handle sign digit in right way
     movzx ecx, byte [r8+24]
     dec ecx
-    mov byte [r8+24], cl
+    mov [r8+24], cl
     mov r9, r8
     mov rdi, r8
     inc r9
@@ -1036,7 +1036,6 @@ ___mov_r_i_reg_opc_ext:
     mov r10d, 1
     mov r11d, 3
     mov r12d, 7
-    xor eax, eax
     cmp ebx, REG_MASK_VAL_16B
     cmove ecx, r10d
     cmp ebx, REG_MASK_VAL_32B
@@ -1044,8 +1043,9 @@ ___mov_r_i_reg_opc_ext:
     cmp ebx, REG_MASK_VAL_64B
     cmove ecx, r12d
 ___mov_r_i_reg_opc_ext_mod:
+    xor eax, eax
     mov r13d, ecx
-    lea rdi, [r9]
+    mov rdi, r9
     rep stosb
     add [r8+24], r13b
     jmp _mov_accemble
