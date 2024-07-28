@@ -836,6 +836,68 @@ _end_process_gen_r_a:
     pop rbp
     ret
 
+; rdi - ptr to ins param, rsi - ptr to inc code struct
+process_gen_a_r:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    movzx edx, byte [rdi+2]
+    lea r10, [rdi+rdx]
+    xor r9, r9
+    mov eax, [r10+9]
+    mov r12d, eax
+    and r12d, REG_REX_MASK
+    shr r12b, 1
+    mov r9b, r12b
+    mov edx, eax
+    and eax, REG_MASK_REG_VAL
+    and edx, REG_MASK_BITS
+    mov [rsi+27], dl
+    cmp edx, REG_MASK_VAL_64B
+    jne _gen_a_r_arg_th
+    or r9b, REX_W
+_gen_a_r_arg_th:
+    cmp eax, REG_REX_TH
+    jb _gen_a_r_init_rm
+    or r9b, REX_R
+    and eax, REG_MASK_REG_IDX
+_gen_a_r_init_rm:
+    xor r12, r12
+    shl eax, 3
+    or r12b, al
+    mov byte [rsi], r12b
+    inc byte [rsi+24]
+    cmp edx, REG_MASK_VAL_16B
+    jne _gen_a_r_addr_check
+    mov byte [rsi+16], PREFIX_16BIT
+    inc byte [rsi+25]
+_gen_a_r_addr_check:
+    mov edx, r9d
+    xor ecx, ecx
+    mov r8d, 1
+    call render_process_addr
+    test rax, rax
+    jnz _err_process_gen_a_r
+    mov r9d, ebx
+    test r9b, r9b
+    jz _success_gen_r_a
+    mov rsi, [rbp-16]
+    lea r11, [rsi+16]
+    movzx eax, byte [rsi+25]
+    mov [r11+rax], r9b
+    inc eax
+    mov [rsi+25], al
+    jmp _success_gen_r_a
+_err_process_gen_a_r:
+_success_gen_a_r:
+    xor rax, rax
+_end_process_gen_a_r:
+    add rsp, 16
+    pop rbp
+    ret
+
 ; -8 passed rdi, -16 passed rsi, -24 render entry array, -32-38 (reserved), -42 (4b) opcode
 ; -128 ins code struct,
 ; rdi - segment ptr, rsi - ptr to token entry to process
@@ -988,7 +1050,37 @@ ___mov_r_i_reg_opc_ext_mod:
     add [r8+24], r13b
     jmp _mov_accemble
 _mov_a:
+    movzx eax, byte [rsi+2]
+    lea r9, [rsi+rax]
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_PTR_OFFSET
+    je __mov_r_i
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_mov
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    je __mov_a_r
+    cmp ebx, TOKEN_TYPE_DIGIT
+    je __mov_a_i
+    jmp _err_invalid_second_param_mov
 __mov_a_r:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    call process_gen_a_r
+    test eax, eax
+    jnz _err_parse_mov
+    lea rsi, [rbp-128]
+    movzx eax, byte [rsi+26]
+    movzx ebx, byte [rsi+27]
+    cmp eax, ebx
+    jne _err_arg_size_mov
+    cmp eax, REG_MASK_VAL_8B
+    jne ___mov_a_r_non_byte_opcode
+    mov byte [rbp-42], 0x88
+    jmp _mov_accemble
+___mov_a_r_non_byte_opcode:
+    mov byte [rbp-42], 0x89
+    jmp _mov_accemble
 __mov_a_i:
 _mov_accemble:
     mov rdi, [rbp-24]

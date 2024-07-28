@@ -1,7 +1,9 @@
 segment readable executable
-;    mov sil, al
-;    mov bpl, dil
-;    mov bl, dil
+    mov r10d, [r8+r10*8]
+    mov sil, al
+    mov bpl, dil
+    mov bl, dil
+    mov rax, NADE_D
     mov al, 123
     mov bx, 30121
     mov esi, 0xFFFFFF
@@ -13,42 +15,68 @@ segment readable executable
     mov r9, 123
     mov r8d, 123
     mov r8w, 9000
-;    mov r14b, 255
-;    mov al, bl
-;    mov bx, cx
-;    mov esi, edi
-;    mov r9b, r15b
-;    mov ax, r8w
-;    mov edx, r10d
-;    mov esi, r12d
-;    mov rax, rcx
-;    mov r8, rdi
-;    mov rsp, r10
-;    mov eax, [NAME_D+12]
-;    mov eax, [NAME_D-NAME_C]
-;    mov sil, [rax+rdx]
-;    mov ah, [rax+rdx]
-;    mov r10d, [r8+r10*8]
-;    mov eax, [rax+rcx*2+14]
-;    mov edx, [rax+rdx*2-NAME_C]
-;    mov r12, [rbx+rdi]
-;    mov eax, [rbp+rax*NAME_C]
-;    mov eax, [rsp+rbp]
-;    mov al, [rdx+rcx*2]
-;    mov eax, [NAME_D+22]
-;    mov eax, [NAME_D-0xffffff]
-;    mov eax, [rsp+NAME_C]
-;    mov eax, [rcx+12]
-;    mov eax, [rcx-1]
-;    mov eax, [rbp+8]
-;    mov eax, [rbp-8]
-;    mov eax, [rsp+123]
-;    mov eax, [NAME_D]
-;    mov eax, [rbp]
-;    mov eax, [rsp]
-;    mov r10b, [r11]
-;    mov eax, [r8]
-;    mov r8, [r9]
+    mov r14b, 255
+    mov al, bl
+    mov bx, cx
+    mov esi, edi
+    mov r9b, r15b
+    mov ax, r8w
+    mov edx, r10d
+    mov esi, r12d
+    mov rax, rcx
+    mov r8, rdi
+    mov rsp, r10
+    mov ax, [NAME_D+12]
+    mov eax, [NAME_D-NAME_C]
+    mov sil, [rax+rdx]
+    mov ah, [rax+rdx]
+    mov r12w, [r8+r11]
+    mov r10d, [r8+r10*8]
+    mov eax, [rax+rcx*2+14]
+    mov edx, [rax+rdx*4-NAME_C]
+    mov r12, [rbx+rdi]
+    mov eax, [rbp+rax*NAME_C]
+    mov eax, [rsp+rbp]
+    mov al, [rdx+rcx*2]
+    mov eax, [NAME_D+22]
+    mov eax, [NAME_D-0xffffff]
+    mov eax, [rsp+NAME_C]
+    mov eax, [rcx+12]
+    mov eax, [rcx-1]
+    mov eax, [rbp+8]
+    mov eax, [rbp-8]
+    mov eax, [rsp+123]
+    mov eax, [NAME_D]
+    mov eax, [rbp]
+    mov eax, [rsp]
+    mov eax, [r8]
+    mov r8, [r9]
+    mov [NAME_D+12], ax 
+    mov [NAME_D-NAME_C], eax 
+    mov [rax+rdx], sil 
+    mov [rax+rdx], ah 
+    mov [r8+r11], r12w
+    mov [r8+r10*8], r10d 
+    mov [rax+rcx*2+14], eax 
+    mov [rax+rdx*4-NAME_C], edx 
+    mov [rbx+rdi], r12 
+    mov [rbp+rax*NAME_C], eax 
+    mov [rsp+rbp], eax 
+    mov [rdx+rcx*2], al 
+    mov [NAME_D+22], eax 
+    mov [NAME_D-0xffffff], eax 
+    mov [rsp+NAME_C], eax 
+    mov [rcx+12], eax 
+    mov [rcx-1], eax 
+    mov [rbp+8], eax 
+    mov [rbp-8], eax 
+    mov [rsp+123], eax 
+    mov [NAME_D], eax 
+    mov [rbp], eax 
+    mov [rsp], eax 
+    mov [r11], r10b 
+    mov [r8], eax 
+    mov [r9], r8 
 
 segment readable
 NAME_C equ 0x4
