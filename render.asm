@@ -165,8 +165,8 @@ process_gen_r_r:
     and ebx, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
     and ecx, REG_MASK_BITS
-    mov [rsi+26], edx
-    mov [rsi+27], ecx
+    mov [rsi+26], dl
+    mov [rsi+27], cl
     cmp ecx, REG_MASK_VAL_64B
     jne _gen_r_r_check_arg_th
     or r9b, REX_W
@@ -330,7 +330,7 @@ process_gen_rm_i:
     mov edx, eax
     and eax, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
-    mov [rsi+26], edx
+    mov [rsi+26], dl
     cmp edx, REG_MASK_VAL_64B
     jne _gen_rm_i_check_arg_th
     or r9b, REX_W
@@ -370,8 +370,9 @@ _end_process_gen_rm_i:
 
 ; -8 passed rdi, -16 passed rsi, -20 passed edx, -24 1st reg token val, -28 1st reg masked val
 ; -32 2nd reg token val, -40 ptr to aux token, -48 ptr to 2nd param, -56 ptr to and of addr token group
-; (3 reserved) -60 temp sib byte, -128 temp token storage
+; (3 reserved) -60 temp sib byte/r8d passed, -128 temp token storage
 ; rdi - ptr to addr token group, rsi - ptr to ins code struct, edx - rex preffix
+; ecx - addr arg order in ins (0 based), r8d - source/dest of addr arg order in ins
 render_process_addr:
     push rbp
     mov rbp, rsp
@@ -379,6 +380,8 @@ render_process_addr:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-20], edx
+    mov [rbp-60], r8d
+    lea r11, [rsi+rcx+26]
     movzx ecx, byte [rdi+2]
     lea rax, [rdi+rcx]
     mov [rbp-56], rax
@@ -402,12 +405,14 @@ render_process_addr:
     cmove ecx, r14d 
     cmp eax, KW_QWORD
     cmove ecx, r15d 
-    mov [rsi+27], cl
+    mov [r11], cl
     add r8, 15
     jmp _rproc_addr_start_check
 _rproc_addr_start_pre_check:
-    mov cl, [rsi+26]
-    mov [rsi+27], cl
+    mov ecx, [rbp-60]
+    lea r12, [rsi+rcx+26]
+    mov dl, [r12]
+    mov [r11], dl
 _rproc_addr_start_check:
     movzx ebx, byte [r8] 
     movzx eax, byte [rdi+1]
@@ -433,7 +438,9 @@ _rproc_addr_1p:
     je _rproc_addr_1p_rsp
     cmp ecx, REG_REX_TH
     jb __rproc_addr_1p_reg
-    or byte [rbp-20], REX_B
+    mov r11b, REX_B
+    or r11b, REX
+    or [rbp-20], r11b
     and ecx, REG_MASK_REG_IDX
  __rproc_addr_1p_reg:
     or r9b, MOD_ADDR_REG
@@ -486,7 +493,9 @@ _rproc_addr_2p:
     jne _err_rproc_addr_invalid_reg_size
     cmp ecx, REG_REX_TH
     jb __rproc_addr_2p_check_arith1
-    or byte [rbp-20], REX_B
+    mov r11b, REX_B
+    or r11b, REX
+    or [rbp-20], r11b
     and ecx, REG_MASK_REG_IDX
 __rproc_addr_2p_check_arith1:
     mov [rbp-24], eax
@@ -576,7 +585,9 @@ __rproc_addr_2p_2nd_reg:
     jne _err_rproc_addr_invalid_reg_size
     cmp ecx, REG_REX_TH
     jb __rproc_addr_2p_sib_init
-    or byte [rbp-20], REX_X
+    mov r11b, REX_X
+    or r11b, REX
+    or [rbp-20], r11b
     and ecx, REG_MASK_REG_IDX
 __rproc_addr_2p_sib_init:
     shl ecx, 3
@@ -615,18 +626,19 @@ ___rproc_addr_2p_sib_check:
     lea r15, [r8+1]
 ___rproc_addr_2p_sib_scale:
     movzx eax, byte [r15+13]
-    cmp eax, 8
+    cmp eax, 4
     ja _err_rproc_addr_invalid_scale
+    movzx edx, byte [r15]
     mov ecx, 0x01010101
     mov ebx, 0x08040201
-    imul ecx, eax
+    imul ecx, edx
     and ecx, ebx
     test ecx, ecx
     jz _err_rproc_addr_invalid_scale
-    mov edi, eax
+    mov edi, edx
     call log2_val_ceil
     shl al, 6
-    or byte [rbp-60], al
+    or [rbp-60], al
 __rproc_adder_2p_3rd_check:
     mov rdx, [rbp-56]
     mov r9, [rbp-48]
@@ -702,7 +714,7 @@ ___rprc_addr_3p_disp32:
     add byte [rsi+24], 4
     jmp _success_render_process_addr
 __rproc_addr_2p_ref_check:
-    ; Add to patch list
+    ;TODO: Add to patch list
     cmp ebx, TOKEN_BUF_PTR_OFFSET
     jne _err_rproc_1param_invalid
     mov [rbp-40], r8
@@ -770,7 +782,6 @@ process_gen_r_a:
     sub rsp, 16
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov r10, rsi
     xor r9, r9
     mov eax, [rdi+9]
     mov r12d, eax
@@ -780,7 +791,7 @@ process_gen_r_a:
     mov edx, eax
     and eax, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
-    mov [rsi+26], edx
+    mov [rsi+26], dl
     cmp edx, REG_MASK_VAL_64B
     jne _gen_r_a_arg_th
     or r9b, REX_W
@@ -793,23 +804,23 @@ _gen_r_a_init_rm:
     xor r12, r12
     shl eax, 3
     or r12b, al
-    mov byte [r10], r12b
+    mov byte [rsi], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_r_a_addr_check
-    lea r11, [r10+16]
-    mov byte [r11], PREFIX_16BIT
+    mov byte [rsi+16], PREFIX_16BIT
     inc byte [rsi+25]
 _gen_r_a_addr_check:
     add rdi, 15
     mov edx, r9d
+    mov ecx, 1
+    xor r8, r8
     call render_process_addr
     test rax, rax
     jnz _err_process_gen_r_a
     mov r9d, ebx
     test r9b, r9b
     jz _success_gen_r_a
-    or r9b, REX
     mov rsi, [rbp-16]
     lea r11, [rsi+16]
     movzx eax, byte [rsi+25]
