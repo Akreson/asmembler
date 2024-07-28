@@ -692,6 +692,7 @@ __ins_kw_check_sp:
     cmp eax, TOKEN_TYPE_KEYWORD
     jne __ins_aux_check_sp
     mov ebx, [rbp-24]
+    and ebx, ADDR_QUL_TYPE_MASK 
     cmp ebx, ADDR_QUL_TYPE_MASK
     jne _err_invalid_expr
     call curr_seg_ptr
