@@ -628,6 +628,37 @@ set_name_token_type:
     mov byte [rax+30], sil 
     ret
 
+; rdi - ptr to file entry, rsi - ptr to token temp mem
+convert_digit_to_neg:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov [rbp-8], rsi
+    call next_token
+    test rax, rax
+    jz _err_convert_dtn
+    test ebx, ebx
+    jnz _err_convert_dtn
+    mov rsi, [rbp-8]
+    movzx ecx, byte [rsi+12]
+    cmp ecx, TOKEN_TYPE_DIGIT
+    jne _err_convert_dtn
+    neg qword [rsi]
+    movzx rdi, byte [rsi+13]
+    inc rdi
+    mov rsi, 8
+    call align_to_pow2
+    mov rsi, [rbp-8]
+    mov byte [rsi+13], al
+    mov al, 1
+    jmp _end_convert_digit_to_neg
+_err_convert_dtn:
+    xor rax, rax
+_end_convert_digit_to_neg:
+    add rsp, 8
+    pop rbp
+    ret
+
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
@@ -728,7 +759,7 @@ __ins_aux_check_sp:
     jne __ins_pref_check_sp
     mov ecx, [rbp-24]
     cmp ecx, AUX_LBRACKET
-    jne _err_invalid_expr
+    jne ___ins_aux_check_sub_sp
     call curr_seg_ptr
     mov rdi, rax
     mov esi, 3
@@ -738,6 +769,15 @@ __ins_aux_check_sp:
     inc ebx
     mov [rbp-84], ebx
     jmp __ins_addr_tokens
+___ins_aux_check_sub_sp:
+    cmp ecx, AUX_SUB
+    jne _err_invalid_expr
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call convert_digit_to_neg
+    test rax, rax
+    jz _err_invalid_expr
+    jmp ___ins_digit_set_sp
 __ins_pref_check_sp:
     cmp eax, TOKEN_TYPE_INS
     jne __ins_name_check_sp
@@ -765,6 +805,7 @@ __ins_digit_check_sp:
     ;TODO: support neg digit
     cmp eax, TOKEN_TYPE_DIGIT
     jne _err_invalid_expr
+___ins_digit_set_sp:
     call curr_seg_ptr
     mov rdi, rax
     lea rsi, [rbp-32]
@@ -1109,15 +1150,27 @@ ___name_data_read_val:
     jz _end_start_parser
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_STR
-    jne ___name_data_read_digit_check
+    jne ___name_data_read_digit_sub_check
     movzx ebx, byte [rbp-68]
     cmp ebx, 1
     ja _err_out_of_range_value
     jmp ___name_data_read_next
+___name_data_read_digit_sub_check:
+    cmp eax, TOKEN_TYPE_AUX
+    jne ___name_data_read_digit_check 
+    mov ecx, [rbp-8]
+    cmp ecx, AUX_SUB
+    jne _err_invalid_expr
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call convert_digit_to_neg
+    test rax, rax
+    jz _err_invalid_expr 
+    jmp ___name_data_read_digit_overflow_check 
 ___name_data_read_digit_check:
     cmp eax, TOKEN_TYPE_DIGIT
     jne _err_invalid_expr
-    mov rcx, [rbp-16]
+___name_data_read_digit_overflow_check:
     movzx ebx, byte [rbp-68]
     shl ebx, 3
     movzx esi, byte [rbp-3] 
@@ -1188,7 +1241,13 @@ ___name_const_def:
     mov ebx, [rbp-8]
     cmp ebx, AUX_NEW_LINE
     je ___name_const_set_empty
-    jmp _err_invalid_const_value
+    cmp ebx, AUX_SUB
+    jne _err_invalid_const_value
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call convert_digit_to_neg
+    test rax, rax
+    jz _err_invalid_expr
 ___name_const_set_token:
     mov edi, TOKEN_KIND_SIZE
     call get_mem_def_name_buf

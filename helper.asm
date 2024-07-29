@@ -16,6 +16,19 @@ log2_val_ceil:
 _end_log2_val_ceil:
     ret
 
+; rdi - val to align, rsi - pow2 align to
+align_to_pow2:
+    mov rax, rdi
+    mov r8, rsi
+    dec r8
+    and rdi, r8
+    test rdi, rdi
+    jz _end_align_to_pow2
+    sub rsi, rdi
+    add rax, rsi
+_end_align_to_pow2:
+    ret
+
 print_new_line:
     push rbp
     mov rsi, NEW_LINE
