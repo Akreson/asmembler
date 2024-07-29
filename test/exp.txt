@@ -1,9 +1,10 @@
 segment readable executable
-    mov word [r8+r11], 22
-    mov word [r8+r11], 322
-    mov word [NAME_D+12], 2134 
     mov dword [NAME_D-NAME_C], 0xffffff 
+    mov word [r8+r11], 32
     mov byte [rax+rdx], 200 
+    mov word [NAME_D+12], 2134 
+    mov word [r8+r11], 322
+    mov qword [rax], CONST_NEG
     mov byte [rax+rdx], 3
     mov dword [r8+r10*8], 1
     mov dword [rax+rcx*2+14], 0xffff 
@@ -26,12 +27,14 @@ segment readable executable
     mov byte [r11], 1 
     mov byte [r8], 1 
     mov byte [r9], 1 
-    mov sil, al
-    mov bpl, dil
-    mov bl, dil
+    mov eax, -1
+    mov rax, -1
+    mov eax, CONST_NEG
+    mov rax, 2048
+    mov r8w, -2
     mov rax, NADE_D
     mov r8d, 123
-    mov al, 123
+    mov al, NAME_C 
     mov bx, 30121
     mov esi, 0xFFFFFF
     mov r9b, 34
@@ -42,6 +45,9 @@ segment readable executable
     mov r9, 123
     mov r8w, 9000
     mov r14b, 255
+    mov sil, al
+    mov bpl, dil
+    mov bl, dil
     mov al, bl
     mov bx, cx
     mov esi, edi
@@ -102,12 +108,10 @@ segment readable executable
     mov [rsp], eax 
     mov [r11], r10b 
     mov [r8], eax 
-    mov [r9], r8 
+    mov [r9], r8
 
 segment readable
+CONST_NEG equ -1
 NAME_C equ 0x4
 NAME_C2 equ 1
 NAME_D db 0
-
-
-

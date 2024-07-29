@@ -2,7 +2,8 @@
 
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
-; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size (3 bytes reserved)
+; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
+; +29 pody opc size + 8 (64bit digit) (2 bytes reserved)
 INS_CODE_STRUCT_SIZE equ 32
 
 MOD_RM_RM_MASK equ 0x07
@@ -128,6 +129,24 @@ get_name_ref_type:
     lea rax, [r10+r9+16]
     movzx ebx, byte [r11+14]
     ret
+
+; edi - dest size, esi - imm size
+; return eax - bytes to line up
+line_up_d_s_size:
+    xor edx, edx
+    inc edx
+    shr edi, REG_MASK_VAL_SHIFT_NORM
+    shr esi, REG_MASK_VAL_SHIFT_NORM
+    mov ecx, edi
+    mov ebx, edx
+    shl edx, cl
+    mov eax, edx
+    mov edx, ebx
+    mov ecx, esi
+    shl edx, cl
+    sub eax, edx
+    ret
+
 
 ; TODO: complete
 ; rdi - ptr to token entry
@@ -260,53 +279,43 @@ _rproc_imm:
     mov edx, [rbp-28]
     movzx eax, byte [rsi+24]
     movzx ebx, byte [r8+13]
+    mov ecx, eax
+    add ecx, 8
+    mov [rsi+29], cl
+    mov r10, [r8]
+    mov [rsi+rax], r10
     cmp ebx, 8
-    ja __rproc_imm64
+    ja __rproc_imm16
     mov byte [r9], REG_MASK_VAL_8B
-    mov cl, [r8]
-    mov [rsi+rax], cl
     inc al
-    mov [rsi+24], al
+    jmp _success_rproc_imm
+__rproc_imm16:
+    cmp ebx, 16
+    ja __rproc_imm32
+    cmp edx, REG_MASK_VAL_16B
+    jb _err_rproc_imm_overflow
+    mov byte [r9], REG_MASK_VAL_16B
+    add al, 2
+    jmp _success_rproc_imm
+__rproc_imm32:
+    cmp ebx, 32
+    ja __rproc_imm64
+    cmp edx, REG_MASK_VAL_32B
+    jb _err_rproc_imm_overflow
+    mov byte [r9], REG_MASK_VAL_32B
+    add al, 4
     jmp _success_rproc_imm
 __rproc_imm64:
     cmp edx, REG_MASK_VAL_64B
-    jne __rproc_imm32
-    cmp ebx, 33
-    jb ___rproc_imm64_32
+    jb _err_rproc_imm_overflow
     mov byte [r9], REG_MASK_VAL_64B
-    mov rcx, [r8]
-    mov [rsi+rax], rcx
     add al, 8
-    mov [rsi+24], al
-    jmp _success_rproc_imm
-___rproc_imm64_32:
-    mov byte [r9], REG_MASK_VAL_32B
-    mov ecx, [r8]
-    mov [rsi+rax], ecx
-    add al, 4
-    mov [rsi+24], al
-    jmp _success_rproc_imm
-__rproc_imm32:
-    cmp edx, REG_MASK_VAL_32B
-    jne __rproc_imm16
-    cmp ebx, 32
-    ja _err_rproc_imm_overflow
-    jmp ___rproc_imm64_32
-__rproc_imm16:
-    cmp edx, REG_MASK_VAL_16B
-    jne _err_rproc_imm_overflow
-    cmp ebx, 16
-    ja _err_rproc_imm_overflow
-    mov byte [r9], REG_MASK_VAL_16B
-    mov cx, [r8]
-    mov [rsi+rax], cx
-    add al, 2
-    mov [rsi+24], al
     jmp _success_rproc_imm
 _err_rproc_imm_overflow:
     mov eax, 1
     jmp _end_render_process_imm
 _success_rproc_imm:
+    mov [rsi+24], al
     xor eax, eax
 _end_render_process_imm:
     add rsp, 64
@@ -1061,60 +1070,39 @@ ___mov_r_i_non_byte_opcode:
     cmp eax, REG_MASK_VAL_32B
     ja ___mov_r_i_reg_opc_remove_modrm
     mov byte [rbp-42], 0xC7
-    cmp eax, REG_MASK_VAL_32B
+    mov ebx, REG_MASK_VAL_32B
+    cmp ebx, eax
     je _mov_accemble
-    mov r10d, 3
-    mov r11d, 2
-    cmp eax, REG_MASK_VAL_8B
-    cmove ecx, r10d
-    cmp eax, REG_MASK_VAL_16B
-    cmove ecx, r11d
-    movzx edx, byte [r8+24]
-    lea r9, [r8+rdx]
-    jmp ___mov_r_i_reg_opc_ext_mod 
+    mov edi, ebx
+    mov esi, eax
+    call line_up_d_s_size
+    add [r8+24], al
+    jmp _mov_accemble
 ___mov_r_i_reg_opc_remove_modrm:
     mov bl, [rbp-42] 
     mov al, [r8]
     and al, MOD_RM_RM_MASK
     or bl, al
     mov [rbp-42], bl
-    ;TODO: handle sign digit in right way
-    movzx ecx, byte [r8+24]
+    movzx edi, byte [r8+26]
+    movzx esi, byte [r8+27]
+    call line_up_d_s_size
+    mov ecx, eax
+    add cl, [r8+24]
     dec ecx
     mov [r8+24], cl
     mov r9, r8
-    mov rdi, r8
     inc r9
+    mov rdi, r8
     mov rsi, r9
     rep movsb
-    movzx eax, byte [r8+27]
-    movzx ebx, byte [r8+26]
-    cmp eax, REG_MASK_VAL_8B
-    jne _mov_accemble
-    cmp ebx, REG_MASK_VAL_8B
-    je _mov_accemble
-    mov r10d, 1
-    mov r11d, 3
-    mov r12d, 7
-    cmp ebx, REG_MASK_VAL_16B
-    cmove ecx, r10d
-    cmp ebx, REG_MASK_VAL_32B
-    cmove ecx, r11d
-    cmp ebx, REG_MASK_VAL_64B
-    cmove ecx, r12d
-___mov_r_i_reg_opc_ext_mod:
-    xor eax, eax
-    mov r13d, ecx
-    mov rdi, r9
-    rep stosb
-    add [r8+24], r13b
     jmp _mov_accemble
 _mov_a:
     movzx eax, byte [rsi+2]
     lea r9, [rsi+rax]
     movzx ecx, byte [r9]
     cmp ecx, TOKEN_BUF_PTR_OFFSET
-    je __mov_r_i
+    je __mov_a_i
     cmp ecx, TOKEN_BUF_DIRECT
     jne _err_invalid_second_param_mov
     movzx ebx, byte [r9+13]
@@ -1164,19 +1152,10 @@ ___mov_a_i_non_byte_opcode:
 ___mov_a_i_check:
     cmp ebx, eax
     je _mov_accemble
-    shr ebx, REG_MASK_VAL_SHIFT_NORM
-    shr eax, REG_MASK_VAL_SHIFT_NORM
-    mov ecx, ebx
-    xor edx, edx
-    inc edx
-    mov esi, edx
-    shl edx, cl
-    mov ebx, edx
-    mov edx, esi
-    mov ecx, eax
-    shl edx, cl
-    sub ebx, edx
-    add [r8+24], bl
+    mov edi, ebx
+    mov esi, eax
+    call line_up_d_s_size
+    add [r8+24], al
 _mov_accemble:
     mov rdi, [rbp-24]
     call entry_array_curr_ptr
