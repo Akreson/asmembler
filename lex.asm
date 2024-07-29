@@ -211,7 +211,7 @@ _end_valid_sym_char:
 next_token:
     push rbp
     mov rbp, rsp
-    sub rsp, 72
+    sub rsp, 84
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov rbx, [rdi]
@@ -220,6 +220,8 @@ next_token:
     mov rdx, [rdi+8]
     mov [rbp-32], rdx
     mov esi, dword [SPACE_CHAR_4B]
+    mov [rbp-80], rcx
+    mov dword [rbp-84], 0
 _loop_skip_wt_nt:
     movzx edi, byte [rbx+rcx]
     cmp edi, _CONST_SEMICOLON
@@ -243,6 +245,11 @@ __loop_skip_check_space:
     je _eof_nt
     jmp _loop_skip_wt_nt
 _char_check_nt:
+    mov r9, rcx
+    mov r8, [rbp-80]
+    sub rcx, r8
+    mov [rbp-84], ecx
+    mov rcx, r9
     mov [rbp-40], rcx
     mov [rbp-48], edi
     call is_alpha
@@ -279,9 +286,7 @@ _aux_check_nt:
     mov rcx, [rbp-40]
     mov esi, dword [SPACE_CHAR_4B]
 _loop_new_line_collate_nl_nt:
-    mov rax, LAST_LINE_NUM
-    inc dword [rax]
-    ;inc dword [LAST_LINE_NUM]
+    inc dword [LAST_LINE_NUM]
 _loop_collate_nl_nt:
     inc rcx
     cmp rcx, rdx
@@ -297,6 +302,11 @@ _loop_collate_nl_nt:
     dec rcx
     mov [rbp-40], rcx
 _set_aux_token:
+    mov r9, rcx
+    mov r8, [rbp-80]
+    sub rcx, r8
+    mov [rbp-84], ecx
+    mov rcx, r9
     inc dword [rbp-40]
     mov ecx, TOKEN_KIND_SIZE
     mov rsi, [rbp-56]
@@ -555,7 +565,8 @@ _err_to_long_sym_nt:
 _end_next_token:
     mov rcx, [rbp-40]
     mov rax, [rbp-8]
+    mov ebx, [rbp-84]
     mov [rax+16], rcx
-    add rsp, 72
+    add rsp, 84 
     pop rbp
     ret
