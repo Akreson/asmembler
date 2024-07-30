@@ -3,8 +3,8 @@
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
-; +29 pody opc size + 8 (64bit digit) (2 bytes reserved)
-INS_CODE_STRUCT_SIZE equ 32
+; +29 (4) opcode bytes, +33 opcode bytes size bytes reserved)
+INS_CODE_STRUCT_SIZE equ 40
 
 MOD_RM_RM_MASK equ 0x07
 
@@ -147,6 +147,36 @@ line_up_d_s_size:
     sub eax, edx
     ret
 
+; rdi - ptr to render entry array, rsi - ptr to ins code struct
+default_ins_accemble:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    call entry_array_curr_ptr
+    mov rdi, rax
+    mov r8, [rbp-16]
+    lea rsi, [r8+16]
+    movzx ecx, byte [r8+25]
+    add rax, rcx
+    rep movsb
+    mov rdi, rax
+    lea rsi, [r8+29]
+    movzx ecx, byte [r8+33]
+    add rax, rcx
+    rep movsb
+    mov rdi, rax
+    mov rsi, r8
+    movzx ecx, byte [r8+24]
+    add rax, rcx
+    rep movsb
+    mov rdi, [rbp-8]
+    mov rsi, rax
+    call entry_array_commit_size
+    add rsp, 16
+    pop rbp
+    ret
 
 ; TODO: complete
 ; rdi - ptr to token entry
@@ -233,7 +263,6 @@ _end_process_gen_r_r:
     add rsp, 16
     pop rbp
     ret
-
 ; rdi - ptr to imm token, rsi - ptr to ins code struct,
 ; edx - imm arg order in ins (0 based), ecx - dest bits size (for overflow check) 
 render_process_imm:
@@ -279,9 +308,6 @@ _rproc_imm:
     mov edx, [rbp-28]
     movzx eax, byte [rsi+24]
     movzx ebx, byte [r8+13]
-    mov ecx, eax
-    add ecx, 8
-    mov [rsi+29], cl
     mov r10, [r8]
     mov [rsi+rax], r10
     cmp ebx, 8
@@ -366,7 +392,7 @@ _gen_rm_i_set_prefix:
     jz _gen_rm_i_set_postfix
     movzx eax, byte [rsi+25]
     mov [r11+rax], r9b
-    inc eax
+    inc al
     mov byte [rsi+25], al
 _gen_rm_i_set_postfix:
     mov rdi, r8
@@ -378,6 +404,7 @@ _end_process_gen_rm_i:
     pop rbp
     ret
 
+; NOTE: count of post opcode bytes must be at least 1 i.e it assumes that mod_r/m is already set
 ; -8 passed rdi, -16 passed rsi, -20 passed edx, -24 1st reg token val, -28 1st reg masked val
 ; -32 2nd reg token val, -40 ptr to aux token, -48 ptr to 2nd param, -56 ptr to and of addr token group
 ; (3 reserved) -60 temp sib byte/r8d passed, -128 temp token storage
@@ -894,10 +921,9 @@ _gen_a_r_addr_check:
     test r9b, r9b
     jz _success_gen_r_a
     mov rsi, [rbp-16]
-    lea r11, [rsi+16]
     movzx eax, byte [rsi+25]
-    mov [r11+rax], r9b
-    inc eax
+    mov [rsi+rax+16], r9b
+    inc al
     mov [rsi+25], al
     jmp _success_gen_r_a
 _err_process_gen_a_r:
@@ -985,7 +1011,9 @@ process_mov:
     mov [rbp-24], rdi
     mov ecx, INS_CODE_STRUCT_SIZE
     lea rdi, [rbp-128]
+    mov r8, rdi
     rep stosb
+    mov byte [r8+33], 1
     mov eax, [rdi+28]
     mov [rsi], eax
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
@@ -1019,18 +1047,17 @@ __mov_r_r:
     call process_gen_r_r
     test eax, eax
     jnz _err_parse_mov
-    movzx eax, byte [rsi+26]
-    movzx ebx, byte [rsi+27]
-    cmp eax, ebx
-    jne _err_arg_size_mov
     lea r8, [rbp-128]
     movzx ebx, byte [r8+26]
+    movzx eax, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_mov
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_r_r_non_byte_opcode
-    mov byte [rbp-42], 0x8A
+    mov byte [r8+29], 0x8A
     jmp _mov_accemble
 ___mov_r_r_non_byte_opcode:
-    mov byte [rbp-42], 0x8B
+    mov byte [r8+29], 0x8B
     jmp _mov_accemble
 __mov_r_a:
     mov rdi, rsi
@@ -1038,17 +1065,17 @@ __mov_r_a:
     call process_gen_r_a
     test eax, eax
     jnz _err_parse_mov
-    lea rsi, [rbp-128]
-    movzx eax, byte [rsi+26]
-    movzx ebx, byte [rsi+27]
+    lea r8, [rbp-128]
+    movzx eax, byte [r8+26]
+    movzx ebx, byte [r8+27]
     cmp eax, ebx
     jne _err_arg_size_mov
     cmp eax, REG_MASK_VAL_8B
     jne ___mov_r_a_non_byte_opcode
-    mov byte [rbp-42], 0x8A
+    mov byte [r8+29], 0x8A
     jmp _mov_accemble
 ___mov_r_a_non_byte_opcode:
-    mov byte [rbp-42], 0x8B
+    mov byte [r8+29], 0x8B
     jmp _mov_accemble
 __mov_r_i:
     mov rdi, rsi
@@ -1060,16 +1087,16 @@ __mov_r_i:
     movzx ebx, byte [r8+26]
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_r_i_non_byte_opcode
-    mov byte [rbp-42], 0xB0
+    mov byte [r8+29], 0xB0
     jmp ___mov_r_i_reg_opc_remove_modrm 
 ___mov_r_i_non_byte_opcode:
-    mov byte [rbp-42], 0xB8
+    mov byte [r8+29], 0xB8
     cmp ebx, REG_MASK_VAL_64B
     jne ___mov_r_i_reg_opc_remove_modrm
     movzx eax, byte [r8+27]
     cmp eax, REG_MASK_VAL_32B
     ja ___mov_r_i_reg_opc_remove_modrm
-    mov byte [rbp-42], 0xC7
+    mov byte [r8+29], 0xC7
     mov ebx, REG_MASK_VAL_32B
     cmp ebx, eax
     je _mov_accemble
@@ -1079,11 +1106,11 @@ ___mov_r_i_non_byte_opcode:
     add [r8+24], al
     jmp _mov_accemble
 ___mov_r_i_reg_opc_remove_modrm:
-    mov bl, [rbp-42] 
+    mov bl, [r8+29] 
     mov al, [r8]
     and al, MOD_RM_RM_MASK
     or bl, al
-    mov [rbp-42], bl
+    mov [r8+29], bl
     movzx edi, byte [r8+26]
     movzx esi, byte [r8+27]
     call line_up_d_s_size
@@ -1091,10 +1118,9 @@ ___mov_r_i_reg_opc_remove_modrm:
     add cl, [r8+24]
     dec ecx
     mov [r8+24], cl
-    mov r9, r8
-    inc r9
+    mov rsi, r8
+    inc rsi
     mov rdi, r8
-    mov rsi, r9
     rep movsb
     jmp _mov_accemble
 _mov_a:
@@ -1117,17 +1143,17 @@ __mov_a_r:
     call process_gen_a_r
     test eax, eax
     jnz _err_parse_mov
-    lea rsi, [rbp-128]
-    movzx eax, byte [rsi+26]
-    movzx ebx, byte [rsi+27]
+    lea r8, [rbp-128]
+    movzx eax, byte [r8+26]
+    movzx ebx, byte [r8+27]
     cmp eax, ebx
     jne _err_arg_size_mov
     cmp eax, REG_MASK_VAL_8B
     jne ___mov_a_r_non_byte_opcode
-    mov byte [rbp-42], 0x88
+    mov byte [r8+29], 0x88
     jmp _mov_accemble
 ___mov_a_r_non_byte_opcode:
-    mov byte [rbp-42], 0x89
+    mov byte [r8+29], 0x89
     jmp _mov_accemble
 __mov_a_i:
     mov rdi, rsi
@@ -1140,10 +1166,10 @@ __mov_a_i:
     movzx eax, byte [r8+27]
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_a_i_non_byte_opcode
-    mov byte [rbp-42], 0xC6
+    mov byte [r8+29], 0xC6
     jmp _mov_accemble
 ___mov_a_i_non_byte_opcode:
-    mov byte [rbp-42], 0xC7
+    mov byte [r8+29], 0xC7
     cmp ebx, REG_MASK_VAL_64B
     jne ___mov_a_i_check
     cmp eax, REG_MASK_VAL_64B
@@ -1158,24 +1184,8 @@ ___mov_a_i_check:
     add [r8+24], al
 _mov_accemble:
     mov rdi, [rbp-24]
-    call entry_array_curr_ptr
-    mov rdi, rax
-    lea r8, [rbp-128]
-    lea rsi, [r8+16]
-    movzx ecx, byte [r8+25]
-    add rax, rcx
-    rep movsb
-    mov bl, [rbp-42]
-    mov [rax], bl
-    inc rax
-    mov rdi, rax
-    mov rsi, r8
-    movzx ecx, byte [r8+24]
-    add rax, rcx
-    rep movsb
-    mov rdi, [rbp-24]
-    mov rsi, rax
-    call entry_array_commit_size
+    lea rsi, [rbp-128]
+    call default_ins_accemble
     jmp _end_process_mov
 _err_parse_mov:
 _err_arg_size_mov:
