@@ -100,6 +100,7 @@ REG_R15 equ 0xBF
 
 
 PREF_INS_TYPE_MASK equ 0x80000000
+INS_JMP_TYPE_MASK equ 0x40000000
 
 ;STR_REPS
 INS_REP   equ 0x81000000
@@ -136,23 +137,24 @@ INS_TZCNT equ 0x0100001E
 INS_LZCNT equ 0x0100001F
 INS_CMP   equ 0x01000020
 INS_CALL  equ 0x01000021
-INS_JMP   equ 0x01000022
-INS_JE    equ 0x01000023
-INS_JNE   equ 0x01000024
-INS_JG    equ 0x01000025
-INS_JGE   equ 0x01000026
-INS_JL    equ 0x01000027
-INS_JLE   equ 0x01000028
-INS_JZ    equ 0x01000029
-INS_JNZ   equ 0x0100002A
-INS_JO    equ 0x0100002B
-INS_JNO   equ 0x0100002C
-INS_JS    equ 0x0100002D
-INS_JNS   equ 0x0100002E
-INS_JA    equ 0x0100002F
-INS_JAE   equ 0x01000030
-INS_JB    equ 0x01000031
-INS_JBE   equ 0x01000032
+INS_JMP   equ 0x41000022
+INS_JA    equ 0x41000023
+INS_JAE   equ 0x41000024
+INS_JB    equ 0x41000025
+INS_JBE   equ 0x41000026
+INS_JCXZ  equ 0x41000027
+INS_JE    equ 0x41000028
+INS_JG    equ 0x41000029
+INS_JGE   equ 0x4100002A
+INS_JL    equ 0x4100002B
+INS_JLE   equ 0x4100002C
+INS_JNE   equ 0x4100002D
+INS_JNO   equ 0x4100002E
+INS_JNP   equ 0x4100002F
+INS_JNS   equ 0x41000030
+INS_JO    equ 0x41000031
+INS_JP    equ 0x41000032
+INS_JS    equ 0x41000033
  
 AUX_COLON     equ 0x020000
 AUX_LPAREN    equ 0x020001
@@ -312,22 +314,39 @@ STR_LZCNT db "lzcnt"
 STR_CMP   db "cmp"
 STR_CALL  db "call"
 STR_JMP   db "jmp"
-STR_JE    db "je"
-STR_JNE   db "jne"
-STR_JG    db "jg"
 STR_JA    db "ja"
-STR_JGE   db "jge"
+STR_JNBE  db "jnbe"
 STR_JAE   db "jae"
-STR_JL    db "jl"
+STR_JNB   db "jnb"
+STR_JNC   db "jnc"
 STR_JB    db "jb"
-STR_JLE   db "jle"
+STR_JC    db "jc"
+STR_JNAE  db "jnae"
 STR_JBE   db "jbe"
+STR_JNA   db "jna"
+STR_JCXZ  db "jcxz"
+STR_JECXZ db "jecxz"
+STR_JRCXZ db "jrcxz"
+STR_JE    db "je"
 STR_JZ    db "jz"
+STR_JG    db "jg"
+STR_JNLE  db "jnle"
+STR_JGE   db "jge"
+STR_JNL   db "jnl"
+STR_JL    db "jl"
+STR_JNGE  db "jnge"
+STR_JLE   db "jle"
+STR_JNG   db "jng"
+STR_JNE   db "jne"
 STR_JNZ   db "jnz"
-STR_JO    db "jo"
 STR_JNO   db "jno"
-STR_JS    db "js"
+STR_JNP   db "jnp"
+STR_JPO   db "jpo"
 STR_JNS   db "jns"
+STR_JO    db "jo"
+STR_JP    db "jp"
+STR_JPE   db "jpe"
+STR_JS    db "js"
 
 STR_KW_DB db "db"
 STR_KW_DW db "dw"
@@ -499,22 +518,40 @@ def_symbol_m INS_LZCNT, TOKEN_TYPE_INS, STR_LZCNT, 5
 def_symbol_m INS_CMP, TOKEN_TYPE_INS, STR_CMP, 3
 def_symbol_m INS_CALL, TOKEN_TYPE_INS, STR_CALL, 4
 def_symbol_m INS_JMP, TOKEN_TYPE_INS, STR_JMP, 3
-def_symbol_m INS_JE, TOKEN_TYPE_INS, STR_JE, 2
-def_symbol_m INS_JNE, TOKEN_TYPE_INS, STR_JNE, 3
-def_symbol_m INS_JG, TOKEN_TYPE_INS, STR_JG, 2
-def_symbol_m INS_JGE, TOKEN_TYPE_INS, STR_JGE, 3
-def_symbol_m INS_JL, TOKEN_TYPE_INS, STR_JL, 2
-def_symbol_m INS_JLE, TOKEN_TYPE_INS, STR_JLE, 3
-def_symbol_m INS_JZ, TOKEN_TYPE_INS, STR_JZ, 2
-def_symbol_m INS_JNZ, TOKEN_TYPE_INS, STR_JNZ, 3
-def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO, 2
-def_symbol_m INS_JNO, TOKEN_TYPE_INS, STR_JNO, 3
-def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS, 2
-def_symbol_m INS_JNS, TOKEN_TYPE_INS, STR_JNS, 3
+
 def_symbol_m INS_JA, TOKEN_TYPE_INS, STR_JA, 2
+def_symbol_m INS_JA, TOKEN_TYPE_INS, STR_JNBE, 4
 def_symbol_m INS_JAE, TOKEN_TYPE_INS, STR_JAE, 3
+def_symbol_m INS_JAE, TOKEN_TYPE_INS, STR_JNB, 3
+def_symbol_m INS_JAE, TOKEN_TYPE_INS, STR_JNC, 3
 def_symbol_m INS_JB, TOKEN_TYPE_INS, STR_JB, 2
+def_symbol_m INS_JB, TOKEN_TYPE_INS, STR_JC, 2
+def_symbol_m INS_JB, TOKEN_TYPE_INS, STR_JNAE, 4
 def_symbol_m INS_JBE, TOKEN_TYPE_INS, STR_JBE, 3
+def_symbol_m INS_JBE, TOKEN_TYPE_INS, STR_JNA, 3
+def_symbol_m INS_JCXZ, TOKEN_TYPE_INS, STR_JCXZ, 4
+def_symbol_m INS_JCXZ, TOKEN_TYPE_INS, STR_JECXZ, 5
+def_symbol_m INS_JCXZ, TOKEN_TYPE_INS, STR_JRCXZ, 5
+def_symbol_m INS_JE, TOKEN_TYPE_INS, STR_JE, 2
+def_symbol_m INS_JE, TOKEN_TYPE_INS, STR_JZ, 2
+def_symbol_m INS_JG, TOKEN_TYPE_INS, STR_JG, 2
+def_symbol_m INS_JG, TOKEN_TYPE_INS, STR_JNLE, 4
+def_symbol_m INS_JGE, TOKEN_TYPE_INS, STR_JGE, 3
+def_symbol_m INS_JGE, TOKEN_TYPE_INS, STR_JNL, 3
+def_symbol_m INS_JL, TOKEN_TYPE_INS, STR_JL, 2
+def_symbol_m INS_JL, TOKEN_TYPE_INS, STR_JNGE, 4
+def_symbol_m INS_JLE, TOKEN_TYPE_INS, STR_JLE, 3
+def_symbol_m INS_JLE, TOKEN_TYPE_INS, STR_JNG, 3
+def_symbol_m INS_JNE, TOKEN_TYPE_INS, STR_JNE, 3
+def_symbol_m INS_JNE, TOKEN_TYPE_INS, STR_JNZ, 3
+def_symbol_m INS_JNO, TOKEN_TYPE_INS, STR_JNO, 3
+def_symbol_m INS_JNP, TOKEN_TYPE_INS, STR_JNP, 3
+def_symbol_m INS_JNP, TOKEN_TYPE_INS, STR_JPO, 3
+def_symbol_m INS_JNS, TOKEN_TYPE_INS, STR_JNS, 3
+def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO, 2
+def_symbol_m INS_JP, TOKEN_TYPE_INS, STR_JP, 2
+def_symbol_m INS_JP, TOKEN_TYPE_INS, STR_JPE, 3
+def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS, 2
 
 def_symbol_m KW_DB, TOKEN_TYPE_KEYWORD, STR_KW_DB, 2
 def_symbol_m KW_DW, TOKEN_TYPE_KEYWORD, STR_KW_DW, 2
