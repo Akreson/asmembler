@@ -34,8 +34,8 @@ dd 0, 0, ADDR_ARR_PATCH_ENTRY_SIZE
 
 ; entry body - 0 ptr to symbol, +8 ptr to token entry header
 ; +16 (1) type, +17 offset to disp from start of ins
-; +18 curr size of disp, +19 min size of disp,
-SEGMENT_PATCH_ENTRY_SIZE equ 20
+; +18 curr size of disp, +19 min size of disp, (4b reserved)
+SEGMENT_PATCH_ENTRY_SIZE equ 24
 SEGMENT_PATCH_LIST dq 0
 dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
 dd 0, 0
