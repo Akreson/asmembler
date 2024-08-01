@@ -1034,6 +1034,7 @@ _end_process_gen_a_r:
     pop rbp
     ret
 
+; TODO: hande TOKEN_BUF_PTR_OFFSET
 ; rdi - ptr to ins param, rsi - ptr to inc cod struct
 process_gen_a_i:
     push rbp

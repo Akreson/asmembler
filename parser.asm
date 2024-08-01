@@ -23,8 +23,6 @@ segment readable writeable
 ; 0 (4b) linked list entry offset to a chain of patch location, 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
-; linked list body - +4 offset in file array, +8 **ptr of buf to offset from, +16 offset in buff,
-; +20 second indirectional offset (must be 0 if not set)
 ; ptr, count in entries, capacity in entries, entry size
 UNKNOWN_NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, UNK_ENTRY_SIZE
@@ -54,6 +52,8 @@ dd 0, 0, SEG_ENTRY_SIZE
 NAME_SYM_HASH_TABLE dq 0
 dd 0, 0
 
+; linked list entry body - +4 offset in file array, +8 **ptr of buf to offset from, +16 offset in buff,
+; +20 second indirectional offset (must be 0 if not set)
 ;entry array (for ease mem mang.) + 
 PATCH_LIST dq 0
 dd 0, 0, 0
