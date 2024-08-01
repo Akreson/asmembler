@@ -1,9 +1,7 @@
-;TODO: move remove mod/rm byte to sep. func.
-
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
-; +29 (4) opcode bytes, +33 opcode bytes size bytes reserved)
+; +29 (4) opcode bytes, +33 opcode bytes count
 INS_CODE_STRUCT_SIZE equ 40
 
 MOD_RM_RM_MASK equ 0x07
@@ -312,14 +310,17 @@ _end_process_gen_r_r:
     add rsp, 16
     pop rbp
     ret
+
 ; rdi - ptr to imm token, rsi - ptr to ins code struct,
 ; edx - imm arg order in ins (0 based), ecx - dest bits size (for overflow check) 
+; r8 - ptr to curr token entry header
 render_process_imm:
     push rbp
     mov rbp, rsp
     sub rsp, 64
     mov [rbp-16], rsi
     mov [rbp-28], ecx
+    mov [rbp-40], r8
     lea rax, [rsi+rdx+26]
     mov [rbp-24], rax
     mov cl, [rdi]
@@ -328,8 +329,12 @@ render_process_imm:
     cmp cl, TOKEN_BUF_PTR_OFFSET
     jne _rproc_imm
     call get_name_ref_type
+    cmp ebx, TOKEN_NAME_CONST
+    je _rproc_imm_const
+    cmp ebx, TOKEN_NAME_CONST_MUT
+    je _rproc_imm_const
     cmp ebx, TOKEN_NAME_DATA
-    jne _rproc_imm_const
+    jne _err_rproc_imm_invalid_name
     mov rsi, [rbp-16]
     mov r9, [rbp-24]
     mov edx, [rbp-28]
@@ -386,6 +391,7 @@ __rproc_imm64:
     mov byte [r9], REG_MASK_VAL_64B
     add al, 8
     jmp _success_rproc_imm
+_err_rproc_imm_invalid_name:
 _err_rproc_imm_overflow:
     mov eax, 1
     jmp _end_render_process_imm
@@ -399,12 +405,15 @@ _end_render_process_imm:
 
 ; for r_i version by default used r/m, imm version
 ; rdi - ptr to ins param, rsi - ptr to inc code struct
+; rdx - ptr to token entry header
 ; return eax - 0 if succes, 1 if imm less then reg
 process_gen_rm_i:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 24
+    mov [rbp-8], rdi
     mov [rbp-16], rsi
+    mov [rbp-24], rdx
     mov r10, rsi
     xor r9, r9
     lea r8, [rdi+15]
@@ -447,9 +456,10 @@ _gen_rm_i_set_postfix:
     mov rdi, r8
     mov ecx, edx
     mov edx, 1
+    mov r8, [rbp-24]
     call render_process_imm
 _end_process_gen_rm_i:
-    add rsp, 16
+    add rsp, 24
     pop rbp
     ret
 
@@ -459,6 +469,7 @@ _end_process_gen_rm_i:
 ; (3 reserved) -60 temp sib byte/r8d passed, -128 temp token storage
 ; rdi - ptr to addr token group, rsi - ptr to ins code struct, edx - rex preffix
 ; ecx - addr arg order in ins (0 based), r8d - source/dest of addr arg order in ins
+; r9 - ptr to curr token entry header
 render_process_addr:
     push rbp
     mov rbp, rsp
@@ -467,6 +478,7 @@ render_process_addr:
     mov [rbp-16], rsi
     mov [rbp-20], edx
     mov [rbp-60], r8d
+    mov [rbp-68], r9
     lea r11, [rsi+rcx+26]
     movzx ecx, byte [rdi+2]
     lea rax, [rdi+rcx]
@@ -861,13 +873,14 @@ _end_render_process_addr:
     pop rbp
     ret
 
-; rdi - ptr to ins param, rsi - ptr to inc code struct
+; rdi - ptr to ins param, rsi - ptr to inc code struct, rdx - ptr to curr token entry header
 process_gen_r_a:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 24
     mov [rbp-8], rdi
     mov [rbp-16], rsi
+    mov [rbp-24], rdx
     xor r9, r9
     mov eax, [rdi+9]
     mov r12d, eax
@@ -901,6 +914,7 @@ _gen_r_a_addr_check:
     mov edx, r9d
     mov ecx, 1
     xor r8, r8
+    mov r9, [rbp-24]
     call render_process_addr
     test rax, rax
     jnz _err_process_gen_r_a
@@ -918,17 +932,18 @@ _err_process_gen_r_a:
 _success_gen_r_a:
     xor rax, rax
 _end_process_gen_r_a:
-    add rsp, 16
+    add rsp, 24
     pop rbp
     ret
 
-; rdi - ptr to ins param, rsi - ptr to inc code struct
+; rdi - ptr to ins param, rsi - ptr to inc code struct, rdx - ptr to curr token entry header
 process_gen_a:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 24
     mov [rbp-8], rdi
     mov [rbp-16], rsi
+    mov [rbp-24], rdx
     lea r9, [rdi+3]
     movzx eax, byte [r9]
     cmp eax, TOKEN_BUF_DIRECT
@@ -940,6 +955,7 @@ process_gen_a:
     xor edx, edx
     xor ecx, ecx
     xor r8d, r8d
+    mov r9, [rbp-24]
     call render_process_addr
     test rax, rax
     jnz _err_process_gen_a
@@ -969,17 +985,18 @@ _err_process_gen_a:
 _success_gen_a:
     xor rax, rax
 _end_process_gen_a:
-    add rsp, 16
+    add rsp, 24
     pop rbp
     ret
 
-; rdi - ptr to ins param, rsi - ptr to inc code struct
+; rdi - ptr to ins param, rsi - ptr to inc code struct, rdx - ptr to curr token entry header
 process_gen_a_r:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 24
     mov [rbp-8], rdi
     mov [rbp-16], rsi
+    mov [rbp-24], rdx
     movzx edx, byte [rdi+2]
     lea r10, [rdi+rdx]
     xor r9, r9
@@ -1014,6 +1031,7 @@ _gen_a_r_addr_check:
     mov edx, r9d
     xor ecx, ecx
     mov r8d, 1
+    mov r9, [rbp-32]
     call render_process_addr
     test rax, rax
     jnz _err_process_gen_a_r
@@ -1030,18 +1048,18 @@ _err_process_gen_a_r:
 _success_gen_a_r:
     xor rax, rax
 _end_process_gen_a_r:
-    add rsp, 16
+    add rsp, 24
     pop rbp
     ret
 
-; TODO: hande TOKEN_BUF_PTR_OFFSET
-; rdi - ptr to ins param, rsi - ptr to inc cod struct
+; rdi - ptr to ins param, rsi - ptr to inc cod struct, rdx - ptr to curr token entry header
 process_gen_a_i:
     push rbp
     mov rbp, rsp
-    sub rsp, 20
+    sub rsp, 32
     mov [rbp-8], rdi
     mov [rbp-16], rsi
+    mov [rbp-32], rdx
     lea r9, [rdi+3]
     movzx eax, byte [r9]
     cmp eax, TOKEN_BUF_DIRECT
@@ -1053,6 +1071,7 @@ process_gen_a_i:
     xor ecx, ecx
     xor edx, edx
     xor r8, r8
+    mov r9, [rbp-32]
     call render_process_addr
     test rax, rax
     jnz _err_process_gen_a_i
@@ -1082,6 +1101,7 @@ _gen_a_i_skip_rex:
     lea rdi, [rbx+rax]
     mov edx, 1
     movzx ecx, byte [rsi+26]
+    mov r8, [rbp-32]
     call render_process_imm
     jmp _end_process_gen_a_i
 _err_gen_a_i_size_unspec:
@@ -1091,7 +1111,7 @@ _err_process_gen_a_i:
 _success_gen_a_i:
     xor eax, eax
 _end_process_gen_a_i:
-    add rsp, 20
+    add rsp, 32
     pop rbp
     ret
 
@@ -1163,6 +1183,7 @@ ___mov_r_r_non_byte_opcode:
 __mov_r_a:
     mov rdi, rsi
     lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
     call process_gen_r_a
     test eax, eax
     jnz _err_parse_mov
@@ -1181,6 +1202,7 @@ ___mov_r_a_non_byte_opcode:
 __mov_r_i:
     mov rdi, rsi
     lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
     call process_gen_rm_i
     test eax, eax
     jnz _err_parse_mov
@@ -1241,6 +1263,7 @@ _mov_a:
 __mov_a_r:
     mov rdi, rsi
     lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
     call process_gen_a_r
     test eax, eax
     jnz _err_parse_mov
@@ -1259,6 +1282,7 @@ ___mov_a_r_non_byte_opcode:
 __mov_a_i:
     mov rdi, rsi
     lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
     call process_gen_a_i
     test eax, eax
     jnz _err_parse_mov
@@ -1342,6 +1366,7 @@ _inc_r:
 _inc_a:
     mov rdi, rsi
     lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
     call process_gen_a
     test rax, rax
     jnz _err_parse_inc
