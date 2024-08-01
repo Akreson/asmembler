@@ -90,9 +90,8 @@ is_name_rip_ref:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea r11, [r10+r9]
     lea rax, [r10+r9+16]
-    movzx edi, byte [r11+14]
+    movzx edi, byte [r10+r9+14]
     cmp edi, TOKEN_NAME_DATA
     je _end_is_name_rip_ref
     cmp edi, TOKEN_NAME_JMP
@@ -106,9 +105,8 @@ is_name_const:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea r11, [r10+r9]
     lea rax, [r10+r9+16]
-    movzx edi, byte [r11+14]
+    movzx edi, byte [r10+r9+14]
     cmp edi, TOKEN_NAME_CONST
     je _end_is_name_const
     cmp edi, TOKEN_NAME_CONST_MUT
@@ -123,9 +121,8 @@ get_name_ref_type:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea r11, [r10+r9]
     lea rax, [r10+r9+16]
-    movzx ebx, byte [r11+14]
+    movzx ebx, byte [r10+r9+14]
     ret
 
 ; edi - dest size, esi - imm size
