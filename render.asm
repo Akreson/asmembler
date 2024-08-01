@@ -1337,13 +1337,6 @@ _inc_r:
     call process_gen_r
     test eax, eax
     jnz _err_parse_inc
-    lea r8, [rbp-128]
-    movzx ebx, byte [r8+26]
-    mov eax, 0xFE
-    mov ecx, 0xFF
-    cmp ebx, REG_MASK_VAL_8B
-    cmove ecx, eax
-    mov byte [r8+29], cl
     jmp _inc_accemble
 _inc_a:
     mov rdi, rsi
@@ -1351,6 +1344,7 @@ _inc_a:
     call process_gen_a
     test rax, rax
     jnz _err_parse_inc
+_inc_accemble:
     lea r8, [rbp-128]
     movzx ebx, byte [r8+26]
     mov eax, 0xFE
@@ -1358,7 +1352,6 @@ _inc_a:
     cmp ebx, REG_MASK_VAL_8B
     cmove ecx, eax
     mov byte [r8+29], cl
-_inc_accemble:
     mov rdi, [rbp-24]
     lea rsi, [rbp-128]
     call default_ins_accemble
