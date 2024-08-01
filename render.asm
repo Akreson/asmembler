@@ -21,6 +21,28 @@ RM_SIB equ 0x04
 
 PREFIX_16BIT equ 0x66
 
+segment readable writeable
+
+CURR_SECTION_OFFSET dd 0
+
+; entry body - 0 ptr to sym, +8 ptr to token entry header,
+; +16 (1) type, +17 offset to disp from start of ins, (2b reserved)
+; +20 offset of section to patch in, +20 offset to patch from start of ins
+ADDR_ARR_PATCH_ENTRY_SIZE equ 24
+DELAYED_PATCH_ARR dq 0
+dd 0, 0, ADDR_ARR_PATCH_ENTRY_SIZE
+
+; entry body - 0 ptr to symbol, +8 ptr to token entry header
+; +16 (1) type, +17 offset to disp from start of ins
+; +18 curr size of disp, +19 min size of disp,
+SEGMENT_PATCH_ENTRY_SIZE equ 20
+SEGMENT_PATCH_LIST dq 0
+dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
+dd 0, 0
+
+SEGMENT_PATCH_ARR dq 0
+dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
+
 segment readable executable
 
 ; rdi - ptr to buf of ptr to seg entry
