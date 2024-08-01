@@ -112,11 +112,12 @@ _end_entry_array_ensure_free_space:
     pop rbp
     ret
 
-;rdi - ptr to entry array main block
+; rdi - ptr to entry array main block
+; return rax - curr ptr, ebx - curr offset 
 entry_array_curr_ptr:
     mov rax, [rdi]
-    mov r8d, [rdi+8]
-    add rax, r8
+    mov ebx, [rdi+8]
+    add rax, rbx
     ret
 
 ; rdi - ptr to entry array main block, esi - count of entry to check
