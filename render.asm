@@ -21,20 +21,28 @@ RM_SIB equ 0x04
 
 PREFIX_16BIT equ 0x66
 
+ADDR_PATCH_TYPE_MAIN_MASK equ 0x0F
+ADDR_PATCH_TYPE_NONE    equ 0
+ADDR_PATCH_TYPE_DEF_RIP equ 0x01
+ADDR_PATCH_TYPE_JMP_RIP equ 0x11
+ADDR_PATCH_TYPE_JCC_RIP equ 0x21
+ADDR_PATCH_TYPE_ABS     equ 0x02
+
 segment readable writeable
 
 CURR_SECTION_OFFSET dd 0
 
 ; entry body - 0 ptr to sym, +8 ptr to token entry header,
 ; +16 (1) type, +17 offset to disp from start of ins, (2b reserved)
-; +20 offset of section to patch in, +20 offset to patch from start of ins
+; +20 offset of section to patch in
 ADDR_ARR_PATCH_ENTRY_SIZE equ 24
 DELAYED_PATCH_ARR dq 0
 dd 0, 0, ADDR_ARR_PATCH_ENTRY_SIZE
 
+; TODO: move this struct to segment entry?
 ; entry body - 0 ptr to symbol, +8 ptr to token entry header
 ; +16 (1) type, +17 offset to disp from start of ins
-; +18 curr size of disp, +19 min size of disp, (4b reserved)
+; +18 max size of disp, +19 min size of disp, (4b reserved)
 SEGMENT_PATCH_ENTRY_SIZE equ 24
 SEGMENT_PATCH_LIST dq 0
 dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
@@ -44,6 +52,86 @@ SEGMENT_PATCH_ARR dq 0
 dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
 
 segment readable executable
+
+; NOTE: all encoding must be with max disp size
+
+; rdi - sym ptr, rsi - ptr to token entry header, rdx - ptr to ins code struct
+; ecx - type, r8d - max disp size (in bytes), r9d - min disp size (can be set to 0 if max == min)
+push_to_segment_patch:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-24], rdx
+    mov [rbp-28], ecx
+    mov [rbp-32], r8d
+    cmp r9d, 0
+    cmove r9d, r8d
+    mov [rbp-36], r9d
+    mov rdi, SEGMENT_PATCH_LIST
+    call list_get_free
+    test eax, eax
+    jnz _add_link_to_seg_patch
+    exit_m -8
+_add_link_to_seg_patch:
+    mov [rbp-40], eax
+    mov [rbp-48], rbx
+    mov rdx, [rbp-24]
+    xor ecx, ecx
+    add cl, byte [rbx+25]
+    add cl, byte [rbx+33]
+    add cl, byte [rbx+24]
+    mov r8, [rbp-8]
+    mov r9, [rbp-16]
+    mov r11d, [rbp-28]
+    mov r12d, [rbp-32]
+    mov r13d, [rbp-36]
+    mov [rbx], r8
+    mov [rbx+8], r9
+    mov [rbx+16], r11b
+    mov [rbx+17], cl
+    mov [rbx+18], r12b
+    mov [rbx+19], r13b
+_end_push_to_segment_patch:
+    add rsp, 64
+    pop rbp
+    ret
+
+; rdi - sym ptr, rsi - ptr to token entry header, rdx - ptr to ins code struct
+; ecx - type 
+push_to_delayed_patch:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-24], rdx
+    mov [rbp-28], ecx
+_end_push_to_delayed_patch:
+    add rsp, 64
+    pop rbp
+    ret
+
+; rdi - sym ptr, rsi - ptr to token entry header, rdx - ptr to ins code struct
+; ecx - type, r8d - max disp size (in bytes), r9d - min disp size (can be set to 0 if max == min)
+push_to_addr_patch:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov eax, dword [CURR_SECTION_OFFSET]
+    mov ebx, [rdi+32]
+    cmp eax, ebx
+    jne _delayed_push_tap
+    call push_to_segment_patch
+    jmp _end_push_to_addr_patch
+_delayed_push_tap:
+    call push_to_delayed_patch
+_end_push_to_addr_patch:
+    add rsp, 64
+    pop rbp
+    ret
+   
 
 ; rdi - ptr to buf of ptr to seg entry
 ; return eax - count of segments
@@ -165,7 +253,7 @@ line_up_d_s_size:
     ret
 
 ; rdi - ptr to render entry array, rsi - ptr to ins code struct
-default_ins_accemble:
+default_ins_assemble:
     push rbp
     mov rbp, rsp
     sub rsp, 16
@@ -1195,10 +1283,10 @@ __mov_r_r:
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_r_r_non_byte_opcode
     mov byte [r8+29], 0x8A
-    jmp _mov_accemble
+    jmp _mov_assemble
 ___mov_r_r_non_byte_opcode:
     mov byte [r8+29], 0x8B
-    jmp _mov_accemble
+    jmp _mov_assemble
 __mov_r_a:
     mov rdi, rsi
     lea rsi, [rbp-128]
@@ -1214,10 +1302,10 @@ __mov_r_a:
     cmp eax, REG_MASK_VAL_8B
     jne ___mov_r_a_non_byte_opcode
     mov byte [r8+29], 0x8A
-    jmp _mov_accemble
+    jmp _mov_assemble
 ___mov_r_a_non_byte_opcode:
     mov byte [r8+29], 0x8B
-    jmp _mov_accemble
+    jmp _mov_assemble
 __mov_r_i:
     mov rdi, rsi
     lea rsi, [rbp-128]
@@ -1241,12 +1329,12 @@ ___mov_r_i_non_byte_opcode:
     mov byte [r8+29], 0xC7
     mov ebx, REG_MASK_VAL_32B
     cmp ebx, eax
-    je _mov_accemble
+    je _mov_assemble
     mov edi, ebx
     mov esi, eax
     call line_up_d_s_size
     add [r8+24], al
-    jmp _mov_accemble
+    jmp _mov_assemble
 ___mov_r_i_reg_opc_remove_modrm:
     mov bl, [r8+29] 
     mov al, [r8]
@@ -1264,7 +1352,7 @@ ___mov_r_i_reg_opc_remove_modrm:
     inc rsi
     mov rdi, r8
     rep movsb
-    jmp _mov_accemble
+    jmp _mov_assemble
 _mov_a:
     movzx eax, byte [rsi+2]
     lea r9, [rsi+rax]
@@ -1294,10 +1382,10 @@ __mov_a_r:
     cmp eax, REG_MASK_VAL_8B
     jne ___mov_a_r_non_byte_opcode
     mov byte [r8+29], 0x88
-    jmp _mov_accemble
+    jmp _mov_assemble
 ___mov_a_r_non_byte_opcode:
     mov byte [r8+29], 0x89
-    jmp _mov_accemble
+    jmp _mov_assemble
 __mov_a_i:
     mov rdi, rsi
     lea rsi, [rbp-128]
@@ -1311,7 +1399,7 @@ __mov_a_i:
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_a_i_non_byte_opcode
     mov byte [r8+29], 0xC6
-    jmp _mov_accemble
+    jmp _mov_assemble
 ___mov_a_i_non_byte_opcode:
     mov byte [r8+29], 0xC7
     cmp ebx, REG_MASK_VAL_64B
@@ -1321,15 +1409,15 @@ ___mov_a_i_non_byte_opcode:
     mov ebx, REG_MASK_VAL_32B
 ___mov_a_i_check:
     cmp ebx, eax
-    je _mov_accemble
+    je _mov_assemble
     mov edi, ebx
     mov esi, eax
     call line_up_d_s_size
     add [r8+24], al
-_mov_accemble:
+_mov_assemble:
     mov rdi, [rbp-24]
     lea rsi, [rbp-128]
-    call default_ins_accemble
+    call default_ins_assemble
     jmp _end_process_mov
 _err_parse_mov:
 _err_arg_size_mov:
@@ -1365,7 +1453,7 @@ process_inc:
     mov byte [r8+33], 1
     mov eax, [rdi+28]
     mov [rsi], eax
-    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN 
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
     je _inc_r
@@ -1381,7 +1469,7 @@ _inc_r:
     call process_gen_r
     test eax, eax
     jnz _err_parse_inc
-    jmp _inc_accemble
+    jmp _inc_assemble
 _inc_a:
     mov rdi, rsi
     lea rsi, [rbp-128]
@@ -1389,7 +1477,7 @@ _inc_a:
     call process_gen_a
     test rax, rax
     jnz _err_parse_inc
-_inc_accemble:
+_inc_assemble:
     lea r8, [rbp-128]
     movzx ebx, byte [r8+26]
     mov eax, 0xFE
@@ -1399,7 +1487,7 @@ _inc_accemble:
     mov byte [r8+29], cl
     mov rdi, [rbp-24]
     lea rsi, [rbp-128]
-    call default_ins_accemble
+    call default_ins_assemble
     jmp _end_process_inc
 _err_invalid_argc_inc:
 _err_invalid_first_param_inc:
@@ -1407,6 +1495,141 @@ _err_parse_inc:
 _err_exit_inc:
     exit_m -6
 _end_process_inc:
+    add rsp, 128
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_jumps:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    movzx eax, byte [rsi+31]
+    cmp eax, 1
+    jne _err_invalid_argc_jumps
+    xor rax, rax
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-24], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    lea rdi, [rbp-128]
+    mov r8, rdi
+    rep stosb
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    add rsi, TOKEN_HEADER_SIZE
+    mov [rbp-32], rsi
+    lea r9, [rsi+16] ; type, body, argc
+    mov [rbp-40], r9
+    mov eax, [rsi+9]
+    movzx ebx, byte [r9]
+    mov edx, eax
+    and edx, INS_JMP_JCC_TYPE_MASK
+    test edx, edx
+    jnz __jumps_check_type_ptr_offset
+_jumps_check_type:
+    mov byte [r8+33], 1
+    cmp ebx, TOKEN_BUF_ADDR
+    je _jumps_addr
+    cmp ebx, TOKEN_BUF_DIRECT
+    je _jumps_direct
+__jumps_check_type_ptr_offset:
+    cmp ebx, TOKEN_BUF_PTR_OFFSET
+    jne _err_parse_jumps
+    lea rdi, [r9+1]
+    call is_name_rip_ref
+    test rax, rax
+    jz _err_parse_invalid_rip_ref
+    mov [rbp-48], rax
+    lea r15, [rbp-128]
+    mov rsi, [rbp-32]
+    mov eax, [rsi+9]
+    mov ebx, eax
+    and ebx, INS_JMP_JCC_TYPE_MASK
+    test ebx, ebx
+    jz _jumps_name
+    jmp _jumps_jcc
+_jumps_addr:
+    mov rdi, r9
+    lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
+    call process_gen_a
+    test rax, rax
+    jnz _err_parse_jumps
+    lea r8, [rbp-128]
+    mov rsi, [rbp-32]
+    movzx ebx, byte [rsi+9]
+    cmp eax, INS_JMP
+    je _jumps_addr_jmp
+    cmp eax, INS_CALL
+    je _jumps_addr_call
+_jumps_addr_jmp:
+    mov byte [r8+29], 0xFF
+    jmp _jumps_assemble
+_jumps_addr_call:
+_jumps_name_jmp:
+_jumps_name_call:
+_jumps_jcc:
+    cmp eax, INS_JCXZ
+    jne __jumps_jcc_check
+    mov byte [r15], 0xE3
+    mov ecx, ADDR_PATCH_TYPE_DEF_RIP
+    mov r8d, 1
+    xor r9, r9
+    jmp _jumps_name_push
+__jumps_jcc_check:
+    mov ecx, ADDR_PATCH_TYPE_JCC_RIP
+    mov r8d, 4
+    mov r9d, 1
+    mov ebx, INS_JO
+    sub eax, ebx
+    add eax, 0x80
+    or eax, 0x0F00
+    mov word [r15], ax
+    mov byte [r15+33], 2
+    jmp _jumps_name_push
+_jumps_name:
+    cmp eax, INS_CALL
+    jne __jumps_name_jmp
+    mov byte [r15+29], 0xE8
+    mov rdi, [rbp-48]
+    mov rsi, [rbp-16]
+    lea rdx, [rbp-128]
+    mov ecx, ADDR_PATCH_TYPE_DEF_RIP
+    call push_to_delayed_patch
+    jmp __jumps_name_push_set_disp
+__jumps_name_jmp:
+    cmp eax, INS_JMP
+    jne _err_parse_jumps
+    mov byte [r15+29], 0xE9 
+    mov ecx, ADDR_PATCH_TYPE_JMP_RIP
+    mov r8d, 4
+    mov r9d, 1
+_jumps_name_push:
+    mov rdi, [rbp-48]
+    mov rsi, [rbp-16]
+    lea rdx, [rbp-128]
+    call push_to_segment_patch
+__jumps_name_push_set_disp:
+    lea r8, [rbp-128]
+    mov dword [r8], 0
+    mov byte [r8+24], 4
+    jmp _jumps_assemble
+_jumps_direct:
+_jumps_jmp:
+_jumps_call:
+    mov byte [r8+33], 1
+_jumps_assemble:
+    mov rdi, [rbp-24]
+    lea rsi, [rbp-128]
+    call default_ins_assemble
+    jmp _end_process_jumps
+_err_parse_invalid_rip_ref:
+_err_invalid_argc_jumps:
+_err_parse_jumps:
+    exit_m -6
+_end_process_jumps:
     add rsp, 128
     pop rbp
     ret
@@ -1423,6 +1646,9 @@ render_process_segment:
     mov [rbp-12], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
     mov [rbp-32], rdi
+    mov rax, qword [SEG_ENTRY_ARRAY]
+    sub rdi, rax
+    mov dword [CURR_SECTION_OFFSET], edi
 _start_loop_process_segment:
     mov rdi, [rbp-32]
     mov esi, 32
@@ -1457,8 +1683,16 @@ _check_ins_rps:
     jmp _start_loop_process_segment 
 _check_ins_rps1:
     cmp ebx, INS_INC
+    jne _check_ins_rps_jmp
     call process_inc
     jmp _start_loop_process_segment
+_check_ins_rps_jmp:
+    mov edx, ebx
+    and edx, INS_JMP_TYPE_MASK
+    test edx, edx
+    jz _err_processing_start_token 
+    call process_jumps
+    jmp _end_render_process_segment
 _err_processing_start_token:
     exit_m -6
 _end_render_process_segment:
@@ -1472,6 +1706,12 @@ start_render:
     mov rbp, rsp
     sub rsp, 2304
     mov dword [rbp-4], 0
+    mov rdi, SEGMENT_PATCH_LIST
+    mov esi, 256
+    call init_list
+    mov rdi, DELAYED_PATCH_ARR
+    mov esi, 256
+    call init_entry_array
     ;TODO: check if collate mode is enabled    
     mov rdi, rsp
     call set_collate_seg_ptr
