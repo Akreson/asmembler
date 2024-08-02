@@ -1059,8 +1059,7 @@ __name_sp_check_name:
     jz __name_sp_set_def
     movzx ecx, byte [rbx+14]
     test ecx, ecx
-    jz __name_sp_set_def
-    jmp _err_defined_symbol
+    jnz _err_defined_symbol 
 __name_sp_set_def:
     mov rdi, rax
     lea rsi, [rbp-16]
@@ -1068,13 +1067,13 @@ __name_sp_set_def:
     call push_name_to_defined
     mov [rbp-84], rax
     mov [rbp-72], ebx
+    mov ecx, [rbp-24]
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_KEYWORD
     je __name_sp_kw
     cmp eax, TOKEN_TYPE_AUX
     je __name_sp_aux
 __name_sp_kw:
-    mov ecx, [rbp-24]
     mov ebx, ecx
     mov edx, DATA_QUL_TYPE_MASK
     and ebx, edx
@@ -1087,15 +1086,19 @@ ___name_data_def:
     mov r9d, dword [CURR_SEG_OFFSET]
     test r9b, r9b
     jz _err_segment_not_set
+    mov [rbp-92], r8d
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_DATA
-    mov edi, 12
+    mov edi, 8
     call get_mem_def_name_buf
     mov [rbp-84], rax
-    call curr_seg_ptr
+    call curr_token_buf_ptr
     mov r8, [rbp-84]
-    mov [r8], rax
+    mov r9d, [rbp-92]
+    mov [r8], r9d
+    mov [r8+4], ebx 
+    call curr_seg_ptr
     mov rdi, rax
     mov esi, [rbp-52]
     call push_token_entry_header
@@ -1271,6 +1274,34 @@ ___name_const_set_empty:
     call set_name_token_type
     jmp _new_entry_start_ps
 __name_sp_aux:
+    cmp ecx, AUX_COLON
+    jne _err_invalid_expr
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    mov ecx, [rbp-24]
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_EOF
+    je _end_start_parser
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
+    cmp ecx, AUX_NEW_LINE
+    jne _err_invalid_expr
+    mov [rbp-92], r8d
+    mov r8, [rbp-84]
+    mov dword [r8], NAME_DATA_ENTRY_SIZE
+    mov byte [r8+30], TOKEN_NAME_JMP
+    mov edi, 8
+    call get_mem_def_name_buf
+    mov [rbp-84], rax
+    call curr_token_buf_ptr
+    mov r8, [rbp-84]
+    mov r9d, [rbp-92]
+    mov [r8], r9d
+    mov [r8+4], ebx 
+    jmp _new_entry_start_ps
 
 _begin_kw_sp:
     ;TODO: add more
