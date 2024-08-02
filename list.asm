@@ -119,6 +119,7 @@ _end_dlist_check_get_entry:
     pop rbp
     ret
 
+
 ;rdi - ptr to list main block, esi - new capacity
 list_realloc:
     push rbp
@@ -141,6 +142,26 @@ _success_list_realloc:
     rep movsb
 _end_list_realloc:
     add rsp, 40
+    pop rbp
+    ret
+
+; rdi - ptr to list main block
+list_get_free:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov [rbp-8], rdi
+    call list_check_get_free
+    test eax, eax
+    jnz _end_list_get_free 
+    mov rdi, [rbp-8]
+    mov esi, [rdi+12]
+    shl esi, 1
+    call list_realloc
+    mov rdi, [rbp-8] 
+    call list_check_get_free
+_end_list_get_free:
+    add rsp, 8
     pop rbp
     ret
 

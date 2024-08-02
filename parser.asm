@@ -33,7 +33,7 @@ NAME_DATA_ENTRY_SIZE equ 44
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
 ; +12 line num in file
 ; +16 name symbol token (+30 type, ), (header size 32b)
-; +32 start of data
+; (+32 start of data)
 ;(TOKEN_NAME_CONST || TOKEN_NAME_CONST_MUT)
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
@@ -64,7 +64,7 @@ TOKEN_HEADER_SIZE equ 16
 ; token buf
 ; (header)(16b)
 ; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
-; (2 bytes reseved)
+; +14 skip flag (is token group represent renderable info.) (1 bytes reseved)
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
 ;TODO: finish format description
@@ -247,15 +247,7 @@ push_link_to_unk:
     mov [rbp-24], ecx
     mov [rbp-28], r8d
     mov rdi, PATCH_LIST
-    call list_check_get_free
-    test eax, eax
-    jnz _add_link_to_chain_unk 
-    mov rdi, PATCH_LIST
-    mov esi, [rdi+12]
-    shl esi, 1
-    call list_realloc
-    mov rdi, PATCH_LIST
-    call list_check_get_free
+    call list_get_free
     test eax, eax
     jnz _add_link_to_chain_unk
     exit_m -8
