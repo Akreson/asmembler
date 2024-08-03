@@ -1573,7 +1573,8 @@ _jumps_name_call:
 _jumps_jcc:
     cmp eax, INS_JCXZ
     jne __jumps_jcc_check
-    mov byte [r15], 0xE3
+    mov byte [r15+29], 0xE3
+    mov byte [r15+33], 1
     mov ecx, ADDR_PATCH_TYPE_DEF_RIP
     mov r8d, 1
     xor r9, r9
@@ -1585,8 +1586,9 @@ __jumps_jcc_check:
     mov ebx, INS_JO
     sub eax, ebx
     add eax, 0x80
-    or eax, 0x0F00
-    mov word [r15], ax
+    shl eax, 8
+    or eax, 0x0F
+    mov word [r15+29], ax
     mov byte [r15+33], 2
     jmp _jumps_name_push
 _jumps_name:
@@ -1692,7 +1694,7 @@ _check_ins_rps_jmp:
     test edx, edx
     jz _err_processing_start_token 
     call process_jumps
-    jmp _end_render_process_segment
+    jmp _start_loop_process_segment
 _err_processing_start_token:
     exit_m -6
 _end_render_process_segment:

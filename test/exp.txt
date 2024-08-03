@@ -1,12 +1,16 @@
 segment readable executable
+    jmp jump_to2
     mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
+jump_to1:
     mov byte [rax+rdx], 200 
     mov word [NAME_D+12], 2134 
     mov word [r8+r11], 322
+    jne jump_to1
     mov qword [rax], CONST_NEG
     mov byte [rax+rdx], 3
     mov dword [r8+r10*8], 1
+jump_to2:
     mov dword [rax+rcx*2+14], 0xffff 
     mov qword [rax+rdx*4-NAME_C], 0xff
     mov qword [rbx+rdi], 11111111 
@@ -27,12 +31,12 @@ segment readable executable
     mov byte [r11], 1 
     mov byte [r8], 1 
     mov byte [r9], 1 
+    mov rax, NAME_D
+    mov eax, CONST_NEG
     mov eax, -1
     mov rax, -1
-    mov eax, CONST_NEG
     mov rax, 2048
     mov r8w, -2
-    mov rax, NADE_D
     mov r8d, 123
     mov al, NAME_C 
     mov bx, 30121
