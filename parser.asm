@@ -27,8 +27,8 @@ UNK_ENTRY_SIZE equ 32
 UNKNOWN_NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, UNK_ENTRY_SIZE
 
-NAME_CONST_ENTRY_SIZE equ 50
-NAME_DATA_ENTRY_SIZE equ 44
+NAME_CONST_ENTRY_SIZE equ 46
+NAME_DATA_ENTRY_SIZE equ 40
 ; entry
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
 ; +12 line num in file
@@ -38,7 +38,7 @@ NAME_DATA_ENTRY_SIZE equ 44
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
-;+32 segment offest, +36 offest to entry header in section token buf
+;+32 segment offset, +36 offest to entry header in section token buf
 NAME_SYM_REF_HEADER_SIZE equ 32
 NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
@@ -64,7 +64,8 @@ TOKEN_HEADER_SIZE equ 16
 ; token buf
 ; (header)(16b)
 ; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
-; +14 skip flag (is token group represent renderable info.) (1 bytes reseved)
+; +14 skip flag (is token group represent renderable info.),
+; +15 (count of rendered bytes for TOKEN_TYPE_INS)
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
 ;TODO: finish format description
@@ -100,13 +101,17 @@ push_token_entry_header:
     push rbp
     mov rbp, rsp
     sub rsp, 24
-    xor rax, rax
-    mov [rbp-8], rdi
-    mov [rbp-24], rax
-    mov [rbp-16], rax
-    mov [rbp-20], esi
+    mov rbx, rdi
+    xor eax, eax
+    xor ecx, ecx
+    mov rdi, rsp
+    mov cl, 24
+    rep stosb
+    mov rdi, rbx
+    ;mov [rbp-8], rdi
+    ;mov [rbp-20], esi
     mov ecx, dword [LAST_LINE_NUM]
-    mov [rbp-16], ecx
+    ;mov [rbp-16], ecx
     mov rdx, rsp
     mov esi, TOKEN_HEADER_SIZE
     call token_buf_push_size
