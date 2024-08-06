@@ -60,6 +60,7 @@ _end_list_insert:
     pop rbp
     ret
 
+; TODO: check if node to free is last alloc
 ;rdi - ptr to list main block, esi - offset to node to free
 ;return eax - next entry offset
 list_free_node:
@@ -69,6 +70,11 @@ list_free_node:
     mov rbx, [rdi]
     mov eax, [rbx+rsi]
     mov [rbp-4], eax
+    mov ecx, [rdi+24]
+    cmp ecx, esi
+    jne _list_free_insert_to_free
+    mov [rbp+24], eax
+_list_free_insert_to_free:
     mov edx, [rdi+20]
     call list_insert_node
     test eax, eax
@@ -99,6 +105,7 @@ list_check_get_free:
     mov rdi, [rbp-8]
     mov rdx, [rdi]
     sub rax, rdx
+    mov [rdi+24], eax
     jmp _end_dlist_check_get_entry 
 _check_free_list_lcgf:
     mov rdi, [rbp-8]
@@ -110,6 +117,7 @@ _check_free_list_lcgf:
     mov ecx, [r8]
     mov [rdi+20], ecx
     mov eax, ebx
+    mov [rdi+24], eax
     mov rbx, r8
     jmp _end_dlist_check_get_entry
 _check_fail_dcgf:
@@ -168,7 +176,7 @@ _end_list_get_free:
 list_dealloc:
 ;TODO: implement
 
-;rdi - ptr to dlist main block, rsi - started count of entries
+;rdi - ptr to list main block, rsi - started count of entries
 init_list:
     push rbp
     mov rbp, rsp
