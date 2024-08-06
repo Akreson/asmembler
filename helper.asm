@@ -2,6 +2,12 @@ segment readable
 DIGIT_MAP db "0123456789ABCDEF", 0
 PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
+MIN_INT8 equ 0x80
+MAX_INT8 equ 0x7F
+
+MIN_INT32 equ 0x80000000
+MAX_INT32 equ 0x7FFFFFFF
+
 segment readable executable
 
 log2_val_ceil:
