@@ -1107,8 +1107,8 @@ ___name_data_def:
     mov rdi, rax
     mov esi, [rbp-52]
     call push_token_entry_header
-    mov r8, [rbp-84]
-    mov [r8+8], ebx
+    ;mov r8, [rbp-84]
+    ;mov [r8+8], ebx
     mov [rbp-76], ebx
 ___name_data_qul_read:
     mov byte [rbp-67], 0
@@ -1303,7 +1303,7 @@ __name_sp_aux:
     mov [rbp-84], rax
     call curr_token_buf_ptr
     mov r8, [rbp-84]
-    mov r9d, [rbp-92]
+    mov r9d, dword [CURR_SEG_OFFSET]
     mov [r8], r9d
     mov [r8+4], ebx 
     jmp _new_entry_start_ps
