@@ -1236,6 +1236,8 @@ process_mov:
     movzx eax, byte [rsi+31]
     cmp eax, 2
     jne _err_invalid_argc_mov
+    mov eax, [rdi+28]
+    mov [rsi], eax
     xor rax, rax
     mov [rbp-8], rdi
     mov [rbp-16], rsi
@@ -1246,8 +1248,6 @@ process_mov:
     mov r8, rdi
     rep stosb
     mov byte [r8+33], 1
-    mov eax, [rdi+28]
-    mov [rsi], eax
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
@@ -1445,6 +1445,8 @@ process_inc:
     movzx eax, byte [rsi+31]
     cmp eax, 1
     jne _err_invalid_argc_inc
+    mov eax, [rdi+28]
+    mov [rsi], eax
     xor rax, rax
     mov [rbp-8], rdi
     mov [rbp-16], rsi
@@ -1455,8 +1457,6 @@ process_inc:
     mov r8, rdi
     rep stosb
     mov byte [r8+33], 1
-    mov eax, [rdi+28]
-    mov [rsi], eax
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
@@ -1511,6 +1511,8 @@ process_jumps:
     movzx eax, byte [rsi+31]
     cmp eax, 1
     jne _err_invalid_argc_jumps
+    mov eax, [rdi+28]
+    mov [rsi], eax
     xor rax, rax
     mov [rbp-8], rdi
     mov [rbp-16], rsi
@@ -1520,8 +1522,6 @@ process_jumps:
     lea rdi, [rbp-128]
     mov r8, rdi
     rep stosb
-    mov eax, [rdi+28]
-    mov [rsi], eax
     add rsi, TOKEN_HEADER_SIZE
     mov [rbp-32], rsi
     lea r9, [rsi+16] ; type, body, argc
