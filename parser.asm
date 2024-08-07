@@ -38,7 +38,7 @@ NAME_DATA_ENTRY_SIZE equ 40
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
-;+32 segment offset, +36 offest to entry header in section token buf
+;+32 segment offset, +36 offest to entry header in seg token buf
 NAME_SYM_REF_HEADER_SIZE equ 32
 NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
