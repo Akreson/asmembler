@@ -70,6 +70,8 @@ push_to_segment_patch:
     cmove r9d, r8d
     mov [rbp-36], r9d
     mov rdi, SEGMENT_PATCH_LIST
+    mov ecx, [rdi+24]
+    mov [rbp-52], ecx
     call list_get_free
     test eax, eax
     jnz _add_link_to_seg_patch
@@ -79,20 +81,23 @@ _add_link_to_seg_patch:
     mov [rbp-48], rbx
     mov rdx, [rbp-24]
     xor ecx, ecx
-    add cl, byte [rbx+25]
-    add cl, byte [rbx+33]
-    add cl, byte [rbx+24]
+    add cl, byte [rdx+25]
+    add cl, byte [rdx+33]
+    add cl, byte [rdx+24]
     mov r8, [rbp-8]
+    sub r8, 16
     mov r9, [rbp-16]
     mov r11d, [rbp-28]
     mov r12d, [rbp-32]
     mov r13d, [rbp-36]
-    mov [rbx], r8
-    mov [rbx+8], r9
-    mov [rbx+16], r11b
-    mov [rbx+17], cl
-    mov [rbx+18], r12b
-    mov [rbx+19], r13b
+    mov r14d, [rbp-52]
+    mov [rbx], r14d
+    mov [rbx+4], r11b
+    mov [rbx+5], cl
+    mov [rbx+6], r12b
+    mov [rbx+7], r13b
+    mov [rbx+8], r8
+    mov [rbx+16], r9
 _end_push_to_segment_patch:
     add rsp, 64
     pop rbp
@@ -118,9 +123,8 @@ _end_push_to_delayed_patch:
 push_to_addr_patch:
     push rbp
     mov rbp, rsp
-    sub rsp, 64
     mov eax, dword [CURR_SECTION_OFFSET]
-    mov ebx, [rdi+32]
+    mov ebx, [rdi+16]
     cmp eax, ebx
     jne _delayed_push_tap
     call push_to_segment_patch
@@ -200,7 +204,7 @@ is_name_rip_ref:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea rax, [r10+r9+16]
+    lea rax, [r10+r9]
     movzx edi, byte [r10+r9+14]
     cmp edi, TOKEN_NAME_DATA
     je _end_is_name_rip_ref
@@ -215,7 +219,7 @@ is_name_const:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea rax, [r10+r9+16]
+    lea rax, [r10+r9]
     movzx edi, byte [r10+r9+14]
     cmp edi, TOKEN_NAME_CONST
     je _end_is_name_const
@@ -231,7 +235,7 @@ get_name_ref_type:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea rax, [r10+r9+16]
+    lea rax, [r10+r9]
     movzx ebx, byte [r10+r9+14]
     ret
 
@@ -729,7 +733,7 @@ __rproc_addr_2p_ptr_offset_check:
     mov r9, [rbp-48]
     lea rdi, [rbp-128]
     mov r15, rdi
-    mov rsi, rax
+    lea rsi, [rax+16]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
     mov ecx, [r8+9]
@@ -816,7 +820,7 @@ __rproc_addr_2p_sib_init:
     jz _err_rproc_second_param_non_const
     lea rdi, [rbp-128]
     mov r15, rdi
-    mov rsi, rax
+    lea rsi, [rax+16]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
     jmp ___rproc_addr_2p_sib_scale 
@@ -888,7 +892,7 @@ __rproc_addr_3p_disp:
     mov r8, [rbp-40]
     lea rdi, [rbp-128]
     mov r9, rdi
-    mov rsi, rax
+    lea rsi, [rax+16]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
 __rproc_addr_3p_disp_digit:
@@ -942,7 +946,7 @@ __rproc_addr_2p_ref_check:
     jz _err_rproc_invalid_ref_name
     lea rdi, [rbp-128]
     mov r15, rdi
-    mov rsi, rax
+    lea rsi, [rax+16]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
     mov r8, [rbp-40]
@@ -1612,7 +1616,7 @@ _jumps_name_push:
     mov rdi, [rbp-48]
     mov rsi, [rbp-16]
     lea rdx, [rbp-128]
-    call push_to_segment_patch
+    call push_to_addr_patch
 __jumps_name_push_set_disp:
     lea r8, [rbp-128]
     mov dword [r8], 0
@@ -1623,8 +1627,10 @@ _jumps_jmp:
 _jumps_call:
     mov byte [r8+33], 1
 _jumps_assemble:
-    mov rdi, [rbp-24]
+    mov rdi, [rbp-16]
     lea rsi, [rbp-128]
+    call set_rendered_size
+    mov rdi, [rbp-24]
     call default_ins_assemble
     jmp _end_process_jumps
 _err_parse_invalid_rip_ref:
