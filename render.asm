@@ -40,9 +40,9 @@ DELAYED_PATCH_ARR dq 0
 dd 0, 0, ADDR_ARR_PATCH_ENTRY_SIZE
 
 ; TODO: move this struct to segment entry?
-; entry body - 0 ptr to symbol, +8 ptr to token entry header
-; +16 (1) type, +17 offset to disp from start of ins
-; +18 max size of disp, +19 min size of disp, (4b reserved)
+; entry body - +4 (1) type, +5 offset to disp from start of ins
+; +6 max size of disp, +7 min size of disp
+; +8 ptr to symbol, +16 ptr to token entry header
 SEGMENT_PATCH_ENTRY_SIZE equ 24
 SEGMENT_PATCH_LIST dq 0
 dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
