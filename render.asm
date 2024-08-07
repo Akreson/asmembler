@@ -145,7 +145,7 @@ set_collate_seg_ptr:
     xor r9, r9
     mov r8, [SEG_ENTRY_ARRAY]
     mov ecx, SEG_ENTRY_SIZE
-    mov eax, 4
+    mov eax, 5 ;TODO: swap 5 and 6 back
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -155,7 +155,7 @@ set_collate_seg_ptr:
     mov [rdi], rbx
     add rdi, 8
 _set_collate_sg_check2:
-    mov eax, 6
+    mov eax, 4
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -165,7 +165,7 @@ _set_collate_sg_check2:
     mov [rdi], rbx
     add rdi, 8
 _set_collate_sg_check3:
-    mov eax, 5
+    mov eax, 6
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
