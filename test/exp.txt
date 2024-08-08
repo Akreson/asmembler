@@ -6,7 +6,7 @@ jump_to1:
     mov byte [rax+rdx], 200 
     mov word [NAME_D+12], 2134 
     mov word [r8+r11], 322
-    jne jump_to1
+    jg jump_to1
     mov qword [rax], CONST_NEG
     mov byte [rax+rdx], 3
     mov dword [r8+r10*8], 1

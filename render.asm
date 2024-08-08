@@ -56,6 +56,15 @@ dd 0, 0, 8
 
 segment readable executable
 
+clear_patch_state:
+    xor ebx, ebx
+    mov rax, SEGMENT_PATCH_LIST
+    mov [rax+8], ebx
+    mov [rax+20], ebx
+    mov [rax+24], ebx
+    mov rcx, TEMP_SYM_PTR_ARR
+    mov [rcx+8], ebx
+    ret
 ; NOTE: all encoding must be with max disp size
 
 ; rdi - sym ptr, rsi - ptr to token entry header, rdx - ptr to ins code struct
@@ -241,6 +250,9 @@ reduce_ins_offset:
     add rsi, rcx
     mov ecx, r9d
     rep movsb
+    mov rdi, [rbp-8]
+    mov r8, [rdi]
+    mov r9d, [rdi+8]
     add r8, r9
     mov ecx, [rbp-20]
     neg ecx ; TODO: revisit
@@ -266,7 +278,8 @@ _end_reduce_ins_offset:
 ; -24 ptr to curr seg patch entry, -28 next offset in patch linked list
 ; -32 prev offset of in patch linked list, -40 ptr to start of linked list buff
 ; -48 ptr to seg token buff entry_array, -56 ptr to render entry_array
-; -64 ptr to start of render buf, -72 ptr to start of token buff
+; -64 ptr to start of render buf, -72 ptr to start of token buff,
+; -76 curr offset in patch linked list
 ; edi - curr seg offset
 render_patch_segment_addr:
     push rbp
@@ -304,6 +317,7 @@ render_patch_segment_addr:
     mov ebx, [r10+24]
     lea rsi, [r11+rbx]
     mov [rbp-24], rsi
+    mov [rbp-76], ebx
     mov dword [rbp-32], ebx
 _start_loop_seg_rpsa:
     mov r10, [rbp-72]
@@ -341,8 +355,8 @@ _skip_bound_cheks:
     inc esi
 __check_jcc_patch_rpsa:
     mov rdx, [rbp-64]
-    mov eax, [r8]
-    lea rcx, [rdx+rax]
+    mov ebx, [r8]
+    lea rcx, [rdx+rbx]
     mov rsi, [rbp-24]
     movzx edx, byte [rsi+4]
     cmp edx, ADDR_PATCH_TYPE_JCC_RIP
@@ -375,13 +389,11 @@ _reduce_buffers_rpsa:
     mov rdx, r8
     call reduce_ins_offset
 _remove_patch_node_rpsa:
-    mov rsi, [rbp-24]
     mov eax, [rbp-32]
-    mov ebx, [rsi]
-    cmp eax, ebx
+    mov esi, [rbp-76]
+    cmp eax, esi
     jne __remove_patch_node_in_between_rpsa
     mov rdi, SEGMENT_PATCH_LIST
-    mov esi, ebx
     call list_free_node
     test eax, eax
     jz _next_sym_ptr_rpsa
@@ -390,7 +402,6 @@ _remove_patch_node_rpsa:
     mov [rbp-24], rsi
     jmp _next_patch_entry_rpsa
 __remove_patch_node_in_between_rpsa:
-    mov rsi, [rbp-40] 
     mov rdi, SEGMENT_PATCH_LIST
     call list_free_node
     mov edi, [rbp-28]
@@ -403,14 +414,18 @@ __remove_patch_node_in_between_rpsa:
     mov [rbp-24], rsi
 _next_patch_entry_rpsa:
     mov ebx, [rbp-28]
-    test ebx, eax
+    test ebx, ebx
     jz _next_sym_ptr_rpsa
     mov rax, [rbp-24]
     mov rdi, [rbp-40]
-    sub rax, rdi
-    mov [rbp-32], eax
+    mov r8, rax
+    sub r8, rdi
+    mov [rbp-32], r9d
     lea rsi, [rdi+rbx]
+    mov eax, [rsi]
     mov [rbp-24], rsi
+    mov [rbp-28], eax
+    mov [rbp-76], ebx
     mov rdx, [rbp-8]
     jmp _start_loop_seg_rpsa
 _next_sym_ptr_rpsa:
@@ -427,6 +442,7 @@ _next_sym_ptr_rpsa:
     jz _end_render_patch_segment_addr
     lea rsi, [rcx+rbx]
     mov [rbp-24], rsi
+    mov [rbp-76], ebx
     mov [rbp-32], ebx
     jmp _start_loop_seg_rpsa
 _err_invalid_rip_patch_type_rpsa:
@@ -2037,6 +2053,7 @@ start_render:
     call set_collate_seg_ptr
     mov [rbp-8], eax
 _render_seg_grab_loop:
+    call clear_patch_state
     mov ebx, [rbp-4]
     mov eax, [rbp-8]
     cmp ebx, eax
@@ -2050,6 +2067,9 @@ _render_seg_grab_loop:
     mov rsi, [rdx]
     mov rdi, rsi
     call render_process_segment
+    mov eax, dword [SEGMENT_PATCH_LIST+8]
+    test eax, eax
+    jz _render_seg_grab_loop
     mov edi, dword [CURR_SECTION_OFFSET]
     call render_patch_segment_addr
     jmp _render_seg_grab_loop    
