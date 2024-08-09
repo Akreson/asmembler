@@ -73,7 +73,7 @@ list_free_node:
     mov ecx, [rdi+24]
     cmp ecx, esi
     jne _list_free_insert_to_free
-    mov [rbp+24], eax
+    mov [rdi+24], eax
 _list_free_insert_to_free:
     mov edx, [rdi+20]
     call list_insert_node
