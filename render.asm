@@ -270,6 +270,9 @@ _start_loop_reduce_io:
     add [rsi], ecx
     jmp _start_loop_reduce_io 
 _end_reduce_ins_offset:
+    mov eax, [rbp-20]
+    mov rsi, [rbp-16]
+    sub [rsi+8], eax
     add rsp, 32
     pop rbp
     ret
@@ -331,7 +334,7 @@ _start_loop_seg_rpsa:
     mov eax, [r12]
     mov rbx, [rdx]
     test rbx, rbx
-    jz _skip_bound_cheks
+    jz _skip_bound_cheks_rpsa
     mov r11d, [rbx+36]
     lea r12, [r10+r11]
     mov esi, [r12]
@@ -339,11 +342,18 @@ _start_loop_seg_rpsa:
     jl _next_sym_ptr_rpsa
     cmp eax, esi
     jl _next_patch_entry_rpsa
-_skip_bound_cheks:
+_skip_bound_cheks_rpsa:
+    mov r9d, edi
     movzx ebx, byte [r8+15]
     add edi, ebx
     sub eax, edi
-    xor esi, esi
+    mov rdx, [rbp-64]
+    lea rcx, [rdx+r9]
+    mov rsi, [rbp-24]
+    movzx edi, byte [rsi+5]
+    mov r9d, [rcx+rdi]
+    add eax, r9d
+    xor edi, edi
     mov r10b, MAX_INT8
     mov r11b, MIN_INT8
     movsx r10d, r10b
@@ -352,40 +362,79 @@ _skip_bound_cheks:
     jg __check_jcc_patch_rpsa
     cmp eax, r11d
     jl __check_jcc_patch_rpsa
-    inc esi
+    inc edi
 __check_jcc_patch_rpsa:
-    mov rdx, [rbp-64]
-    mov ebx, [r8]
-    lea rcx, [rdx+rbx]
-    mov rsi, [rbp-24]
     movzx edx, byte [rsi+4]
     cmp edx, ADDR_PATCH_TYPE_JCC_RIP
     jne _check_jmp_patch_rpsa
-    test esi, esi
+    test edi, edi
     jz __check_jcc_max_patch_rpsa
-    mov rsi, [rbp-56] ; from 2 byte jcc opcode to 1 byte
-    mov bl, [rcx+1]
+__check_jcc_patch_min_set:
+    mov r9d, 4
+    mov r10d, eax
+    mov r11d, eax
+    add r10d, r9d
+    sub r11d, r9d
+    cmp eax, 0
+    cmovge r10d, r11d
+    mov eax, r10d
+    mov bl, [rcx+1] ; from 2 byte jcc opcode to 1 byte
     sub bl, 0x10
     mov [rcx], bl
     mov [rcx+1], al
     mov byte [r8+15], 2
-    mov ecx, 4
+    mov ecx, r9d
     jmp _reduce_buffers_rpsa
 __check_jcc_max_patch_rpsa:
-    movzx ebx, byte [rsi+5]
-    mov [rcx+rbx], eax
-    jmp _remove_patch_node_rpsa
+    inc edi
+    cmp eax, 0
+    jg __check_jcc_max_set
+    mov edx, eax
+    sub edx, 4
+    cmp edx, r11d
+    jge __check_jcc_patch_min_set
+__check_jcc_max_set:
+    mov r10b, [rsi+6]
+    cmp r10b, 4
+    jl _err_offset_to_big_rpsa 
+    jmp __check_def_patch_update_rpsa
 _check_jmp_patch_rpsa:
     cmp edx, ADDR_PATCH_TYPE_JMP_RIP
     jne _check_def_patch_rpsa
+    test edi, edi
+    jz __check_jmp_max_patch_rpsa
+__check_jmp_patch_min_set:
+    mov r9d, 3
+    mov r10d, eax
+    mov r11d, eax
+    add r10d, r9d
+    sub r11d, r9d
+    cmp eax, 0
+    cmovge r10d, r11d
+    mov eax, r10d
+    or byte [rcx], 0x2
+    mov [rcx+1], al
+    mov byte [r8+15], 2
+    mov ecx, r9d
+    jmp _reduce_buffers_rpsa
+__check_jmp_max_patch_rpsa:
+    inc edi
+    cmp eax, 0
+    jg __check_def_patch_update_rpsa
+    mov edx, eax
+    sub edx, 4
+    cmp edx, r11d
+    jge __check_jmp_patch_min_set
 _check_def_patch_rpsa:
     cmp edx, ADDR_PATCH_TYPE_DEF_RIP
-    jne _check_abs_patch_rpsa
-_check_abs_patch_rpsa:
-    cmp edx, ADDR_PATCH_TYPE_ABS
     jne _err_invalid_rip_patch_type_rpsa
+__check_def_patch_update_rpsa:
+    movzx ebx, byte [rsi+5]
+    mov [rcx+rbx], eax
+    jmp _remove_patch_node_rpsa
 _reduce_buffers_rpsa:
     mov rdi, [rbp-48]
+    mov rsi, [rbp-56]
     mov rdx, r8
     call reduce_ins_offset
 _remove_patch_node_rpsa:
@@ -445,6 +494,7 @@ _next_sym_ptr_rpsa:
     mov [rbp-76], ebx
     mov [rbp-32], ebx
     jmp _start_loop_seg_rpsa
+_err_offset_to_big_rpsa:
 _err_invalid_rip_patch_type_rpsa:
     exit_m -6
 _end_render_patch_segment_addr:
