@@ -175,16 +175,16 @@ _start_loop_csrs:
     add rdx, rcx
     cmp rdx, r10
     jge _end_collect_segment_rip_sym
-    mov ecx, [rdx]
+    mov ebx, [rdx+32]
+    cmp ebx, esi
+    jne _start_loop_csrs
     movzx eax, byte [rdx+30]
     cmp eax, TOKEN_NAME_JMP
     je _check_seg_offset_csrs
     cmp eax, TOKEN_NAME_DATA
     jne _start_loop_csrs
 _check_seg_offset_csrs:
-    mov ebx, [rdx+32]
-    cmp ebx, esi
-    jne _start_loop_csrs
+    mov ecx, [rdx]
     mov [rbp-24], rdx
     mov [rbp-16], ecx
     mov rdi, [rbp-8]
@@ -420,7 +420,7 @@ _next_patch_entry_rpsa:
     mov rdi, [rbp-40]
     mov r8, rax
     sub r8, rdi
-    mov [rbp-32], r9d
+    mov [rbp-32], r8d
     lea rsi, [rdi+rbx]
     mov eax, [rsi]
     mov [rbp-24], rsi
