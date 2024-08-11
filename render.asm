@@ -1,7 +1,7 @@
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
-; +29 (4) opcode bytes, +33 opcode bytes count
+; +29 (4) opcode bytes, +33 opcode bytes count,
 INS_CODE_STRUCT_SIZE equ 40
 
 MOD_RM_RM_MASK equ 0x07
@@ -1466,7 +1466,7 @@ _gen_a_test_rex:
     jz _success_gen_a
 _gen_a_set_rex:
     movzx eax, byte [rsi+25]
-    mov [rsi+rax+16], ebx
+    mov [rsi+rax+16], bl
     inc al
     mov [rsi+25], al
     jmp _success_gen_a
@@ -1817,7 +1817,7 @@ _end_process_mov:
     ret
 
 ; rdi - segment ptr, rsi - ptr to token entry to process
-process_inc:
+process_inc_dec:
     push rbp
     mov rbp, rsp
     sub rsp, 128
@@ -1836,14 +1836,16 @@ process_inc:
     mov r8, rdi
     rep stosb
     mov byte [r8+33], 1
-    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    add rsi, TOKEN_HEADER_SIZE
+    mov [rbp-32], rsi
+    add rsi, 16
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
-    je _inc_r
+    je _inc_dec_r
     cmp ebx, TOKEN_BUF_ADDR
-    je _inc_a
+    je _inc_dec_a
     jmp _err_invalid_first_param_inc
-_inc_r:
+_inc_dec_r:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
     jne _err_invalid_first_param_inc 
@@ -1852,15 +1854,15 @@ _inc_r:
     call process_gen_r
     test eax, eax
     jnz _err_parse_inc
-    jmp _inc_assemble
-_inc_a:
+    jmp _inc_dec_assemble
+_inc_dec_a:
     mov rdi, rsi
     lea rsi, [rbp-128]
     mov rdx, [rbp-16]
     call process_gen_a
     test rax, rax
     jnz _err_parse_inc
-_inc_assemble:
+_inc_dec_assemble:
     lea r8, [rbp-128]
     movzx ebx, byte [r8+26]
     mov eax, 0xFE
@@ -1868,16 +1870,25 @@ _inc_assemble:
     cmp ebx, REG_MASK_VAL_8B
     cmove ecx, eax
     mov byte [r8+29], cl
-    mov rdi, [rbp-24]
+    mov rdx, [rbp-32]
     lea rsi, [rbp-128]
+    mov edx, [rdx+9]
+    movzx eax, byte [rsi]
+    mov ecx, 0
+    mov ebx, 0x8
+    cmp edx, INS_DEC
+    cmove ecx, ebx
+    or al, cl
+    mov [rsi], al
+    mov rdi, [rbp-24]
     call default_ins_assemble
-    jmp _end_process_inc
+    jmp _end_process_inc_dec
 _err_invalid_argc_inc:
 _err_invalid_first_param_inc:
 _err_parse_inc:
 _err_exit_inc:
     exit_m -6
-_end_process_inc:
+_end_process_inc_dec:
     add rsp, 128
     pop rbp
     ret
@@ -2091,9 +2102,12 @@ _check_ins_rps:
     call process_mov
     jmp _start_loop_process_segment 
 _check_ins_rps1:
+    cmp ebx, INS_DEC
+    je __check_ins_rps1_call 
     cmp ebx, INS_INC
     jne _check_ins_rps_jmp
-    call process_inc
+__check_ins_rps1_call:
+    call process_inc_dec
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx

@@ -1,4 +1,56 @@
 segment readable executable
+    dec dword [NAME_D-NAME_C]
+    dec word [r8+r11]
+    dec byte [rax+rdx]
+    dec word [NAME_D+12]
+    dec word [r8+r11]
+    dec qword [rax]
+    dec byte [rax+rdx]
+    dec dword [r8+r10*8]
+    dec dword [rax+rcx*2+14]
+    dec qword [rax+rdx*4-NAME_C]
+    dec qword [rbx+rdi]
+    dec dword [rbp+rax*NAME_C]
+    dec word [rsp+rbp]
+    dec byte [rdx+rcx*2]
+    dec dword [NAME_D+22]
+    dec byte [NAME_D-0xffffff]
+    dec dword [rsp+NAME_C]
+    dec byte [rcx+12]
+    dec byte [rcx-1]
+    dec byte [rbp+8]
+    dec byte [rbp-8]
+    dec byte [rsp+123]
+    dec byte [NAME_D]
+    dec byte [rbp]
+    dec byte [rsp]
+    dec byte [r11]
+    dec byte [r8]
+    dec byte [r9]
+    dec bx
+    dec esi
+    dec eax
+    dec rax
+    dec r8w
+    dec r8d
+    dec r9b
+    dec ax
+    dec edx
+    dec esi
+    dec r9
+    dec r8w
+    dec r14b
+    dec sil
+    dec bpl
+    dec bl
+    dec ah
+    dec bx
+    dec esi
+    dec r9b
+    dec ax
+    dec esi
+    dec rsp
+
     inc dword [NAME_D-NAME_C]
     inc word [r8+r11]
     inc byte [rax+rdx]
