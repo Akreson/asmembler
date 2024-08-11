@@ -11,6 +11,7 @@ REX_W equ 0x08
 REX_R equ 0x04
 REX_X equ 0x02
 REX_B equ 0x01
+EXC_REX_W equ 0xF7
 
 MOD_ADDR_REG        equ 0
 MOD_ADDR_REG_DISP8  equ 0x40
@@ -1911,7 +1912,6 @@ process_jumps:
     test edx, edx
     jnz __jumps_check_type_ptr_offset
 _jumps_check_type:
-    mov byte [r8+33], 1
     cmp ebx, TOKEN_BUF_ADDR
     je _jumps_addr
     cmp ebx, TOKEN_BUF_DIRECT
@@ -1922,7 +1922,7 @@ __jumps_check_type_ptr_offset:
     lea rdi, [r9+1]
     call is_name_rip_ref
     test rax, rax
-    jz _err_parse_invalid_rip_ref
+    jz _err_parse_invalid_rip_ref_jumps
     mov [rbp-48], rax
     lea r15, [rbp-128]
     mov rsi, [rbp-32]
@@ -1931,27 +1931,6 @@ __jumps_check_type_ptr_offset:
     and ebx, INS_JMP_JCC_TYPE_MASK
     test ebx, ebx
     jz _jumps_name
-    jmp _jumps_jcc
-_jumps_addr:
-    mov rdi, r9
-    lea rsi, [rbp-128]
-    mov rdx, [rbp-16]
-    call process_gen_a
-    test rax, rax
-    jnz _err_parse_jumps
-    lea r8, [rbp-128]
-    mov rsi, [rbp-32]
-    movzx ebx, byte [rsi+9]
-    cmp eax, INS_JMP
-    je _jumps_addr_jmp
-    cmp eax, INS_CALL
-    je _jumps_addr_call
-_jumps_addr_jmp:
-    mov byte [r8+29], 0xFF
-    jmp _jumps_assemble
-_jumps_addr_call:
-_jumps_name_jmp:
-_jumps_name_call:
 _jumps_jcc:
     cmp eax, INS_JCXZ
     jne __jumps_jcc_check
@@ -1996,14 +1975,56 @@ _jumps_name_push:
     lea rdx, [rbp-128]
     call push_to_addr_patch
 __jumps_name_push_set_disp:
-    lea r8, [rbp-128]
-    mov dword [r8], 0
-    mov byte [r8+24], 4
+    lea rsi, [rbp-128]
+    mov dword [rsi], 0
+    mov byte [rsi+24], 4
     jmp _jumps_assemble
+_jumps_addr:
+    mov rdi, r9
+    lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
+    mov byte [rsi+26], REG_MASK_VAL_32B; hack for not setting REX_W and still pass size check
+    call process_gen_a
+    test rax, rax
+    jnz _err_parse_jumps
+    jmp _jump_set_jmp_call
 _jumps_direct:
-_jumps_jmp:
-_jumps_call:
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    jne _err_parse_invalid_arg_jumps
+__jumps_direct_r:
+    mov rdi, r9
+    lea rsi, [rbp-128]
+    call process_gen_r
+    test eax, eax
+    jnz _err_parse_jumps
+    lea rsi, [rbp-128]
+    mov bl, [rsi+26]
+    cmp bl, REG_MASK_VAL_64B 
+    jne _err_parse_invalid_arg_jumps
+    mov r9, [rbp-40]
+    mov eax, [r9+9]
+    mov dl, [rsi+16]
+    and dl, EXC_REX_W
+    mov [rsi+16], dl
+    and eax, REG_MASK_REG_VAL
+    cmp eax, REG_REX_TH
+    jge _jump_set_jmp_call
+    mov byte [rsi+25], 0
+    jmp _jump_set_jmp_call
+_jump_set_jmp_call:
+    lea r8, [rbp-128]
+    mov rsi, [rbp-32]
+    mov byte [r8+29], 0xFF
     mov byte [r8+33], 1
+    mov al, [r8]
+    mov ebx, [rsi+9]
+    mov r9d, 0x10
+    mov r10d, 0x20
+    cmp ebx, INS_JMP
+    cmove r9d, r10d
+    or al, r9b
+    mov [r8], al
 _jumps_assemble:
     mov rdi, [rbp-16]
     lea rsi, [rbp-128]
@@ -2011,7 +2032,8 @@ _jumps_assemble:
     mov rdi, [rbp-24]
     call default_ins_assemble
     jmp _end_process_jumps
-_err_parse_invalid_rip_ref:
+_err_parse_invalid_rip_ref_jumps:
+_err_parse_invalid_arg_jumps:
 _err_invalid_argc_jumps:
 _err_parse_jumps:
     exit_m -6

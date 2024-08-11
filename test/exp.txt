@@ -10,7 +10,7 @@ jump_to4:
     jmp jump_to1
     jmp jump_to4
     mov qword [rax], CONST_NEG
-    mov byte [rax+rdx], 3
+    mov byte [rax+rdx+2], 3
     mov dword [r8+r10*8], 1
 jump_to2:
     mov dword [rax+rcx*2+14], 0xffff 

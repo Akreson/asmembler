@@ -1,0 +1,19 @@
+segment readable executable
+    jmp [r8+r13+12]
+    jmp [rax]
+    jmp [rax+12]
+    jmp [rax+rdx*2]
+    jmp [r8+rdx*2+8]
+    jmp [NAME]
+    call [rax]
+    call [rax+rdx*2]
+    call [r8+r12+12]
+    call [r8+rdx*2+8]
+    call [NAME]
+    jmp rax
+    jmp r8
+    call rax
+    call r8
+
+segment readable
+NAME db 8
