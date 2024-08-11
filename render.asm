@@ -1201,9 +1201,10 @@ __rproc_addr_2p_sib_init:
 ___rproc_addr_2p_sib_check:
     cmp cl, TOKEN_BUF_DIRECT
     jne _err_rproc_addr_invalid_2nd
+    mov [rbp-48], r8
     mov al, [r8+13]
     cmp al, TOKEN_TYPE_DIGIT
-    jne __rproc_adder_2p_3rd_check
+    jne __rproc_addr_2p_3rd_check
     lea r9, [r8+15]
     mov [rbp-48], r9
     lea r15, [r8+1]
@@ -1222,12 +1223,11 @@ ___rproc_addr_2p_sib_scale:
     call log2_val_ceil
     shl al, 6
     or [rbp-60], al
-__rproc_adder_2p_3rd_check:
+__rproc_addr_2p_3rd_check:
     mov rdx, [rbp-56]
-    mov r9, [rbp-48]
-    cmp rdx, r9
+    mov r8, [rbp-48]
+    cmp rdx, r8
     je __rproc_addr_2p_r_r_set
-    mov r8, r9
     lea r9, [r8+15]
     mov eax, [r8+9]
     cmp eax, AUX_ADD
@@ -1430,12 +1430,16 @@ process_gen_a:
     mov [rbp-16], rsi
     mov [rbp-24], rdx
     lea r9, [rdi+3]
+    mov bl, [rsi+26]
+    test bl, bl
+    jnz _gen_a_skip_size_check
     movzx eax, byte [r9]
     cmp eax, TOKEN_BUF_DIRECT
     jne _err_gen_a_size_unspec
     mov bl, [r9+13]
     cmp bl, TOKEN_TYPE_KEYWORD
     jne _err_gen_a_size_unspec
+_gen_a_skip_size_check:
     inc byte [rsi+24]
     xor edx, edx
     xor ecx, ecx
