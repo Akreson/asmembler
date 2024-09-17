@@ -278,6 +278,8 @@ _end_reduce_ins_offset:
     pop rbp
     ret
 
+; TODO: Fix rip ref before rip ref
+; (now _n_ rip ref don't look at previous rip ref between _mark_n_ and _n_ ref)
 ; -8 curr checked sym thr ptr, -16 start of temp sym ptr buff,
 ; -24 ptr to curr seg patch entry, -28 next offset in patch linked list
 ; -32 prev offset of in patch linked list, -40 ptr to start of linked list buff
@@ -409,7 +411,7 @@ __check_jmp_patch_min_set:
     mov r10d, eax
     mov r11d, eax
     add r10d, r9d
-    sub r11d, r9d
+    ;sub r11d, r9d
     cmp eax, 0
     cmovge r10d, r11d
     mov eax, r10d
@@ -423,7 +425,7 @@ __check_jmp_max_patch_rpsa:
     cmp eax, 0
     jg __check_def_patch_update_rpsa
     mov edx, eax
-    sub edx, 4
+    sub edx, 3
     cmp edx, r11d
     jge __check_jmp_patch_min_set
 _check_def_patch_rpsa:
@@ -1967,6 +1969,7 @@ _jumps_name:
     cmp eax, INS_CALL
     jne __jumps_name_jmp
     mov byte [r15+29], 0xE8
+    mov byte [r15+33], 1
     mov rdi, [rbp-48]
     mov rsi, [rbp-16]
     lea rdx, [rbp-128]
@@ -1977,6 +1980,7 @@ __jumps_name_jmp:
     cmp eax, INS_JMP
     jne _err_parse_jumps
     mov byte [r15+29], 0xE9 
+    mov byte [r15+33], 1
     mov ecx, ADDR_PATCH_TYPE_JMP_RIP
     mov r8d, 4
     mov r9d, 1
@@ -2060,11 +2064,11 @@ render_process_segment:
     push rbp
     mov rbp, rsp
     sub rsp, 128
+    mov [rbp-8], rdi
     mov rbx, rdi
     mov rax, qword [SEG_ENTRY_ARRAY]
     sub rbx, rax
     mov dword [CURR_SECTION_OFFSET], ebx
-    mov [rbp-8], rdi
     xor rax, rax
     mov [rbp-12], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
@@ -2154,8 +2158,7 @@ _render_seg_grab_loop:
     shl ebx, 3
     mov rdx, rsp
     add rdx, rbx
-    mov rsi, [rdx]
-    mov rdi, rsi
+    mov rdi, [rdx]
     call render_process_segment
     mov eax, dword [SEGMENT_PATCH_LIST+8]
     test eax, eax
