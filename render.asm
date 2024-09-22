@@ -1,8 +1,25 @@
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
-; +29 (4) opcode bytes, +33 opcode bytes count,
-INS_CODE_STRUCT_SIZE equ 40
+; +29 (4) opcode bytes, +33 opcode bytes count, +34 ins operands type, (1 byte reserved)
+; +36 1st op reg, +40 2nd op reg, +44 3rd op reg
+INS_CODE_STRUCT_SIZE equ 64
+
+OP1_TYPE_R equ 0x1
+OP1_TYPE_A equ 0x2
+OP1_TYPE_I equ 0x3
+OP2_TYPE_R equ 0x4
+OP2_TYPE_A equ 0x8
+OP2_TYPE_I equ 0xC
+OP3_TYPE_R equ 0x10
+OP3_TYPE_A equ 0x20
+OP3_TYPE_I equ 0x30
+
+OP12_TYPE_R_R equ 0x5
+OP12_TYPE_R_A equ 0x6
+OP12_TYPE_R_I equ 0x7
+OP12_TYPE_A_R equ 0xA
+OP12_TYPE_A_I equ 0xB
 
 MOD_RM_RM_MASK equ 0x07
 
@@ -2057,6 +2074,243 @@ _end_process_jumps:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+process_general0:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rdx+120], rdi
+    mov [rdx+112], rsi
+    movzx eax, byte [rsi+31]
+    cmp eax, 2
+    jne _err_invalid_argc_general0
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rdx+104], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    mov rdi, rdx
+    mov r8, rdx
+    rep stosb
+    mov byte [r8+33], 1
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    je _general0_r
+    cmp ebx, TOKEN_BUF_ADDR
+    je _general0_a
+    jmp _err_invalid_first_param_general0
+_general0_r:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    jne _err_invalid_first_param_general0
+    lea r9, [rsi+15]
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_ADDR
+    je __general0_r_a
+    cmp ecx, TOKEN_BUF_PTR_OFFSET
+    je __general0_r_i
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_general0
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    je __general0_r_r
+    cmp ebx, TOKEN_TYPE_DIGIT
+    je __general0_r_i
+    jmp _err_invalid_second_param_general0 
+__general0_r_r:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    call process_gen_r_r
+    test eax, eax
+    jnz _err_parse_general0
+    mov r8, [rbp-16]
+    movzx ebx, byte [r8+26]
+    movzx eax, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_general0
+    mov byte [r8+34], OP12_TYPE_R_R
+    jmp _success_process_general0
+__general0_r_a:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_general0
+    mov r8, [rbp-16]
+    movzx eax, byte [r8+26]
+    movzx ebx, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_general0
+    mov byte [r8+34], OP12_TYPE_R_A
+    jmp _success_process_general0
+__general0_r_i:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_rm_i
+    test eax, eax
+    jnz _err_parse_general0
+    mov byte [r8+34], OP12_TYPE_R_I
+    jmp _success_process_general0
+_general0_a:
+    movzx eax, byte [rsi+2]
+    lea r9, [rsi+rax]
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_PTR_OFFSET
+    je __general0_a_i
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_general0
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    je __general0_a_r
+    cmp ebx, TOKEN_TYPE_DIGIT
+    je __general0_a_i
+    jmp _err_invalid_second_param_general0
+__general0_a_r:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_a_r
+    test eax, eax
+    jnz _err_parse_general0
+    mov r8, [rbp-16]
+    movzx eax, byte [r8+26]
+    movzx ebx, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_general0
+    mov byte [r8+34], OP12_TYPE_A_R
+    jmp _success_process_general0
+__general0_a_i:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_a_i
+    test eax, eax
+    jnz _err_parse_general0
+    mov r8, [rbp-16]
+    mov byte [r8+34], OP12_TYPE_A_I
+    jmp _success_process_general0
+_err_arg_size_general0:
+_err_invalid_argc_general0:
+_err_invalid_second_param_general0:
+_err_invalid_first_param_general0:
+_err_parse_general0:
+    mov eax, 1
+    jmp _end_process_general0
+_success_process_general0:
+    xor eax, eax
+_end_process_general0:
+    add rsp, 16
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_add:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov rdx, rsp
+    call process_general0
+    test eax, eax
+    jnz _end_process_add
+    lea r8, [rbp-128]
+    mov bl, [r8+34]
+    cmp bl, OP12_TYPE_R_R 
+    je _add_r_r
+    cmp bl, OP12_TYPE_R_A 
+    je _add_r_a
+    cmp bl, OP12_TYPE_R_I 
+    je _add_r_i
+    cmp bl, OP12_TYPE_A_R 
+    je _add_a_r
+    cmp bl, OP12_TYPE_A_I 
+    je _add_a_i
+_add_r_r:
+    mov dl, [r8+26]
+    cmp dl, REG_MASK_VAL_8B
+    jne __add_r_r_non_byte_opcode
+    mov byte [r8+29], 0x2
+    jmp _add_assemble
+__add_r_r_non_byte_opcode:
+    mov byte [r8+29], 0x3
+    jmp _add_assemble
+_add_r_a:
+    mov dl, [r8+26]
+    cmp dl, REG_MASK_VAL_8B
+    jne __add_r_a_non_byte_opcode
+    mov byte [r8+29], 0x2
+    jmp _add_assemble
+__add_r_a_non_byte_opcode:
+    mov byte [r8+29], 0x3
+    jmp _add_assemble
+_add_r_i:
+    mov dword [rbp-64], 0x81058004
+    mov byte [rbp-60], 0x83
+    jmp _add_rm_i
+_add_a_i:
+    mov dword [rbp-64], 0x81818080
+    mov byte [rbp-60], 0x83
+_add_rm_i:
+    mov cl, [r8+26]
+    mov dl, [r8+27]
+    cmp cl, dl
+    jl _err_add_r_i_overflow
+    jne __add_rm_i_ds
+    mov ebx, [r8+36]
+    and ebx, REG_MASK_REG_VAL
+    cmp cl, REG_MASK_VAL_8B
+    jne __add_rm_i_ss_non_byte_opcode
+    movzx eax, byte [rbp-64]
+    movzx edi, byte [rbp-63]
+    cmp ebx, REG_AL
+    cmovne eax, edi
+    mov [r8+29], al
+    jmp _add_assemble
+__add_rm_i_ss_non_byte_opcode:
+    movzx eax, byte [rbp-62]
+    movzx edi, byte [rbp-61]
+    cmp ebx, REG_AL
+    cmovne eax, edi
+    mov [r8+29], al
+    jmp _add_assemble
+__add_rm_i_ds:
+    cmp dl, REG_MASK_VAL_8B 
+    je __add_rm_i_ds_set
+    mov [r8+27], cl
+    mov edi, ecx
+    mov esi, edx
+    call line_up_d_s_size
+    add [r8+24], al
+    jmp _add_rm_i
+__add_rm_i_ds_set:
+    mov al, byte [rbp-60]
+    mov byte [r8+29], al    
+    jmp _add_assemble
+_add_a_r:
+    mov dl, [r8+26]
+    cmp dl, REG_MASK_VAL_8B
+    jne __add_a_r_non_byte_opcode
+    mov byte [r8+29], 0x0
+    jmp _add_assemble
+__add_a_r_non_byte_opcode:
+    mov byte [r8+29], 0x1
+    jmp _add_assemble
+_add_assemble:
+    mov rdi, [rbp-24]
+    lea rsi, [rbp-128]
+    call default_ins_assemble
+    jmp _end_process_mov
+_err_add_r_i_overflow:
+_end_process_add:
+    add rsp, 128
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -2107,11 +2361,16 @@ _check_ins_rps:
     jmp _start_loop_process_segment 
 _check_ins_rps1:
     cmp ebx, INS_DEC
-    je __check_ins_rps1_call 
+    je __check_ins_rps1_proc 
     cmp ebx, INS_INC
-    jne _check_ins_rps_jmp
-__check_ins_rps1_call:
+    jne _check_ins_rps2
+__check_ins_rps1_proc:
     call process_inc_dec
+    jmp _start_loop_process_segment
+_check_ins_rps2:
+    cmp ebx, INS_ADD
+    jne _check_ins_rps_jmp
+    call process_add
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx
