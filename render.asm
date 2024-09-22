@@ -615,12 +615,12 @@ _end_is_name_const:
     ret
 
 ; rdi - ptr to TOKEN_BUF_PTR_OFFSET entrh body
-; return rax - ptr to symbol, ebx - type
+; return rax - ptr to symbol body val, ebx - type
 get_name_ref_type:
     mov r8, [rdi]
     mov r9d, [rdi+8]
     mov r10, [r8]
-    lea rax, [r10+r9]
+    lea rax, [r10+r9+16]
     movzx ebx, byte [r10+r9+14]
     ret
 
