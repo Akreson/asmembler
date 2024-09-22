@@ -703,6 +703,7 @@ process_gen_r:
     mov [rsp-8], rsi
     xor r9, r9
     mov eax, [rdi+9]
+    mov [rsi+36], eax
     mov r12d, eax
     and r12b, REG_REX_MASK
     shr r12b, 1
@@ -756,6 +757,8 @@ process_gen_r_r:
     lea r8, [rdi+15]
     mov eax, [rdi+9]
     mov ebx, [r8+9]
+    mov [rsi+36], eax
+    mov [rsi+40], ebx
     mov r12d, eax
     mov r13d, ebx
     and r12b, REG_REX_MASK
@@ -910,7 +913,7 @@ _end_render_process_imm:
     pop rbp
     ret
 
-; for r_i version by default used r/m, imm version
+; for r_i version by default used [r/m, imm] ins. version
 ; rdi - ptr to ins param, rsi - ptr to inc code struct
 ; rdx - ptr to token entry header
 ; return eax - 0 if succes, 1 if imm less then reg
@@ -925,6 +928,7 @@ process_gen_rm_i:
     xor r9, r9
     lea r8, [rdi+15]
     mov eax, [rdi+9]
+    mov [rsi+36], eax
     mov r12d, eax
     and r12b, REG_REX_MASK
     shr r12b, 1
@@ -1390,6 +1394,7 @@ process_gen_r_a:
     mov [rbp-24], rdx
     xor r9, r9
     mov eax, [rdi+9]
+    mov [rsi+36], eax
     mov r12d, eax
     and r12b, REG_REX_MASK
     shr r12b, 1
@@ -1512,6 +1517,7 @@ process_gen_a_r:
     lea r10, [rdi+rdx]
     xor r9, r9
     mov eax, [r10+9]
+    mov [rsi+40], eax
     mov r12d, eax
     and r12d, REG_REX_MASK
     shr r12b, 1
@@ -2222,15 +2228,15 @@ process_add:
     jnz _end_process_add
     lea r8, [rbp-128]
     mov bl, [r8+34]
-    cmp bl, OP12_TYPE_R_R 
+    cmp bl, OP12_TYPE_R_R
     je _add_r_r
-    cmp bl, OP12_TYPE_R_A 
+    cmp bl, OP12_TYPE_R_A
     je _add_r_a
-    cmp bl, OP12_TYPE_R_I 
+    cmp bl, OP12_TYPE_R_I
     je _add_r_i
-    cmp bl, OP12_TYPE_A_R 
+    cmp bl, OP12_TYPE_A_R
     je _add_a_r
-    cmp bl, OP12_TYPE_A_I 
+    cmp bl, OP12_TYPE_A_I
     je _add_a_i
 _add_r_r:
     mov dl, [r8+26]
