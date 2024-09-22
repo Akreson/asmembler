@@ -629,6 +629,8 @@ get_name_ref_type:
 line_up_d_s_size:
     xor edx, edx
     inc edx
+    and edi, REG_MASK_BITS
+    and esi, REG_MASK_BITS
     shr edi, REG_MASK_VAL_SHIFT_NORM
     shr esi, REG_MASK_VAL_SHIFT_NORM
     mov ecx, edi
