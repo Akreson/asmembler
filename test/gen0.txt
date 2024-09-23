@@ -1,4 +1,5 @@
 segment readable executable
+    add rax, NAME_D
     add dword [NAME_D-NAME_C], 0xffffff 
     add word [r8+r11], 32
     add byte [rax+rdx], 200 
@@ -27,7 +28,6 @@ segment readable executable
     add byte [r11], 1 
     add byte [r8], 1 
     add byte [r9], 1 
-    add rax, NAME_D
     add eax, CONST_NEG
     add eax, -1
     add rax, -1

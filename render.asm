@@ -2168,6 +2168,7 @@ __general0_r_i:
     call process_gen_rm_i
     test eax, eax
     jnz _err_parse_general0
+    mov r8, [rbp-16]
     mov byte [r8+34], OP12_TYPE_R_I
     jmp _success_process_general0
 _general0_a:
@@ -2274,32 +2275,50 @@ _add_rm_i:
     cmp cl, dl
     jl _err_add_r_i_overflow
     jne __add_rm_i_ds
+__add_rm_i_ds_back:
+    mov bl, [r8+34]
+    cmp bl, OP12_TYPE_A_I
+    je __add_rm_i_skip_al_check     
     mov ebx, [r8+36]
     and ebx, REG_MASK_REG_VAL
-    cmp cl, REG_MASK_VAL_8B
-    jne __add_rm_i_ss_non_byte_opcode
-    movzx eax, byte [rbp-64]
-    movzx edi, byte [rbp-63]
     cmp ebx, REG_AL
-    cmovne eax, edi
+    je __add_rm_i_ss_al
+__add_rm_i_skip_al_check:
+    cmp cl, REG_MASK_VAL_8B
+    jne __add_rm_i_ss_non_b_opc
+    mov al, [rbp-63]
     mov [r8+29], al
     jmp _add_assemble
-__add_rm_i_ss_non_byte_opcode:
-    movzx eax, byte [rbp-62]
-    movzx edi, byte [rbp-61]
-    cmp ebx, REG_AL
-    cmovne eax, edi
+__add_rm_i_ss_non_b_opc:
+    mov al, [rbp-61]
     mov [r8+29], al
+    jmp _add_assemble
+__add_rm_i_ss_al:
+    cmp cl, REG_MASK_VAL_8B
+    jne ___add_rm_i_ss_al_non_b_opc
+    mov al, [rbp-64]
+    jmp __add_rm_i_ss_al_modrm
+___add_rm_i_ss_al_non_b_opc:
+    mov al, [rbp-62]
+__add_rm_i_ss_al_modrm:
+    mov [r8+29], al
+    mov rdi, r8
+    call remove_modrm_byte
     jmp _add_assemble
 __add_rm_i_ds:
     cmp dl, REG_MASK_VAL_8B 
     je __add_rm_i_ds_set
+    cmp dl, REG_MASK_VAL_32B
+    jb _err_add_r_i_overflow
+    mov esi, REG_MASK_VAL_32B
+    cmp cl, REG_MASK_VAL_32B
+    cmovg ecx, esi
     mov [r8+27], cl
     mov edi, ecx
     mov esi, edx
     call line_up_d_s_size
     add [r8+24], al
-    jmp _add_rm_i
+    jmp __add_rm_i_ds_back
 __add_rm_i_ds_set:
     mov al, byte [rbp-60]
     mov byte [r8+29], al    
