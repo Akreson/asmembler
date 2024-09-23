@@ -643,6 +643,16 @@ line_up_d_s_size:
     sub eax, edx
     ret
 
+; rdi - ptr to ins. code struct
+remove_modrm_byte:
+    movzx ecx, byte [rdi+24]
+    dec ecx
+    mov [rdi+24], cl
+    mov rsi, rdi
+    inc rsi
+    rep movsb
+    ret
+
 ; rdi - ptr to render entry array, rsi - ptr to ins code struct
 default_ins_assemble:
     push rbp
@@ -1754,14 +1764,9 @@ ___mov_r_i_reg_opc_remove_modrm:
     movzx edi, byte [r8+26]
     movzx esi, byte [r8+27]
     call line_up_d_s_size
-    mov ecx, eax
-    add cl, [r8+24]
-    dec ecx
-    mov [r8+24], cl
-    mov rsi, r8
-    inc rsi
+    add [r8+24], al
     mov rdi, r8
-    rep movsb
+    call remove_modrm_byte
     jmp _mov_assemble
 _mov_a:
     movzx eax, byte [rsi+2]
