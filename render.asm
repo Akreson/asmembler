@@ -653,6 +653,14 @@ remove_modrm_byte:
     rep movsb
     ret
 
+
+apply_reg_mask_to_modrm:
+    mov r11b, [r9+9]
+    shl r11b, 3
+    mov r12b, [r8]
+    or r11b, r12b
+    mov [r8], r11b
+
 ; rdi - ptr to render entry array, rsi - ptr to ins code struct
 default_ins_assemble:
     push rbp
@@ -2088,7 +2096,7 @@ _end_process_jumps:
     ret
 
 ; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
-; rcx - opcode list for general0 pattern, r8 - ptr to stack of caller
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
 process_ins_template0:
     push rbp
     mov rbp, rsp
@@ -2228,6 +2236,11 @@ _instemp0_rm_i:
     mov dl, [r8+27]
     cmp cl, dl
     jl _err_instemp0_r_i_overflow
+    mov r10b, [r9+9]
+    shl r10b, 3
+    mov r11b, [r8]
+    or r10b, r11b
+    mov [r8], r10b
     jne __instemp0_rm_i_ds
 __instemp0_rm_i_ds_back:
     mov bl, [r8+34]
@@ -2299,12 +2312,107 @@ process_add:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81800504
     mov dword [rbp-60], 0x02010083
-    mov byte [rbp-56], 0x3
+    mov word [rbp-56], 0x0003 ; last opcode + reg mask
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
-    call process_general0
+    call process_ins_template0
 _end_process_add:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_sub:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x81802D2C
+    mov dword [rbp-60], 0x2A292883
+    mov word [rbp-56], 0x052B
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template0
+_end_process_sub:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_and:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x81802524
+    mov dword [rbp-60], 0x22212083
+    mov word [rbp-56], 0x0423
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template0
+_end_process_and:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_or:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x81800D0C
+    mov dword [rbp-60], 0x0A090883
+    mov word [rbp-56], 0x010B
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template0
+_end_process_or:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_xor:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x81803534
+    mov dword [rbp-60], 0x32313083
+    mov word [rbp-56], 0x0633
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template0
+_end_process_xor:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_cmp:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x81803D3C
+    mov dword [rbp-60], 0x3A393883
+    mov word [rbp-56], 0x073B
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template0
+_end_process_cmp:
     add rsp, 192
     pop rbp
     ret
@@ -2367,8 +2475,33 @@ __check_ins_rps1_proc:
     jmp _start_loop_process_segment
 _check_ins_rps2:
     cmp ebx, INS_ADD
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps3
     call process_add
+    jmp _start_loop_process_segment
+_check_ins_rps3:
+    cmp ebx, INS_SUB
+    jne _check_ins_rps4
+    call process_sub
+    jmp _start_loop_process_segment
+_check_ins_rps4:
+    cmp ebx, INS_AND
+    jne _check_ins_rps5
+    call process_and
+    jmp _start_loop_process_segment
+_check_ins_rps5:
+    cmp ebx, INS_OR
+    jne _check_ins_rps6
+    call process_or
+    jmp _start_loop_process_segment
+_check_ins_rps6:
+    cmp ebx, INS_XOR
+    jne _check_ins_rps7
+    call process_xor
+    jmp _start_loop_process_segment
+_check_ins_rps7:
+    cmp ebx, INS_CMP
+    jne _check_ins_rps_jmp
+    call process_cmp
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx

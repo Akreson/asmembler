@@ -1,4 +1,115 @@
 segment readable executable
+    and dword [NAME_D-NAME_C], 0xffffff 
+    and rax, NAME_D
+    and word [r8+r11], 32
+    and byte [rax+rdx], 200 
+    and word [NAME_D+12], 2134 
+    and word [r8+r11], 322
+    and qword [rax], CONST_NEG
+    and byte [rax+rdx+2], 3
+    and dword [r8+r10*8], 1
+    and dword [rax+rcx*2+14], 0xffff 
+    and qword [rax+rdx*4-NAME_C], 0xff
+    and qword [rbx+rdi], 11111111 
+    and dword [rbp+rax*NAME_C], 0x12345623 
+    and word [rsp+rbp], 0xaaaa 
+    and byte [rdx+rcx*2], 0x2 
+    and dword [NAME_D+22], 0x12 
+    and byte [NAME_D-0xffffff], 0xc
+    and dword [rsp+NAME_C], 0xffffffff 
+    and byte [rcx+12], 111 
+    and byte [rcx-1], 1
+    and byte [rbp+8], 1 
+    and byte [rbp-8], 1 
+    and byte [rsp+123], 1 
+    and byte [NAME_D], 1
+    and byte [rbp], 1 
+    and byte [rsp], 1 
+    and byte [r11], 1 
+    and byte [r8], 1 
+    and byte [r9], 1 
+    and eax, CONST_NEG
+    and eax, -1
+    and rax, -1
+    and rax, 2048
+    and r8w, -2
+    and r8d, 123
+    and al, NAME_C 
+    and bx, 30121
+    and esi, 0xFFFFFF
+    and r9b, 34
+    and ax, 16000
+    and edx, 0xFFFFFFFF
+    and esi, 0x1FFFF
+    and rax, 0x100000000
+    and r9, 123
+    and r8w, 9000
+    and r14b, 255
+    and sil, al
+    and bpl, dil
+    and bl, dil
+    and al, bl
+    and bx, cx
+    and esi, edi
+    and r9b, r15b
+    and ax, r8w
+    and edx, r10d
+    and esi, r12d
+    and rax, rcx
+    and r8, rdi
+    and rsp, r10
+    and ax, [NAME_D+12]
+    and eax, [NAME_D-NAME_C]
+    and sil, [rax+rdx]
+    and ah, [rax+rdx]
+    and r12w, [r8+r11]
+    and r10d, [r8+r10*8]
+    and eax, [rax+rcx*2+14]
+    and edx, [rax+rdx*4-NAME_C]
+    and r12, [rbx+rdi]
+    and eax, [rbp+rax*NAME_C]
+    and eax, [rsp+rbp]
+    and al, [rdx+rcx*2]
+    and eax, [NAME_D+22]
+    and eax, [NAME_D-0xffffff]
+    and eax, [rsp+NAME_C]
+    and eax, [rcx+12]
+    and eax, [rcx-1]
+    and eax, [rbp+8]
+    and eax, [rbp-8]
+    and eax, [rsp+123]
+    and eax, [NAME_D]
+    and eax, [rbp]
+    and eax, [rsp]
+    and eax, [r8]
+    and r8, [r9]
+    and [NAME_D+12], ax 
+    and [NAME_D-NAME_C], eax 
+    and [rax+rdx], sil 
+    and [rax+rdx], ah 
+    and [r8+r11], r12w
+    and [r8+r10*8], r10d 
+    and [rax+rcx*2+14], eax 
+    and [rax+rdx*4-NAME_C], edx 
+    and [rbx+rdi], r12 
+    and [rbp+rax*NAME_C], eax 
+    and [rsp+rbp], eax 
+    and [rdx+rcx*2], al 
+    and [NAME_D+22], eax 
+    and [NAME_D-0xffffff], eax 
+    and [rsp+NAME_C], eax 
+    and [rcx+12], eax 
+    and [rcx-1], eax 
+    and [rbp+8], eax 
+    and [rbp-8], eax 
+    and [rsp+123], eax 
+    and [NAME_D], eax 
+    and [rbp], eax 
+    and [rsp], eax 
+    and [r11], r10b 
+    and [r8], eax 
+    and [r9], r8
+
     add dword [NAME_D-NAME_C], 0xffffff 
     add rax, NAME_D
     add word [r8+r11], 32
@@ -109,6 +220,453 @@ segment readable executable
     add [r11], r10b 
     add [r8], eax 
     add [r9], r8
+
+
+    sub dword [NAME_D-NAME_C], 0xffffff 
+    sub rax, NAME_D
+    sub word [r8+r11], 32
+    sub byte [rax+rdx], 200 
+    sub word [NAME_D+12], 2134 
+    sub word [r8+r11], 322
+    sub qword [rax], CONST_NEG
+    sub byte [rax+rdx+2], 3
+    sub dword [r8+r10*8], 1
+    sub dword [rax+rcx*2+14], 0xffff 
+    sub qword [rax+rdx*4-NAME_C], 0xff
+    sub qword [rbx+rdi], 11111111 
+    sub dword [rbp+rax*NAME_C], 0x12345623 
+    sub word [rsp+rbp], 0xaaaa 
+    sub byte [rdx+rcx*2], 0x2 
+    sub dword [NAME_D+22], 0x12 
+    sub byte [NAME_D-0xffffff], 0xc
+    sub dword [rsp+NAME_C], 0xffffffff 
+    sub byte [rcx+12], 111 
+    sub byte [rcx-1], 1
+    sub byte [rbp+8], 1 
+    sub byte [rbp-8], 1 
+    sub byte [rsp+123], 1 
+    sub byte [NAME_D], 1
+    sub byte [rbp], 1 
+    sub byte [rsp], 1 
+    sub byte [r11], 1 
+    sub byte [r8], 1 
+    sub byte [r9], 1 
+    sub eax, CONST_NEG
+    sub eax, -1
+    sub rax, -1
+    sub rax, 2048
+    sub r8w, -2
+    sub r8d, 123
+    sub al, NAME_C 
+    sub bx, 30121
+    sub esi, 0xFFFFFF
+    sub r9b, 34
+    sub ax, 16000
+    sub edx, 0xFFFFFFFF
+    sub esi, 0x1FFFF
+    sub rax, 0x100000000
+    sub r9, 123
+    sub r8w, 9000
+    sub r14b, 255
+    sub sil, al
+    sub bpl, dil
+    sub bl, dil
+    sub al, bl
+    sub bx, cx
+    sub esi, edi
+    sub r9b, r15b
+    sub ax, r8w
+    sub edx, r10d
+    sub esi, r12d
+    sub rax, rcx
+    sub r8, rdi
+    sub rsp, r10
+    sub ax, [NAME_D+12]
+    sub eax, [NAME_D-NAME_C]
+    sub sil, [rax+rdx]
+    sub ah, [rax+rdx]
+    sub r12w, [r8+r11]
+    sub r10d, [r8+r10*8]
+    sub eax, [rax+rcx*2+14]
+    sub edx, [rax+rdx*4-NAME_C]
+    sub r12, [rbx+rdi]
+    sub eax, [rbp+rax*NAME_C]
+    sub eax, [rsp+rbp]
+    sub al, [rdx+rcx*2]
+    sub eax, [NAME_D+22]
+    sub eax, [NAME_D-0xffffff]
+    sub eax, [rsp+NAME_C]
+    sub eax, [rcx+12]
+    sub eax, [rcx-1]
+    sub eax, [rbp+8]
+    sub eax, [rbp-8]
+    sub eax, [rsp+123]
+    sub eax, [NAME_D]
+    sub eax, [rbp]
+    sub eax, [rsp]
+    sub eax, [r8]
+    sub r8, [r9]
+    sub [NAME_D+12], ax 
+    sub [NAME_D-NAME_C], eax 
+    sub [rax+rdx], sil 
+    sub [rax+rdx], ah 
+    sub [r8+r11], r12w
+    sub [r8+r10*8], r10d 
+    sub [rax+rcx*2+14], eax 
+    sub [rax+rdx*4-NAME_C], edx 
+    sub [rbx+rdi], r12 
+    sub [rbp+rax*NAME_C], eax 
+    sub [rsp+rbp], eax 
+    sub [rdx+rcx*2], al 
+    sub [NAME_D+22], eax 
+    sub [NAME_D-0xffffff], eax 
+    sub [rsp+NAME_C], eax 
+    sub [rcx+12], eax 
+    sub [rcx-1], eax 
+    sub [rbp+8], eax 
+    sub [rbp-8], eax 
+    sub [rsp+123], eax 
+    sub [NAME_D], eax 
+    sub [rbp], eax 
+    sub [rsp], eax 
+    sub [r11], r10b 
+    sub [r8], eax 
+    sub [r9], r8
+
+    or dword [NAME_D-NAME_C], 0xffffff 
+    or rax, NAME_D 
+    or word [r8+r11], 32
+    or byte [rax+rdx], 200 
+    or word [NAME_D+12], 2134 
+    or word [r8+r11], 322
+    or qword [rax], CONST_NEG
+    or byte [rax+rdx+2], 3
+    or dword [r8+r10*8], 1
+    or dword [rax+rcx*2+14], 0xffff 
+    or qword [rax+rdx*4-NAME_C], 0xff
+    or qword [rbx+rdi], 11111111 
+    or dword [rbp+rax*NAME_C], 0x12345623 
+    or word [rsp+rbp], 0xaaaa 
+    or byte [rdx+rcx*2], 0x2 
+    or dword [NAME_D+22], 0x12 
+    or byte [NAME_D-0xffffff], 0xc
+    or dword [rsp+NAME_C], 0xffffffff 
+    or byte [rcx+12], 111 
+    or byte [rcx-1], 1
+    or byte [rbp+8], 1 
+    or byte [rbp-8], 1 
+    or byte [rsp+123], 1 
+    or byte [NAME_D], 1
+    or byte [rbp], 1 
+    or byte [rsp], 1 
+    or byte [r11], 1 
+    or byte [r8], 1 
+    or byte [r9], 1 
+    or eax, CONST_NEG
+    or eax, -1
+    or rax, -1
+    or rax, 2048
+    or r8w, -2
+    or r8d, 123
+    or al, NAME_C
+    or bx, 30121
+    or esi, 0xffffff
+    or r9b, 34
+    or ax, 16000
+    or edx, 0xffffffff
+    or esi, 0x1ffff
+    or rax, 0x100000000
+    or r9, 123
+    or r8w, 9000
+    or r14b, 255
+    or sil, al
+    or bpl, dil
+    or bl, dil
+    or al, bl
+    or bx, cx
+    or esi, edi
+    or r9b, r15b
+    or ax, r8w
+    or edx, r10d
+    or esi, r12d
+    or rax, rcx
+    or r8, rdi
+    or rsp, r10
+    or ax, [NAME_D+12]
+    or eax, [NAME_D-NAME_C]
+    or sil, [rax+rdx]
+    or ah, [rax+rdx]
+    or r12w, [r8+r11]
+    or r10d, [r8+r10*8]
+    or eax, [rax+rcx*2+14]
+    or edx, [rax+rdx*4-NAME_C]
+    or r12, [rbx+rdi]
+    or eax, [rbp+rax*NAME_C]
+    or eax, [rsp+rbp]
+    or al, [rdx+rcx*2]
+    or eax, [NAME_D+22]
+    or eax, [NAME_D-0xffffff]
+    or eax, [rsp+NAME_C]
+    or eax, [rcx+12]
+    or eax, [rcx-1]
+    or eax, [rbp+8]
+    or eax, [rbp-8]
+    or eax, [rsp+123]
+    or eax, [NAME_D]
+    or eax, [rbp]
+    or eax, [rsp]
+    or eax, [r8]
+    or r8, [r9]
+    or [NAME_D+12], ax 
+    or [NAME_D-NAME_C], eax 
+    or [rax+rdx], sil 
+    or [rax+rdx], ah 
+    or [r8+r11], r12w
+    or [r8+r10*8], r10d 
+    or [rax+rcx*2+14], eax 
+    or [rax+rdx*4-NAME_C], edx 
+    or [rbx+rdi], r12 
+    or [rbp+rax*NAME_C], eax 
+    or [rsp+rbp], eax 
+    or [rdx+rcx*2], al 
+    or [NAME_D+22], eax 
+    or [NAME_D-0xffffff], eax 
+    or [rsp+NAME_C], eax 
+    or [rcx+12], eax 
+    or [rcx-1], eax 
+    or [rbp+8], eax 
+    or [rbp-8], eax 
+    or [rsp+123], eax 
+    or [NAME_D], eax 
+    or [rbp], eax 
+    or [rsp], eax 
+    or [r11], r10b 
+    or [r8], eax 
+    or [r9], r8
+
+
+    xor dword [NAME_D-NAME_C], 0xffffff 
+    xor rax,NAME_D 
+    xor word [r8+r11], 32
+    xor byte [rax+rdx], 200 
+    xor word [NAME_D+12], 2134 
+    xor word [r8+r11], 322
+    xor qword [rax], CONST_NEG
+    xor byte [rax+rdx+2], 3
+    xor dword [r8+r10*8], 1
+    xor dword [rax+rcx*2+14], 0xffff 
+    xor qword [rax+rdx*4-NAME_C], 0xff
+    xor qword [rbx+rdi], 11111111 
+    xor dword [rbp+rax*NAME_C], 0x12345623 
+    xor word [rsp+rbp], 0xaaaa 
+    xor byte [rdx+rcx*2], 0x2 
+    xor dword [NAME_D+22], 0x12 
+    xor byte [NAME_D-0xffffff], 0xc
+    xor dword [rsp+NAME_C], 0xffffffff 
+    xor byte [rcx+12], 111 
+    xor byte [rcx-1], 1
+    xor byte [rbp+8], 1 
+    xor byte [rbp-8], 1 
+    xor byte [rsp+123], 1 
+    xor byte [NAME_D], 1
+    xor byte [rbp], 1 
+    xor byte [rsp], 1 
+    xor byte [r11], 1 
+    xor byte [r8], 1 
+    xor byte [r9], 1 
+    xor eax, CONST_NEG
+    xor eax, -1
+    xor rax, -1
+    xor rax, 2048
+    xor r8w, -2
+    xor r8d, 123
+    xor al, NAME_C
+    xor bx, 30121
+    xor esi, 0xffffff
+    xor r9b, 34
+    xor ax, 16000
+    xor edx, 0xffffffff
+    xor esi, 0x1ffff
+    xor rax, 0x100000000
+    xor r9, 123
+    xor r8w, 9000
+    xor r14b, 255
+    xor sil, al
+    xor bpl, dil
+    xor bl, dil
+    xor al, bl
+    xor bx, cx
+    xor esi, edi
+    xor r9b, r15b
+    xor ax, r8w
+    xor edx, r10d
+    xor esi, r12d
+    xor rax, rcx
+    xor r8, rdi
+    xor rsp, r10
+    xor ax, [NAME_D+12]
+    xor eax, [NAME_D-NAME_C]
+    xor sil, [rax+rdx]
+    xor ah, [rax+rdx]
+    xor r12w, [r8+r11]
+    xor r10d, [r8+r10*8]
+    xor eax, [rax+rcx*2+14]
+    xor edx, [rax+rdx*4-NAME_C]
+    xor r12, [rbx+rdi]
+    xor eax, [rbp+rax*NAME_C]
+    xor eax, [rsp+rbp]
+    xor al, [rdx+rcx*2]
+    xor eax, [NAME_D+22]
+    xor eax, [NAME_D-0xffffff]
+    xor eax, [rsp+NAME_C]
+    xor eax, [rcx+12]
+    xor eax, [rcx-1]
+    xor eax, [rbp+8]
+    xor eax, [rbp-8]
+    xor eax, [rsp+123]
+    xor eax, [NAME_D]
+    xor eax, [rbp]
+    xor eax, [rsp]
+    xor eax, [r8]
+    xor r8, [r9]
+    xor [NAME_D+12], ax 
+    xor [NAME_D-NAME_C], eax 
+    xor [rax+rdx], sil 
+    xor [rax+rdx], ah 
+    xor [r8+r11], r12w
+    xor [r8+r10*8], r10d 
+    xor [rax+rcx*2+14], eax 
+    xor [rax+rdx*4-NAME_C], edx 
+    xor [rbx+rdi], r12 
+    xor [rbp+rax*NAME_C], eax 
+    xor [rsp+rbp], eax 
+    xor [rdx+rcx*2], al 
+    xor [NAME_D+22], eax 
+    xor [NAME_D-0xffffff], eax 
+    xor [rsp+NAME_C], eax 
+    xor [rcx+12], eax 
+    xor [rcx-1], eax 
+    xor [rbp+8], eax 
+    xor [rbp-8], eax 
+    xor [rsp+123], eax 
+    xor [NAME_D], eax 
+    xor [rbp], eax 
+    xor [rsp], eax 
+    xor [r11], r10b 
+    xor [r8], eax 
+    xor [r9], r8
+
+
+    cmp dword [NAME_D-NAME_C], 0xffffff 
+    cmp rax,NAME_D 
+    cmp word [r8+r11], 32
+    cmp byte [rax+rdx], 200 
+    cmp word [NAME_D+12], 2134 
+    cmp word [r8+r11], 322
+    cmp qword [rax], CONST_NEG
+    cmp byte [rax+rdx+2], 3
+    cmp dword [r8+r10*8], 1
+    cmp dword [rax+rcx*2+14], 0xffff 
+    cmp qword [rax+rdx*4-NAME_C], 0xff
+    cmp qword [rbx+rdi], 11111111 
+    cmp dword [rbp+rax*NAME_C], 0x12345623 
+    cmp word [rsp+rbp], 0xaaaa 
+    cmp byte [rdx+rcx*2], 0x2 
+    cmp dword [NAME_D+22], 0x12 
+    cmp byte [NAME_D-0xffffff], 0xc
+    cmp dword [rsp+NAME_C], 0xffffffff 
+    cmp byte [rcx+12], 111 
+    cmp byte [rcx-1], 1
+    cmp byte [rbp+8], 1 
+    cmp byte [rbp-8], 1 
+    cmp byte [rsp+123], 1 
+    cmp byte [NAME_D], 1
+    cmp byte [rbp], 1 
+    cmp byte [rsp], 1 
+    cmp byte [r11], 1 
+    cmp byte [r8], 1 
+    cmp byte [r9], 1 
+    cmp eax, CONST_NEG
+    cmp eax, -1
+    cmp rax, -1
+    cmp rax, 2048
+    cmp r8w, -2
+    cmp r8d, 123
+    cmp al, NAME_C
+    cmp bx, 30121
+    cmp esi, 0xffffff
+    cmp r9b, 34
+    cmp ax, 16000
+    cmp edx, 0xffffffff
+    cmp esi, 0x1ffff
+    cmp rax, 0x100000000
+    cmp r9, 123
+    cmp r8w, 9000
+    cmp r14b, 255
+    cmp sil, al
+    cmp bpl, dil
+    cmp bl, dil
+    cmp al, bl
+    cmp bx, cx
+    cmp esi, edi
+    cmp r9b, r15b
+    cmp ax, r8w
+    cmp edx, r10d
+    cmp esi, r12d
+    cmp rax, rcx
+    cmp r8, rdi
+    cmp rsp, r10
+    cmp ax, [NAME_D+12]
+    cmp eax, [NAME_D-NAME_C]
+    cmp sil, [rax+rdx]
+    cmp ah, [rax+rdx]
+    cmp r12w, [r8+r11]
+    cmp r10d, [r8+r10*8]
+    cmp eax, [rax+rcx*2+14]
+    cmp edx, [rax+rdx*4-NAME_C]
+    cmp r12, [rbx+rdi]
+    cmp eax, [rbp+rax*NAME_C]
+    cmp eax, [rsp+rbp]
+    cmp al, [rdx+rcx*2]
+    cmp eax, [NAME_D+22]
+    cmp eax, [NAME_D-0xffffff]
+    cmp eax, [rsp+NAME_C]
+    cmp eax, [rcx+12]
+    cmp eax, [rcx-1]
+    cmp eax, [rbp+8]
+    cmp eax, [rbp-8]
+    cmp eax, [rsp+123]
+    cmp eax, [NAME_D]
+    cmp eax, [rbp]
+    cmp eax, [rsp]
+    cmp eax, [r8]
+    cmp r8, [r9]
+    cmp [NAME_D+12], ax 
+    cmp [NAME_D-NAME_C], eax 
+    cmp [rax+rdx], sil 
+    cmp [rax+rdx], ah 
+    cmp [r8+r11], r12w
+    cmp [r8+r10*8], r10d 
+    cmp [rax+rcx*2+14], eax 
+    cmp [rax+rdx*4-NAME_C], edx 
+    cmp [rbx+rdi], r12 
+    cmp [rbp+rax*NAME_C], eax 
+    cmp [rsp+rbp], eax 
+    cmp [rdx+rcx*2], al 
+    cmp [NAME_D+22], eax 
+    cmp [NAME_D-0xffffff], eax 
+    cmp [rsp+NAME_C], eax 
+    cmp [rcx+12], eax 
+    cmp [rcx-1], eax 
+    cmp [rbp+8], eax 
+    cmp [rbp-8], eax 
+    cmp [rsp+123], eax 
+    cmp [NAME_D], eax 
+    cmp [rbp], eax 
+    cmp [rsp], eax 
+    cmp [r11], r10b 
+    cmp [r8], eax 
+    cmp [r9], r8
 
 segment readable
 CONST_NEG equ -1
