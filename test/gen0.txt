@@ -1,6 +1,6 @@
 segment readable executable
-    add rax, NAME_D
     add dword [NAME_D-NAME_C], 0xffffff 
+    add rax, NAME_D
     add word [r8+r11], 32
     add byte [rax+rdx], 200 
     add word [NAME_D+12], 2134 
