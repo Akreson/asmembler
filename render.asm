@@ -947,6 +947,7 @@ process_gen_rm_i:
     lea r8, [rdi+15]
     mov eax, [rdi+9]
     mov [rsi+36], eax
+    mov dword [rsi+40], REG_MASK_VAL_UNSPEC
     mov r12d, eax
     and r12b, REG_REX_MASK
     shr r12b, 1
@@ -1413,6 +1414,7 @@ process_gen_r_a:
     xor r9, r9
     mov eax, [rdi+9]
     mov [rsi+36], eax
+    mov dword [rsi+40], REG_MASK_VAL_UNSPEC
     mov r12d, eax
     and r12b, REG_REX_MASK
     shr r12b, 1
@@ -1474,6 +1476,7 @@ process_gen_a:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-24], rdx
+    mov dword [rsi+40], REG_MASK_VAL_UNSPEC
     lea r9, [rdi+3]
     mov bl, [rsi+26]
     test bl, bl
@@ -1535,6 +1538,7 @@ process_gen_a_r:
     lea r10, [rdi+rdx]
     xor r9, r9
     mov eax, [r10+9]
+    mov dword [rsi+36], REG_MASK_VAL_UNSPEC
     mov [rsi+40], eax
     mov r12d, eax
     and r12d, REG_REX_MASK
