@@ -762,7 +762,7 @@ _end_process_gen_r:
     pop rbp
     ret
 
-; for r_r version by default used r, r/m version
+; for r_r version r/m, r version is used
 ; rdi - ptr to ins param, rsi - ptr to ins code struct 
 ; return eax - 0 if succes 
 process_gen_r_r:
@@ -799,17 +799,17 @@ process_gen_r_r:
 _gen_r_r_check_arg_th:
     cmp eax, REG_REX_TH
     jb _gen_r_r_2rex_check
-    or r9b, REX_R
+    or r9b, REX_B
     and eax, REG_MASK_REG_IDX
 _gen_r_r_2rex_check:
     cmp ebx, REG_REX_TH
     jb _gen_r_r_set_arg
-    or r9b, REX_B
+    or r9b, REX_R
     and ebx, REG_MASK_REG_IDX
 _gen_r_r_set_arg:
     xor r12, r12
     lea r11, [r10+16]
-    shl eax, 3
+    shl ebx, 3
     or r12b, al
     or r12b, bl
     or r12b, MOD_REG
@@ -1710,10 +1710,10 @@ __mov_r_r:
     jne _err_arg_size_mov
     cmp ebx, REG_MASK_VAL_8B
     jne ___mov_r_r_non_byte_opcode
-    mov byte [r8+29], 0x8A
+    mov byte [r8+29], 0x88
     jmp _mov_assemble
 ___mov_r_r_non_byte_opcode:
-    mov byte [r8+29], 0x8B
+    mov byte [r8+29], 0x89
     jmp _mov_assemble
 __mov_r_a:
     mov rdi, rsi
@@ -2155,7 +2155,8 @@ __instemp0_r_r:
     movzx eax, byte [r8+27]
     cmp eax, ebx
     jne _err_arg_size_instemp0
-    jmp __instemp0_r_rm_load_opc
+    mov byte [r8+34], OP12_TYPE_R_R
+    jmp __instemp0_rm_r_load_opc
 __instemp0_r_a:
     mov rdi, rsi
     mov rsi, [rbp-16]
@@ -2168,7 +2169,7 @@ __instemp0_r_a:
     movzx ebx, byte [r8+27]
     cmp eax, ebx
     jne _err_arg_size_instemp0
-__instemp0_r_rm_load_opc:
+    mov byte [r8+34], OP12_TYPE_R_A
     mov r9, [rbp-24]
     movzx ecx, byte [r9+7]
     movzx ebx, byte [r9+8]
@@ -2209,6 +2210,8 @@ __instemp0_a_r:
     movzx ebx, byte [r8+27]
     cmp eax, ebx
     jne _err_arg_size_instemp0
+    mov byte [r8+34], OP12_TYPE_A_R
+__instemp0_rm_r_load_opc:
     mov r9, [rbp-24]
     movzx ecx, byte [r9+5]
     movzx ebx, byte [r9+6]
