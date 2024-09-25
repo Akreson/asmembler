@@ -1860,80 +1860,112 @@ _end_process_mov:
     pop rbp
     ret
 
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_inc_dec:
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
+process_ins_template1:
     push rbp
     mov rbp, rsp
-    sub rsp, 128
+    sub rsp, 40
     movzx eax, byte [rsi+31]
     cmp eax, 1
-    jne _err_invalid_argc_inc
+    jne _err_instemp1_invalid_argc
     mov eax, [rdi+28]
     mov [rsi], eax
     xor rax, rax
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
+    mov [r8+24], rdi
+    mov [r8+16], rsi
     add rdi, ENTRY_ARRAY_DATA_SIZE
-    mov [rbp-24], rdi
+    mov [rbp-32], rdi
     mov ecx, INS_CODE_STRUCT_SIZE
-    lea rdi, [rbp-128]
-    mov r8, rdi
+    mov rdi, rdx
+    mov r8, rdx
     rep stosb
     mov byte [r8+33], 1
-    add rsi, TOKEN_HEADER_SIZE
-    mov [rbp-32], rsi
-    add rsi, 16
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
-    je _inc_dec_r
+    je _instemp1_r
     cmp ebx, TOKEN_BUF_ADDR
-    je _inc_dec_a
-    jmp _err_invalid_first_param_inc
-_inc_dec_r:
+    je _instemp1_a
+    jmp _err_instemp1_invalid_first_param
+_instemp1_r:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
-    jne _err_invalid_first_param_inc 
+    jne _err_instemp1_invalid_first_param 
     mov rdi, rsi
-    lea rsi, [rbp-128]
+    mov rsi, [rbp-16]
     call process_gen_r
     test eax, eax
-    jnz _err_parse_inc
-    jmp _inc_dec_assemble
-_inc_dec_a:
+    jnz _err_instemp1_parse
+    jmp _instemp1_assemble
+_instemp1_a:
     mov rdi, rsi
-    lea rsi, [rbp-128]
-    mov rdx, [rbp-16]
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
     call process_gen_a
     test rax, rax
-    jnz _err_parse_inc
-_inc_dec_assemble:
-    lea r8, [rbp-128]
-    movzx ebx, byte [r8+26]
-    mov eax, 0xFE
-    mov ecx, 0xFF
-    cmp ebx, REG_MASK_VAL_8B
-    cmove ecx, eax
-    mov byte [r8+29], cl
-    mov rdx, [rbp-32]
-    lea rsi, [rbp-128]
-    mov edx, [rdx+9]
-    movzx eax, byte [rsi]
-    mov ecx, 0
-    mov ebx, 0x8
-    cmp edx, INS_DEC
-    cmove ecx, ebx
-    or al, cl
-    mov [rsi], al
-    mov rdi, [rbp-24]
+    jnz _err_instemp1_parse
+_instemp1_assemble:
+    mov r9, [rbp-24]
+    mov rsi, [rbp-16]
+    mov bl, [rsi+26]
+    movzx eax, byte [r9]
+    movzx ecx, byte [r9+1]
+    cmp bl, REG_MASK_VAL_8B
+    cmovg eax, ecx
+    mov byte [rsi+29], al
+    mov dl, [r9+2]
+    shl dl, 3
+    mov cl, [rsi]
+    or cl, dl
+    mov [rsi], cl
+    mov rdi, [rbp-32]
     call default_ins_assemble
-    jmp _end_process_inc_dec
-_err_invalid_argc_inc:
-_err_invalid_first_param_inc:
-_err_parse_inc:
-_err_exit_inc:
+    jmp _end_instemp1_process
+_err_instemp1_invalid_argc:
+_err_instemp1_invalid_first_param:
+_err_instemp1_parse:
+_err_instemp1_exit:
     exit_m -6
-_end_process_inc_dec:
-    add rsp, 128
+_end_instemp1_process:
+    add rsp, 40
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_inc:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x00FFFE
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_inc:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_dec:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x01FFFE
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_dec:
+    add rsp, 192
     pop rbp
     ret
 
@@ -2508,44 +2540,46 @@ _check_ins_rps:
     call process_mov
     jmp _start_loop_process_segment 
 _check_ins_rps1:
-    cmp ebx, INS_DEC
-    je __check_ins_rps1_proc 
     cmp ebx, INS_INC
     jne _check_ins_rps2
-__check_ins_rps1_proc:
-    call process_inc_dec
+    call process_inc
     jmp _start_loop_process_segment
 _check_ins_rps2:
-    cmp ebx, INS_ADD
+    cmp ebx, INS_DEC
     jne _check_ins_rps3
-    call process_add
+    call process_dec
     jmp _start_loop_process_segment
 _check_ins_rps3:
-    cmp ebx, INS_SUB
+    cmp ebx, INS_ADD
     jne _check_ins_rps4
-    call process_sub
+    call process_add
     jmp _start_loop_process_segment
 _check_ins_rps4:
-    cmp ebx, INS_AND
+    cmp ebx, INS_SUB
     jne _check_ins_rps5
-    call process_and
+    call process_sub
     jmp _start_loop_process_segment
 _check_ins_rps5:
-    cmp ebx, INS_OR
+    cmp ebx, INS_AND
     jne _check_ins_rps6
-    call process_or
+    call process_and
     jmp _start_loop_process_segment
 _check_ins_rps6:
-    cmp ebx, INS_XOR
+    cmp ebx, INS_OR
     jne _check_ins_rps7
-    call process_xor
+    call process_or
     jmp _start_loop_process_segment
 _check_ins_rps7:
-    cmp ebx, INS_CMP
+    cmp ebx, INS_XOR
     jne _check_ins_rps8
-    call process_cmp
+    call process_xor
     jmp _start_loop_process_segment
 _check_ins_rps8:
+    cmp ebx, INS_CMP
+    jne _check_ins_rps9
+    call process_cmp
+    jmp _start_loop_process_segment
+_check_ins_rps9:
     cmp ebx, INS_TEST
     jne _check_ins_rps_jmp
     call process_test
