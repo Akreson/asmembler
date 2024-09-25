@@ -2239,16 +2239,21 @@ _instemp0_rm_rm:
     jmp _instemp0_assemble
 _instemp0_rm_i:
     mov r9, [rbp-24]
-    mov cl, [r8+26]
-    mov dl, [r8+27]
-    cmp cl, dl
-    jl _err_instemp0_r_i_overflow
     mov r10b, [r9+9]
     shl r10b, 3
     mov r11b, [r8]
     or r10b, r11b
     mov [r8], r10b
+    mov cl, [r8+26]
+    mov dl, [r8+27]
+    cmp cl, dl
+    jl _err_instemp0_r_i_overflow
     jne __instemp0_rm_i_ds
+    mov r10b, cl
+    mov r11b, dl
+    or r10b, r11b
+    cmp r10b, REG_MASK_VAL_64B
+    je _err_instemp0_r_i_overflow
 __instemp0_rm_i_ds_back:
     mov bl, [r8+34]
     cmp bl, OP12_TYPE_A_I
@@ -2274,10 +2279,14 @@ __instemp0_rm_i_ss_al:
     call remove_modrm_byte
     jmp _instemp0_assemble
 __instemp0_rm_i_ds:
+    mov r10b, [r9+11]
+    test r10b, r10b
+    jnz _instemp0_rm_i_ds_op_align
     cmp dl, REG_MASK_VAL_8B 
     je __instemp0_rm_i_ds_set
+_instemp0_rm_i_ds_op_align:
     cmp dl, REG_MASK_VAL_32B
-    jb _err_instemp0_r_i_overflow
+    ja _err_instemp0_r_i_overflow
     mov esi, REG_MASK_VAL_32B
     cmp cl, REG_MASK_VAL_32B
     cmovg ecx, esi
@@ -2285,6 +2294,7 @@ __instemp0_rm_i_ds:
     mov edi, ecx
     mov esi, edx
     call line_up_d_s_size
+    mov cl, [r8+26]
     add [r8+24], al
     jmp __instemp0_rm_i_ds_back
 __instemp0_rm_i_ds_set:
@@ -2319,7 +2329,7 @@ process_add:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81800504
     mov dword [rbp-60], 0x02010083
-    mov word [rbp-56], 0x0003 ; last opcode + reg mask
+    mov dword [rbp-56], 0x00000003 ; last opcode + reg mask
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2338,7 +2348,7 @@ process_sub:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81802D2C
     mov dword [rbp-60], 0x2A292883
-    mov word [rbp-56], 0x052B
+    mov dword [rbp-56], 0x0000052B
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2357,7 +2367,7 @@ process_and:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81802524
     mov dword [rbp-60], 0x22212083
-    mov word [rbp-56], 0x0423
+    mov dword [rbp-56], 0x00000423
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2376,7 +2386,7 @@ process_or:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81800D0C
     mov dword [rbp-60], 0x0A090883
-    mov word [rbp-56], 0x010B
+    mov dword [rbp-56], 0x0000010B
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2395,7 +2405,7 @@ process_xor:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81803534
     mov dword [rbp-60], 0x32313083
-    mov word [rbp-56], 0x0633
+    mov dword [rbp-56], 0x00000633
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2414,7 +2424,7 @@ process_cmp:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81803D3C
     mov dword [rbp-60], 0x3A393883
-    mov word [rbp-56], 0x073B
+    mov dword [rbp-56], 0x0000073B
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]

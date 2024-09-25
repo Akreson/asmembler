@@ -41,7 +41,7 @@ segment readable executable
     and ax, 16000
     and edx, 0xFFFFFFFF
     and esi, 0x1FFFF
-    and rax, 0x100000000
+    and rax, 0x10000000
     and r9, 123
     and r8w, 9000
     and r14b, 255
@@ -152,7 +152,7 @@ segment readable executable
     add ax, 16000
     add edx, 0xFFFFFFFF
     add esi, 0x1FFFF
-    add rax, 0x100000000
+    add rax, 0x10000000
     add r9, 123
     add r8w, 9000
     add r14b, 255
@@ -264,7 +264,7 @@ segment readable executable
     sub ax, 16000
     sub edx, 0xFFFFFFFF
     sub esi, 0x1FFFF
-    sub rax, 0x100000000
+    sub rax, 0x10000000
     sub r9, 123
     sub r8w, 9000
     sub r14b, 255
@@ -375,7 +375,7 @@ segment readable executable
     or ax, 16000
     or edx, 0xffffffff
     or esi, 0x1ffff
-    or rax, 0x100000000
+    or rax, 0x10000000
     or r9, 123
     or r8w, 9000
     or r14b, 255
@@ -487,7 +487,7 @@ segment readable executable
     xor ax, 16000
     xor edx, 0xffffffff
     xor esi, 0x1ffff
-    xor rax, 0x100000000
+    xor rax, 0x10000000
     xor r9, 123
     xor r8w, 9000
     xor r14b, 255
@@ -599,7 +599,7 @@ segment readable executable
     cmp ax, 16000
     cmp edx, 0xffffffff
     cmp esi, 0x1ffff
-    cmp rax, 0x100000000
+    cmp rax, 0x10000000
     cmp r9, 123
     cmp r8w, 9000
     cmp r14b, 255
@@ -667,6 +667,92 @@ segment readable executable
     cmp [r11], r10b 
     cmp [r8], eax 
     cmp [r9], r8
+
+    test dword [NAME_D-NAME_C], 0xffffff 
+    test rax,NAME_D 
+    test word [r8+r11], 32
+    test byte [rax+rdx], 200 
+    test word [NAME_D+12], 2134 
+    test word [r8+r11], 322
+    test qword [rax], CONST_NEG
+    test byte [rax+rdx+2], 3
+    test dword [r8+r10*8], 1
+    test dword [rax+rcx*2+14], 0xffff 
+    test qword [rax+rdx*4-NAME_C], 0xff
+    test qword [rbx+rdi], 11111111 
+    test dword [rbp+rax*NAME_C], 0x12345623 
+    test word [rsp+rbp], 0xaaaa 
+    test byte [rdx+rcx*2], 0x2 
+    test dword [NAME_D+22], 0x12 
+    test byte [NAME_D-0xffffff], 0xc
+    test dword [rsp+NAME_C], 0xffffffff 
+    test byte [rcx+12], 111 
+    test byte [rcx-1], 1
+    test byte [rbp+8], 1 
+    test byte [rbp-8], 1 
+    test byte [rsp+123], 1 
+    test byte [NAME_D], 1
+    test byte [rbp], 1 
+    test byte [rsp], 1 
+    test byte [r11], 1 
+    test byte [r8], 1 
+    test byte [r9], 1 
+    test eax, CONST_NEG
+    test eax, -1
+    test rax, -1
+    test rax, 2048
+    test r8w, -2
+    test r8d, 123
+    test al, NAME_C
+    test bx, 30121
+    test esi, 0xffffff
+    test r9b, 34
+    test ax, 16000
+    test edx, 0xffffffff
+    test esi, 0x1ffff
+    test rax, 0x10000000
+    test r9, 123
+    test r8w, 9000
+    test r14b, 255
+    test sil, al
+    test bpl, dil
+    test bl, dil
+    test al, bl
+    test bx, cx
+    test esi, edi
+    test r9b, r15b
+    test ax, r8w
+    test edx, r10d
+    test esi, r12d
+    test rax, rcx
+    test r8, rdi
+    test rsp, r10
+    test [NAME_D+12], ax 
+    test [NAME_D-NAME_C], eax 
+    test [rax+rdx], sil 
+    test [rax+rdx], ah 
+    test [r8+r11], r12w
+    test [r8+r10*8], r10d 
+    test [rax+rcx*2+14], eax 
+    test [rax+rdx*4-NAME_C], edx 
+    test [rbx+rdi], r12 
+    test [rbp+rax*NAME_C], eax 
+    test [rsp+rbp], eax 
+    test [rdx+rcx*2], al 
+    test [NAME_D+22], eax 
+    test [NAME_D-0xffffff], eax 
+    test [rsp+NAME_C], eax 
+    test [rcx+12], eax 
+    test [rcx-1], eax 
+    test [rbp+8], eax 
+    test [rbp-8], eax 
+    test [rsp+123], eax 
+    test [NAME_D], eax 
+    test [rbp], eax 
+    test [rsp], eax 
+    test [r11], r10b 
+    test [r8], eax 
+    test [r9], r8
 
 segment readable
 CONST_NEG equ -1
