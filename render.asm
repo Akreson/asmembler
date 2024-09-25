@@ -2424,6 +2424,31 @@ _end_process_cmp:
     pop rbp
     ret
 
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_test:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0xF7F6A9A8
+    mov dword [rbp-60], 0x00858400
+    mov dword [rbp-56], 0x01000000
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template0
+    lea r8, [rbp-128]
+    mov al, [r8+34]
+    cmp al, OP12_TYPE_R_A
+    je _test_proc_invalid_op
+_test_proc_invalid_op:
+_end_process_test:
+    add rsp, 192
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -2507,8 +2532,13 @@ _check_ins_rps6:
     jmp _start_loop_process_segment
 _check_ins_rps7:
     cmp ebx, INS_CMP
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps8
     call process_cmp
+    jmp _start_loop_process_segment
+_check_ins_rps8:
+    cmp ebx, INS_TEST
+    jne _check_ins_rps_jmp
+    call process_test
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx
