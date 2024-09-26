@@ -1,0 +1,371 @@
+segment readable executable
+    dec dword [NAME_D-NAME_C]
+    dec word [r8+r11]
+    dec byte [rax+rdx]
+    dec word [NAME_D+12]
+    dec word [r8+r11]
+    dec qword [rax]
+    dec byte [rax+rdx]
+    dec dword [r8+r10*8]
+    dec dword [rax+rcx*2+14]
+    dec qword [rax+rdx*4-NAME_C]
+    dec qword [rbx+rdi]
+    dec dword [rbp+rax*NAME_C]
+    dec word [rsp+rbp]
+    dec byte [rdx+rcx*2]
+    dec dword [NAME_D+22]
+    dec byte [NAME_D-0xffffff]
+    dec dword [rsp+NAME_C]
+    dec byte [rcx+12]
+    dec byte [rcx-1]
+    dec byte [rbp+8]
+    dec byte [rbp-8]
+    dec byte [rsp+123]
+    dec byte [NAME_D]
+    dec byte [rbp]
+    dec byte [rsp]
+    dec byte [r11]
+    dec byte [r8]
+    dec byte [r9]
+    dec bx
+    dec esi
+    dec eax
+    dec rax
+    dec r8w
+    dec r8d
+    dec r9b
+    dec ax
+    dec edx
+    dec esi
+    dec r9
+    dec r8w
+    dec r14b
+    dec sil
+    dec bpl
+    dec bl
+    dec ah
+    dec bx
+    dec esi
+    dec r9b
+    dec ax
+    dec esi
+    dec rsp
+
+    inc dword [NAME_D-NAME_C]
+    inc word [r8+r11]
+    inc byte [rax+rdx]
+    inc word [NAME_D+12]
+    inc word [r8+r11]
+    inc qword [rax]
+    inc byte [rax+rdx]
+    inc dword [r8+r10*8]
+    inc dword [rax+rcx*2+14]
+    inc qword [rax+rdx*4-NAME_C]
+    inc qword [rbx+rdi]
+    inc dword [rbp+rax*NAME_C]
+    inc word [rsp+rbp]
+    inc byte [rdx+rcx*2]
+    inc dword [NAME_D+22]
+    inc byte [NAME_D-0xffffff]
+    inc dword [rsp+NAME_C]
+    inc byte [rcx+12]
+    inc byte [rcx-1]
+    inc byte [rbp+8]
+    inc byte [rbp-8]
+    inc byte [rsp+123]
+    inc byte [NAME_D]
+    inc byte [rbp]
+    inc byte [rsp]
+    inc byte [r11]
+    inc byte [r8]
+    inc byte [r9]
+    inc bx
+    inc esi
+    inc eax
+    inc rax
+    inc r8w
+    inc r8d
+    inc r9b
+    inc ax
+    inc edx
+    inc esi
+    inc r9
+    inc r8w
+    inc r14b
+    inc sil
+    inc bpl
+    inc bl
+    inc ah
+    inc bx
+    inc esi
+    inc r9b
+    inc ax
+    inc esi
+    inc rsp
+
+    neg dword [NAME_D-NAME_C]
+    neg word [r8+r11]
+    neg byte [rax+rdx]
+    neg word [NAME_D+12]
+    neg word [r8+r11]
+    neg qword [rax]
+    neg byte [rax+rdx]
+    neg dword [r8+r10*8]
+    neg dword [rax+rcx*2+14]
+    neg qword [rax+rdx*4-NAME_C]
+    neg qword [rbx+rdi]
+    neg dword [rbp+rax*NAME_C]
+    neg word [rsp+rbp]
+    neg byte [rdx+rcx*2]
+    neg dword [NAME_D+22]
+    neg byte [NAME_D-0xffffff]
+    neg dword [rsp+NAME_C]
+    neg byte [rcx+12]
+    neg byte [rcx-1]
+    neg byte [rbp+8]
+    neg byte [rbp-8]
+    neg byte [rsp+123]
+    neg byte [NAME_D]
+    neg byte [rbp]
+    neg byte [rsp]
+    neg byte [r11]
+    neg byte [r8]
+    neg byte [r9]
+    neg bx
+    neg esi
+    neg eax
+    neg rax
+    neg r8w
+    neg r8d
+    neg r9b
+    neg ax
+    neg edx
+    neg esi
+    neg r9
+    neg r8w
+    neg r14b
+    neg sil
+    neg bpl
+    neg bl
+    neg ah
+    neg bx
+    neg esi
+    neg r9b
+    neg ax
+    neg esi
+    
+    not rsp
+    not dword [NAME_D-NAME_C]
+    not word [r8+r11]
+    not byte [rax+rdx]
+    not word [NAME_D+12]
+    not word [r8+r11]
+    not qword [rax]
+    not byte [rax+rdx]
+    not dword [r8+r10*8]
+    not dword [rax+rcx*2+14]
+    not qword [rax+rdx*4-NAME_C]
+    not qword [rbx+rdi]
+    not dword [rbp+rax*NAME_C]
+    not word [rsp+rbp]
+    not byte [rdx+rcx*2]
+    not dword [NAME_D+22]
+    not byte [NAME_D-0xffffff]
+    not dword [rsp+NAME_C]
+    not byte [rcx+12]
+    not byte [rcx-1]
+    not byte [rbp+8]
+    not byte [rbp-8]
+    not byte [rsp+123]
+    not byte [NAME_D]
+    not byte [rbp]
+    not byte [rsp]
+    not byte [r11]
+    not byte [r8]
+    not byte [r9]
+    not bx
+    not esi
+    not eax
+    not rax
+    not r8w
+    not r8d
+    not r9b
+    not ax
+    not edx
+    not esi
+    not r9
+    not r8w
+    not r14b
+    not sil
+    not bpl
+    not bl
+    not ah
+    not bx
+    not esi
+    not r9b
+    not ax
+    not esi
+    not rsp
+    not rsp
+
+    mul dword [NAME_D-NAME_C]
+    mul word [r8+r11]
+    mul byte [rax+rdx]
+    mul word [NAME_D+12]
+    mul word [r8+r11]
+    mul qword [rax]
+    mul byte [rax+rdx]
+    mul dword [r8+r10*8]
+    mul dword [rax+rcx*2+14]
+    mul qword [rax+rdx*4-NAME_C]
+    mul qword [rbx+rdi]
+    mul dword [rbp+rax*NAME_C]
+    mul word [rsp+rbp]
+    mul byte [rdx+rcx*2]
+    mul dword [NAME_D+22]
+    mul byte [NAME_D-0xffffff]
+    mul dword [rsp+NAME_C]
+    mul byte [rcx+12]
+    mul byte [rcx-1]
+    mul byte [rbp+8]
+    mul byte [rbp-8]
+    mul byte [rsp+123]
+    mul byte [NAME_D]
+    mul byte [rbp]
+    mul byte [rsp]
+    mul byte [r11]
+    mul byte [r8]
+    mul byte [r9]
+    mul bx
+    mul esi
+    mul eax
+    mul rax
+    mul r8w
+    mul r8d
+    mul r9b
+    mul ax
+    mul edx
+    mul esi
+    mul r9
+    mul r8w
+    mul r14b
+    mul sil
+    mul bpl
+    mul bl
+    mul ah
+    mul bx
+    mul esi
+    mul r9b
+    mul ax
+    mul esi
+    mul rsp
+
+    div dword [NAME_D-NAME_C]
+    div word [r8+r11]
+    div byte [rax+rdx]
+    div word [NAME_D+12]
+    div word [r8+r11]
+    div qword [rax]
+    div byte [rax+rdx]
+    div dword [r8+r10*8]
+    div dword [rax+rcx*2+14]
+    div qword [rax+rdx*4-NAME_C]
+    div qword [rbx+rdi]
+    div dword [rbp+rax*NAME_C]
+    div word [rsp+rbp]
+    div byte [rdx+rcx*2]
+    div dword [NAME_D+22]
+    div byte [NAME_D-0xffffff]
+    div dword [rsp+NAME_C]
+    div byte [rcx+12]
+    div byte [rcx-1]
+    div byte [rbp+8]
+    div byte [rbp-8]
+    div byte [rsp+123]
+    div byte [NAME_D]
+    div byte [rbp]
+    div byte [rsp]
+    div byte [r11]
+    div byte [r8]
+    div byte [r9]
+    div bx
+    div esi
+    div eax
+    div rax
+    div r8w
+    div r8d
+    div r9b
+    div ax
+    div edx
+    div esi
+    div r9
+    div r8w
+    div r14b
+    div sil
+    div bpl
+    div bl
+    div ah
+    div bx
+    div esi
+    div r9b
+    div ax
+    div esi
+    div rsp
+
+    idiv dword [NAME_D-NAME_C]
+    idiv word [r8+r11]
+    idiv byte [rax+rdx]
+    idiv word [NAME_D+12]
+    idiv word [r8+r11]
+    idiv qword [rax]
+    idiv byte [rax+rdx]
+    idiv dword [r8+r10*8]
+    idiv dword [rax+rcx*2+14]
+    idiv qword [rax+rdx*4-NAME_C]
+    idiv qword [rbx+rdi]
+    idiv dword [rbp+rax*NAME_C]
+    idiv word [rsp+rbp]
+    idiv byte [rdx+rcx*2]
+    idiv dword [NAME_D+22]
+    idiv byte [NAME_D-0xffffff]
+    idiv dword [rsp+NAME_C]
+    idiv byte [rcx+12]
+    idiv byte [rcx-1]
+    idiv byte [rbp+8]
+    idiv byte [rbp-8]
+    idiv byte [rsp+123]
+    idiv byte [NAME_D]
+    idiv byte [rbp]
+    idiv byte [rsp]
+    idiv byte [r11]
+    idiv byte [r8]
+    idiv byte [r9]
+    idiv bx
+    idiv esi
+    idiv eax
+    idiv rax
+    idiv r8w
+    idiv r8d
+    idiv r9b
+    idiv ax
+    idiv edx
+    idiv esi
+    idiv r9
+    idiv r8w
+    idiv r14b
+    idiv sil
+    idiv bpl
+    idiv bl
+    idiv ah
+    idiv bx
+    idiv esi
+    idiv r9b
+    idiv ax
+    idiv esi
+    idiv rsp
+
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0

@@ -1970,6 +1970,90 @@ _end_process_dec:
     ret
 
 ; rdi - segment ptr, rsi - ptr to token entry to process
+process_neg:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x03F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_neg:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_not:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x02F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_not:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_mul:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x04F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_mul:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_div:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x06F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_div:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_idiv:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x07F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_idiv:
+    add rsp, 192
+    pop rbp
+    ret
+; rdi - segment ptr, rsi - ptr to token entry to process
 process_jumps:
     push rbp
     mov rbp, rsp
@@ -2581,8 +2665,33 @@ _check_ins_rps8:
     jmp _start_loop_process_segment
 _check_ins_rps9:
     cmp ebx, INS_TEST
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps10
     call process_test
+    jmp _start_loop_process_segment
+_check_ins_rps10:
+    cmp ebx, INS_NEG
+    jne _check_ins_rps11
+    call process_neg
+    jmp _start_loop_process_segment
+_check_ins_rps11:
+    cmp ebx, INS_NOT
+    jne _check_ins_rps12
+    call process_not
+    jmp _start_loop_process_segment
+_check_ins_rps12:
+    cmp ebx, INS_MUL
+    jne _check_ins_rps13
+    call process_mul
+    jmp _start_loop_process_segment
+_check_ins_rps13:
+    cmp ebx, INS_DIV
+    jne _check_ins_rps14
+    call process_div
+    jmp _start_loop_process_segment
+_check_ins_rps14:
+    cmp ebx, INS_IDIV
+    jne _check_ins_rps_jmp
+    call process_idiv
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx
