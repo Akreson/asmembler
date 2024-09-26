@@ -129,7 +129,7 @@ INS_SHR   equ 0x01000014
 INS_SAR   equ 0x01000015
 INS_SUB   equ 0x01000016
 INS_DIV   equ 0x01000017
-INS_IDVI  equ 0x01000018
+INS_IDIV  equ 0x01000018
 INS_MUL   equ 0x01000019
 INS_IMUL  equ 0x0100001A
 INS_TEST  equ 0x0100001B
@@ -158,6 +158,8 @@ INS_JGE   equ 0x41800030
 INS_JLE   equ 0x41800031
 INS_JG    equ 0x41800032
 INS_JCXZ  equ 0x41800033
+INS_NEG   equ 0x01000034
+INS_NOT   equ 0x01000035
  
 AUX_COLON     equ 0x020000
 AUX_LPAREN    equ 0x020001
@@ -306,7 +308,7 @@ STR_SHR   db "shr" ; / not the same
 STR_SAR   db "sar" ; \
 STR_SUB   db "sub"
 STR_DIV   db "div"
-STR_IDVI  db "idiv"
+STR_IDIV  db "idiv"
 STR_MUL   db "mul"
 STR_IMUL  db "imul"
 STR_TEST  db "test"
@@ -350,6 +352,8 @@ STR_JO    db "jo"
 STR_JP    db "jp"
 STR_JPE   db "jpe"
 STR_JS    db "js"
+STR_NEG   db "neg"
+STR_NOT   db "not"
 
 STR_KW_DB db "db"
 STR_KW_DW db "dw"
@@ -510,7 +514,7 @@ def_symbol_m INS_SHR, TOKEN_TYPE_INS, STR_SHR, 3
 def_symbol_m INS_SAR, TOKEN_TYPE_INS, STR_SAR, 3
 def_symbol_m INS_SUB, TOKEN_TYPE_INS, STR_SUB, 3
 def_symbol_m INS_DIV, TOKEN_TYPE_INS, STR_DIV, 3
-def_symbol_m INS_IDVI, TOKEN_TYPE_INS, STR_IDVI, 4
+def_symbol_m INS_IDIV, TOKEN_TYPE_INS, STR_IDIV, 4
 def_symbol_m INS_MUL, TOKEN_TYPE_INS, STR_MUL, 3
 def_symbol_m INS_IMUL, TOKEN_TYPE_INS, STR_IMUL, 4
 def_symbol_m INS_TEST, TOKEN_TYPE_INS, STR_TEST, 4
@@ -555,6 +559,9 @@ def_symbol_m INS_JO, TOKEN_TYPE_INS, STR_JO, 2
 def_symbol_m INS_JP, TOKEN_TYPE_INS, STR_JP, 2
 def_symbol_m INS_JP, TOKEN_TYPE_INS, STR_JPE, 3
 def_symbol_m INS_JS, TOKEN_TYPE_INS, STR_JS, 2
+
+def_symbol_m INS_NEG, TOKEN_TYPE_INS, STR_NEG, 3
+def_symbol_m INS_NOT, TOKEN_TYPE_INS, STR_NOT, 3
 
 def_symbol_m KW_DB, TOKEN_TYPE_KEYWORD, STR_KW_DB, 2
 def_symbol_m KW_DW, TOKEN_TYPE_KEYWORD, STR_KW_DW, 2
