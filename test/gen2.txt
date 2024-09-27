@@ -1,0 +1,82 @@
+segment readable executable
+    bsr sil, al
+    bsr bpl, dil
+    bsr bl, dil
+    bsr al, bl
+    bsr bx, cx
+    bsr esi, edi
+    bsr r9b, r15b
+    bsr ax, r8w
+    bsr edx, r10d
+    bsr esi, r12d
+    bsr rax, rcx
+    bsr r8, rdi
+    bsr rsp, r10
+    bsr ax, [NAME_D+12]
+    bsr eax, [NAME_D-NAME_C]
+    bsr sil, [rax+rdx]
+    bsr ah, [rax+rdx]
+    bsr r12w, [r8+r11]
+    bsr r10d, [r8+r10*8]
+    bsr eax, [rax+rcx*2+14]
+    bsr edx, [rax+rdx*4-NAME_C]
+    bsr r12, [rbx+rdi]
+    bsr eax, [rbp+rax*NAME_C]
+    bsr eax, [rsp+rbp]
+    bsr al, [rdx+rcx*2]
+    bsr rdx, [NAME_D+22]
+    bsr eax, [NAME_D-0xffffff]
+    bsr eax, [rsp+NAME_C]
+    bsr eax, [rcx+12]
+    bsr eax, [rcx-1]
+    bsr eax, [rbp+8]
+    bsr eax, [rbp-8]
+    bsr eax, [rsp+123]
+    bsr eax, [NAME_D]
+    bsr eax, [rbp]
+    bsr eax, [rsp]
+    bsr eax, [r8]
+
+    bsf sil, al
+    bsf bpl, dil
+    bsf bl, dil
+    bsf al, bl
+    bsf bx, cx
+    bsf esi, edi
+    bsf r9b, r15b
+    bsf ax, r8w
+    bsf edx, r10d
+    bsf esi, r12d
+    bsf rax, rcx
+    bsf r8, rdi
+    bsf rsp, r10
+    bsf ax, [NAME_D+12]
+    bsf eax, [NAME_D-NAME_C]
+    bsf sil, [rax+rdx]
+    bsf ah, [rax+rdx]
+    bsf r12w, [r8+r11]
+    bsf r10d, [r8+r10*8]
+    bsf eax, [rax+rcx*2+14]
+    bsf edx, [rax+rdx*4-NAME_C]
+    bsf r12, [rbx+rdi]
+    bsf eax, [rbp+rax*NAME_C]
+    bsf eax, [rsp+rbp]
+    bsf al, [rdx+rcx*2]
+    bsf rdx, [NAME_D+22]
+    bsf eax, [NAME_D-0xffffff]
+    bsf eax, [rsp+NAME_C]
+    bsf eax, [rcx+12]
+    bsf eax, [rcx-1]
+    bsf eax, [rbp+8]
+    bsf eax, [rbp-8]
+    bsf eax, [rsp+123]
+    bsf eax, [NAME_D]
+    bsf eax, [rbp]
+    bsf eax, [rsp]
+    bsf eax, [r8]
+
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0

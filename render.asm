@@ -2,7 +2,7 @@
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
 ; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
 ; +29 (4) opcode bytes, +33 opcode bytes count, +34 ins operands type, (1 byte reserved)
-; +36 1st op reg, +40 2nd op reg, +44 3rd op reg
+; +36 1st op reg, +40 2nd op reg, +44 3rd op reg, +48 4th op reg, +52 rex byte
 INS_CODE_STRUCT_SIZE equ 64
 
 OP1_TYPE_R equ 0x1
@@ -753,6 +753,7 @@ _gen_r_rex_check:
     jz _success_gen_r
     movzx eax, byte [rsi+25]
     mov [rsi+rax+16], r9b
+    mov [r10+52], r9b
     inc al
     mov [rsi+25], al
 _success_gen_r:
@@ -770,7 +771,6 @@ process_gen_r_r:
     mov rbp, rsp
     sub rsp, 16
     mov [rbp-8], rsi
-    mov r10, rsi
     xor r9,r9 
     lea r8, [rdi+15]
     mov eax, [rdi+9]
@@ -808,12 +808,12 @@ _gen_r_r_2rex_check:
     and ebx, REG_MASK_REG_IDX
 _gen_r_r_set_arg:
     xor r12, r12
-    lea r11, [r10+16]
+    lea r11, [rsi+16]
     shl ebx, 3
     or r12b, al
     or r12b, bl
     or r12b, MOD_REG
-    mov [r10], r12b
+    mov [rsi], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_r_r_set_prefix
@@ -825,6 +825,7 @@ _gen_r_r_set_prefix:
     jz _success_gen_r_r
     movzx eax, byte [rsi+25]
     mov [r11+rax], r9b
+    mov [rsi+52], r9b
     inc eax
     mov [rsi+25], al
     jmp _success_gen_r_r
@@ -837,6 +838,35 @@ _success_gen_r_r:
 _end_process_gen_r_r:
     add rsp, 16
     pop rbp
+    ret
+
+; rdi - ptr to ins code struct
+switch_reg_to_r_rm:
+    mov al, [rdi+52]
+    test al, al
+    jz _switch_r_rm_skip_rex
+    mov bl, al
+    mov cl, al
+    and bl, REX_B
+    shr bl, 2
+    and cl, REX_R
+    shl cl, 2
+    or bl, cl
+    or bl, REX
+    movzx edx, byte [rsi+25]
+    mov [rdi+rdx+16], bl
+_switch_r_rm_skip_rex:
+    mov cl, [rdi]
+    mov bl, cl
+    mov al, dl
+    or cl, 0xC0
+    or bl, 0x38
+    or al, 0x07
+    shl bl, 3
+    shr al, 3
+    or cl, bl
+    or cl, al
+    mov [rdi], cl
     ret
 
 ; rdi - ptr to imm token, rsi - ptr to ins code struct,
@@ -942,7 +972,6 @@ process_gen_rm_i:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-24], rdx
-    mov r10, rsi
     xor r9, r9
     lea r8, [rdi+15]
     mov eax, [rdi+9]
@@ -966,10 +995,10 @@ _gen_rm_i_check_arg_th:
     and eax, REG_MASK_REG_IDX
 _gen_rm_i_set_arg:
     xor r12, r12
-    lea r11, [r10+16]
+    lea r11, [rsi+16]
     or r12b, MOD_REG
     or r12b, al
-    mov [r10], r12b
+    mov [rsi], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_rm_i_set_prefix
@@ -980,6 +1009,7 @@ _gen_rm_i_set_prefix:
     jz _gen_rm_i_set_postfix
     movzx eax, byte [rsi+25]
     mov [r11+rax], r9b
+    mov [rsi+52], r9b
     inc al
     mov byte [rsi+25], al
 _gen_rm_i_set_postfix:
@@ -1457,6 +1487,7 @@ _gen_r_a_addr_check:
     lea r11, [rsi+16]
     movzx eax, byte [rsi+25]
     mov [r11+rax], r9b
+    mov [rsi+52], r9b
     inc al
     mov [rsi+25], al
     jmp _success_gen_r_a
@@ -1514,6 +1545,7 @@ _gen_a_test_rex:
 _gen_a_set_rex:
     movzx eax, byte [rsi+25]
     mov [rsi+rax+16], bl
+    mov [rsi+52], r9b
     inc al
     mov [rsi+25], al
     jmp _success_gen_a
@@ -1580,6 +1612,7 @@ _gen_a_r_addr_check:
     mov rsi, [rbp-16]
     movzx eax, byte [rsi+25]
     mov [rsi+rax+16], r9b
+    mov [rsi+52], r9b
     inc al
     mov [rsi+25], al
     jmp _success_gen_r_a
@@ -1632,6 +1665,7 @@ _gen_a_i_test_rex:
 _gen_a_i_set_rex:
     movzx eax, byte [rsi+25]
     mov [rsi+rax+16], bl
+    mov [rsi+52], r9b
     inc al
     mov [rsi+25], al
 _gen_a_i_skip_rex:
@@ -2575,6 +2609,135 @@ _end_process_test:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
+process_ins_template2:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 40
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
+    mov [r8+24], rdi
+    mov [r8+16], rsi
+    movzx eax, byte [rsi+31]
+    cmp eax, 2
+    jne _err_invalid_argc_instemp2
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    mov rdi, rdx
+    mov r8, rdx
+    rep stosb
+    add byte [r8+33], 2
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _err_invalid_first_param_instemp2
+_instemp2_r:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    jne _err_invalid_first_param_instemp2
+    lea r9, [rsi+15]
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_ADDR
+    je __instemp2_r_a
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_instemp2
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    je __instemp2_r_r
+    jmp _err_invalid_second_param_instemp2 
+__instemp2_r_r:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    call process_gen_r_r
+    test eax, eax
+    jnz _err_parse_instemp2
+    mov r8, [rbp-16]
+    movzx ebx, byte [r8+26]
+    movzx eax, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_instemp2
+    cmp eax, REG_MASK_VAL_8B
+    je _err_arg_size_instemp2
+    mov rdi, r8
+    call switch_reg_to_r_rm
+    jmp _instemp2_load_opc
+__instemp2_r_a:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_instemp2
+    mov r8, [rbp-16]
+    movzx eax, byte [r8+26]
+    movzx ebx, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_instemp2
+    cmp eax, REG_MASK_VAL_8B
+    je _err_arg_size_instemp2
+_instemp2_load_opc:
+    mov r9, [rbp-24]
+    mov cx, word [r9]
+    mov [r8+29], cx
+    jmp _instemp2_assemble
+_err_arg_size_instemp2:
+_err_invalid_argc_instemp2:
+_err_invalid_second_param_instemp2:
+_err_invalid_first_param_instemp2:
+_err_parse_instemp2:
+    mov eax, 1
+    jmp _end_process_instemp2
+_instemp2_assemble:
+    mov rdi, [rbp-32]
+    mov rsi, [rbp-16]
+    call default_ins_assemble
+_success_process_instemp2:
+    xor eax, eax
+_end_process_instemp2:
+    add rsp, 40 
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_bsr:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov word [rbp-64], 0xBD0F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template2
+_end_process_bsr:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_bsf:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov word [rbp-64], 0xBC0F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template2
+_end_process_bsf:
+    add rsp, 192
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -2690,8 +2853,18 @@ _check_ins_rps13:
     jmp _start_loop_process_segment
 _check_ins_rps14:
     cmp ebx, INS_IDIV
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps15
     call process_idiv
+    jmp _start_loop_process_segment
+_check_ins_rps15:
+    cmp ebx, INS_BSR
+    jne _check_ins_rps16
+    call process_bsr
+    jmp _start_loop_process_segment
+_check_ins_rps16:
+    cmp ebx, INS_BSF
+    jne _check_ins_rps_jmp
+    call process_bsf
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx
