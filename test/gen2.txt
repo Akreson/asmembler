@@ -1,11 +1,12 @@
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0
+
 segment readable executable
-    bsr sil, al
-    bsr bpl, dil
-    bsr bl, dil
-    bsr al, bl
     bsr bx, cx
     bsr esi, edi
-    bsr r9b, r15b
     bsr ax, r8w
     bsr edx, r10d
     bsr esi, r12d
@@ -14,8 +15,6 @@ segment readable executable
     bsr rsp, r10
     bsr ax, [NAME_D+12]
     bsr eax, [NAME_D-NAME_C]
-    bsr sil, [rax+rdx]
-    bsr ah, [rax+rdx]
     bsr r12w, [r8+r11]
     bsr r10d, [r8+r10*8]
     bsr eax, [rax+rcx*2+14]
@@ -37,13 +36,8 @@ segment readable executable
     bsr eax, [rsp]
     bsr eax, [r8]
 
-    bsf sil, al
-    bsf bpl, dil
-    bsf bl, dil
-    bsf al, bl
     bsf bx, cx
     bsf esi, edi
-    bsf r9b, r15b
     bsf ax, r8w
     bsf edx, r10d
     bsf esi, r12d
@@ -52,8 +46,6 @@ segment readable executable
     bsf rsp, r10
     bsf ax, [NAME_D+12]
     bsf eax, [NAME_D-NAME_C]
-    bsf sil, [rax+rdx]
-    bsf ah, [rax+rdx]
     bsf r12w, [r8+r11]
     bsf r10d, [r8+r10*8]
     bsf eax, [rax+rcx*2+14]
@@ -75,8 +67,374 @@ segment readable executable
     bsf eax, [rsp]
     bsf eax, [r8]
 
-segment readable
-CONST_NEG equ -1
-NAME_C equ 0x4
-NAME_C2 equ 1
-NAME_D db 0
+    cmovo bx, cx
+    cmovno bx, cx
+    cmovb bx, cx
+    cmovc bx, cx
+    cmovnae bx, cx
+    cmovae bx, cx
+    cmovnb bx, cx
+    cmovnc bx, cx
+    cmove bx, cx
+    cmovz bx, cx
+    cmovne bx, cx
+    cmovnz bx, cx
+    cmovbe bx, cx
+    cmovna bx, cx
+    cmova bx, cx
+    cmovnbe bx, cx
+    cmovs bx, cx
+    cmovns bx, cx
+    cmovp bx, cx
+    cmovpe bx, cx
+    cmovnp bx, cx
+    cmovpo bx, cx
+    cmovl bx, cx
+    cmovnge bx, cx
+    cmovge bx, cx
+    cmovnl bx, cx
+    cmovle bx, cx
+    cmovng bx, cx
+    cmovg bx, cx
+    cmovnle bx, cx
+
+    cmovo esi, edi
+    cmovno esi, edi
+    cmovb esi, edi
+    cmovc esi, edi
+    cmovnae esi, edi
+    cmovae esi, edi
+    cmovnb esi, edi
+    cmovnc esi, edi
+    cmove esi, edi
+    cmovz esi, edi
+    cmovne esi, edi
+    cmovnz esi, edi
+    cmovbe esi, edi
+    cmovna esi, edi
+    cmova esi, edi
+    cmovnbe esi, edi
+    cmovs esi, edi
+    cmovns esi, edi
+    cmovp esi, edi
+    cmovpe esi, edi
+    cmovnp esi, edi
+    cmovpo esi, edi
+    cmovl esi, edi
+    cmovnge esi, edi
+    cmovge esi, edi
+    cmovnl esi, edi
+    cmovle esi, edi
+    cmovng esi, edi
+    cmovg esi, edi
+    cmovnle esi, edi
+
+    cmovo r9b, r15b
+    cmovno r9b, r15b
+    cmovb r9b, r15b
+    cmovc r9b, r15b
+    cmovnae r9b, r15b
+    cmovae r9b, r15b
+    cmovnb r9b, r15b
+    cmovnc r9b, r15b
+    cmove r9b, r15b
+    cmovz r9b, r15b
+    cmovne r9b, r15b
+    cmovnz r9b, r15b
+    cmovbe r9b, r15b
+    cmovna r9b, r15b
+    cmova r9b, r15b
+    cmovnbe r9b, r15b
+    cmovs r9b, r15b
+    cmovns r9b, r15b
+    cmovp r9b, r15b
+    cmovpe r9b, r15b
+    cmovnp r9b, r15b
+    cmovpo r9b, r15b
+    cmovl r9b, r15b
+    cmovnge r9b, r15b
+    cmovge r9b, r15b
+    cmovnl r9b, r15b
+    cmovle r9b, r15b
+    cmovng r9b, r15b
+    cmovg r9b, r15b
+    cmovnle r9b, r15b
+
+    cmovo ax, r8w
+    cmovno ax, r8w
+    cmovb ax, r8w
+    cmovc ax, r8w
+    cmovnae ax, r8w
+    cmovae ax, r8w
+    cmovnb ax, r8w
+    cmovnc ax, r8w
+    cmove ax, r8w
+    cmovz ax, r8w
+    cmovne ax, r8w
+    cmovnz ax, r8w
+    cmovbe ax, r8w
+    cmovna ax, r8w
+    cmova ax, r8w
+    cmovnbe ax, r8w
+    cmovs ax, r8w
+    cmovns ax, r8w
+    cmovp ax, r8w
+    cmovpe ax, r8w
+    cmovnp ax, r8w
+    cmovpo ax, r8w
+    cmovl ax, r8w
+    cmovnge ax, r8w
+    cmovge ax, r8w
+    cmovnl ax, r8w
+    cmovle ax, r8w
+    cmovng ax, r8w
+    cmovg ax, r8w
+    cmovnle ax, r8w
+    
+    cmovo edx, r10d
+    cmovno edx, r10d
+    cmovb edx, r10d
+    cmovc edx, r10d
+    cmovnae edx, r10d
+    cmovae edx, r10d
+    cmovnb edx, r10d
+    cmovnc edx, r10d
+    cmove edx, r10d
+    cmovz edx, r10d
+    cmovne edx, r10d
+    cmovnz edx, r10d
+    cmovbe edx, r10d
+    cmovna edx, r10d
+    cmova edx, r10d
+    cmovnbe edx, r10d
+    cmovs edx, r10d
+    cmovns edx, r10d
+    cmovp edx, r10d
+    cmovpe edx, r10d
+    cmovnp edx, r10d
+    cmovpo edx, r10d
+    cmovl edx, r10d
+    cmovnge edx, r10d
+    cmovge edx, r10d
+    cmovnl edx, r10d
+    cmovle edx, r10d
+    cmovng edx, r10d
+    cmovg edx, r10d
+    cmovnle edx, r10d
+    
+    cmovo ax, [NAME_D+12]
+    cmovno ax, [NAME_D+12]
+    cmovb ax, [NAME_D+12]
+    cmovc ax, [NAME_D+12]
+    cmovnae ax, [NAME_D+12]
+    cmovae ax, [NAME_D+12]
+    cmovnb ax, [NAME_D+12]
+    cmovnc ax, [NAME_D+12]
+    cmove ax, [NAME_D+12]
+    cmovz ax, [NAME_D+12]
+    cmovne ax, [NAME_D+12]
+    cmovnz ax, [NAME_D+12]
+    cmovbe ax, [NAME_D+12]
+    cmovna ax, [NAME_D+12]
+    cmova ax, [NAME_D+12]
+    cmovnbe ax, [NAME_D+12]
+    cmovs ax, [NAME_D+12]
+    cmovns ax, [NAME_D+12]
+    cmovp ax, [NAME_D+12]
+    cmovpe ax, [NAME_D+12]
+    cmovnp ax, [NAME_D+12]
+    cmovpo ax, [NAME_D+12]
+    cmovl ax, [NAME_D+12]
+    cmovnge ax, [NAME_D+12]
+    cmovge ax, [NAME_D+12]
+    cmovnl ax, [NAME_D+12]
+    cmovle ax, [NAME_D+12]
+    cmovng ax, [NAME_D+12]
+    cmovg ax, [NAME_D+12]
+    cmovnle ax, [NAME_D+12]
+
+    cmovo eax, [NAME_D-NAME_C]
+    cmovno eax, [NAME_D-NAME_C]
+    cmovb eax, [NAME_D-NAME_C]
+    cmovc eax, [NAME_D-NAME_C]
+    cmovnae eax, [NAME_D-NAME_C]
+    cmovae eax, [NAME_D-NAME_C]
+    cmovnb eax, [NAME_D-NAME_C]
+    cmovnc eax, [NAME_D-NAME_C]
+    cmove eax, [NAME_D-NAME_C]
+    cmovz eax, [NAME_D-NAME_C]
+    cmovne eax, [NAME_D-NAME_C]
+    cmovnz eax, [NAME_D-NAME_C]
+    cmovbe eax, [NAME_D-NAME_C]
+    cmovna eax, [NAME_D-NAME_C]
+    cmova eax, [NAME_D-NAME_C]
+    cmovnbe eax, [NAME_D-NAME_C]
+    cmovs eax, [NAME_D-NAME_C]
+    cmovns eax, [NAME_D-NAME_C]
+    cmovp eax, [NAME_D-NAME_C]
+    cmovpe eax, [NAME_D-NAME_C]
+    cmovnp eax, [NAME_D-NAME_C]
+    cmovpo eax, [NAME_D-NAME_C]
+    cmovl eax, [NAME_D-NAME_C]
+    cmovnge eax, [NAME_D-NAME_C]
+    cmovge eax, [NAME_D-NAME_C]
+    cmovnl eax, [NAME_D-NAME_C]
+    cmovle eax, [NAME_D-NAME_C]
+    cmovng eax, [NAME_D-NAME_C]
+    cmovg eax, [NAME_D-NAME_C]
+    cmovnle eax, [NAME_D-NAME_C]
+
+    cmovo sil, [rax+rdx]
+    cmovno sil, [rax+rdx]
+    cmovb sil, [rax+rdx]
+    cmovc sil, [rax+rdx]
+    cmovnae sil, [rax+rdx]
+    cmovae sil, [rax+rdx]
+    cmovnb sil, [rax+rdx]
+    cmovnc sil, [rax+rdx]
+    cmove sil, [rax+rdx]
+    cmovz sil, [rax+rdx]
+    cmovne sil, [rax+rdx]
+    cmovnz sil, [rax+rdx]
+    cmovbe sil, [rax+rdx]
+    cmovna sil, [rax+rdx]
+    cmova sil, [rax+rdx]
+    cmovnbe sil, [rax+rdx]
+    cmovs sil, [rax+rdx]
+    cmovns sil, [rax+rdx]
+    cmovp sil, [rax+rdx]
+    cmovpe sil, [rax+rdx]
+    cmovnp sil, [rax+rdx]
+    cmovpo sil, [rax+rdx]
+    cmovl sil, [rax+rdx]
+    cmovnge sil, [rax+rdx]
+    cmovge sil, [rax+rdx]
+    cmovnl sil, [rax+rdx]
+    cmovle sil, [rax+rdx]
+    cmovng sil, [rax+rdx]
+    cmovg sil, [rax+rdx]
+    cmovnle sil, [rax+rdx]
+
+    cmovo r10d, [r8+r10*8]
+    cmovno r10d, [r8+r10*8]
+    cmovb r10d, [r8+r10*8]
+    cmovc r10d, [r8+r10*8]
+    cmovnae r10d, [r8+r10*8]
+    cmovae r10d, [r8+r10*8]
+    cmovnb r10d, [r8+r10*8]
+    cmovnc r10d, [r8+r10*8]
+    cmove r10d, [r8+r10*8]
+    cmovz r10d, [r8+r10*8]
+    cmovne r10d, [r8+r10*8]
+    cmovnz r10d, [r8+r10*8]
+    cmovbe r10d, [r8+r10*8]
+    cmovna r10d, [r8+r10*8]
+    cmova r10d, [r8+r10*8]
+    cmovnbe r10d, [r8+r10*8]
+    cmovs r10d, [r8+r10*8]
+    cmovns r10d, [r8+r10*8]
+    cmovp r10d, [r8+r10*8]
+    cmovpe r10d, [r8+r10*8]
+    cmovnp r10d, [r8+r10*8]
+    cmovpo r10d, [r8+r10*8]
+    cmovl r10d, [r8+r10*8]
+    cmovnge r10d, [r8+r10*8]
+    cmovge r10d, [r8+r10*8]
+    cmovnl r10d, [r8+r10*8]
+    cmovle r10d, [r8+r10*8]
+    cmovng r10d, [r8+r10*8]
+    cmovg r10d, [r8+r10*8]
+    cmovnle r10d, [r8+r10*8]
+
+    cmovo eax, [rax+rcx*2+14]
+    cmovno eax, [rax+rcx*2+14]
+    cmovb eax, [rax+rcx*2+14]
+    cmovc eax, [rax+rcx*2+14]
+    cmovnae eax, [rax+rcx*2+14]
+    cmovae eax, [rax+rcx*2+14]
+    cmovnb eax, [rax+rcx*2+14]
+    cmovnc eax, [rax+rcx*2+14]
+    cmove eax, [rax+rcx*2+14]
+    cmovz eax, [rax+rcx*2+14]
+    cmovne eax, [rax+rcx*2+14]
+    cmovnz eax, [rax+rcx*2+14]
+    cmovbe eax, [rax+rcx*2+14]
+    cmovna eax, [rax+rcx*2+14]
+    cmova eax, [rax+rcx*2+14]
+    cmovnbe eax, [rax+rcx*2+14]
+    cmovs eax, [rax+rcx*2+14]
+    cmovns eax, [rax+rcx*2+14]
+    cmovp eax, [rax+rcx*2+14]
+    cmovpe eax, [rax+rcx*2+14]
+    cmovnp eax, [rax+rcx*2+14]
+    cmovpo eax, [rax+rcx*2+14]
+    cmovl eax, [rax+rcx*2+14]
+    cmovnge eax, [rax+rcx*2+14]
+    cmovge eax, [rax+rcx*2+14]
+    cmovnl eax, [rax+rcx*2+14]
+    cmovle eax, [rax+rcx*2+14]
+    cmovng eax, [rax+rcx*2+14]
+    cmovg eax, [rax+rcx*2+14]
+    cmovnle eax, [rax+rcx*2+14]
+
+    cmovo eax, [rsp+rbp]
+    cmovno eax, [rsp+rbp]
+    cmovb eax, [rsp+rbp]
+    cmovc eax, [rsp+rbp]
+    cmovnae eax, [rsp+rbp]
+    cmovae eax, [rsp+rbp]
+    cmovnb eax, [rsp+rbp]
+    cmovnc eax, [rsp+rbp]
+    cmove eax, [rsp+rbp]
+    cmovz eax, [rsp+rbp]
+    cmovne eax, [rsp+rbp]
+    cmovnz eax, [rsp+rbp]
+    cmovbe eax, [rsp+rbp]
+    cmovna eax, [rsp+rbp]
+    cmova eax, [rsp+rbp]
+    cmovnbe eax, [rsp+rbp]
+    cmovs eax, [rsp+rbp]
+    cmovns eax, [rsp+rbp]
+    cmovp eax, [rsp+rbp]
+    cmovpe eax, [rsp+rbp]
+    cmovnp eax, [rsp+rbp]
+    cmovpo eax, [rsp+rbp]
+    cmovl eax, [rsp+rbp]
+    cmovnge eax, [rsp+rbp]
+    cmovge eax, [rsp+rbp]
+    cmovnl eax, [rsp+rbp]
+    cmovle eax, [rsp+rbp]
+    cmovng eax, [rsp+rbp]
+    cmovg eax, [rsp+rbp]
+    cmovnle eax, [rsp+rbp]
+
+    cmovo eax, [r8]
+    cmovno eax, [r8]
+    cmovb eax, [r8]
+    cmovc eax, [r8]
+    cmovnae eax, [r8]
+    cmovae eax, [r8]
+    cmovnb eax, [r8]
+    cmovnc eax, [r8]
+    cmove eax, [r8]
+    cmovz eax, [r8]
+    cmovne eax, [r8]
+    cmovnz eax, [r8]
+    cmovbe eax, [r8]
+    cmovna eax, [r8]
+    cmova eax, [r8]
+    cmovnbe eax, [r8]
+    cmovs eax, [r8]
+    cmovns eax, [r8]
+    cmovp eax, [r8]
+    cmovpe eax, [r8]
+    cmovnp eax, [r8]
+    cmovpo eax, [r8]
+    cmovl eax, [r8]
+    cmovnge eax, [r8]
+    cmovge eax, [r8]
+    cmovnl eax, [r8]
+    cmovle eax, [r8]
+    cmovng eax, [r8]
+    cmovg eax, [r8]
+    cmovnle eax, [r8]

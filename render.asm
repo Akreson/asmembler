@@ -653,7 +653,6 @@ remove_modrm_byte:
     rep movsb
     ret
 
-
 apply_reg_mask_to_modrm:
     mov r11b, [r9+9]
     shl r11b, 3
@@ -2739,6 +2738,30 @@ _end_process_bsf:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_cmovcc:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    xor ebx, ebx
+    mov bx, 0x400F
+    mov eax, [rsi+25]; header_size + type + ptr to str
+    mov ecx, INS_CMOVO
+    sub eax, ecx
+    shl eax, 8
+    add ebx, eax
+    mov word [rbp-64], bx
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template2
+_end_process_cmovcc:
+    add rsp, 192
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -2871,8 +2894,15 @@ _check_ins_rps_jmp:
     mov edx, ebx
     and edx, INS_JMP_TYPE_MASK
     test edx, edx
-    jz _err_processing_start_token 
+    jz _check_ins_rps_cmovcc 
     call process_jumps
+    jmp _start_loop_process_segment
+_check_ins_rps_cmovcc:
+    mov edx, ebx
+    and edx, INS_CMOVCC_TYPE_MASK
+    test edx, edx
+    jz _err_processing_start_token 
+    call process_cmovcc
     jmp _start_loop_process_segment
 _err_processing_start_token:
     exit_m -6
