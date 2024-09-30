@@ -847,23 +847,24 @@ switch_reg_to_r_rm:
     jz _switch_r_rm_skip_rex
     mov bl, al
     mov cl, al
+    and al, 0x78
     and bl, REX_B
-    shr bl, 2
+    shl bl, 2
     and cl, REX_R
-    shl cl, 2
-    or bl, cl
-    or bl, REX
-    movzx edx, byte [rsi+25]
-    mov [rdi+rdx+16], bl
+    shr cl, 2
+    or al, cl
+    or al, bl
+    movzx edx, byte [rdi+25]
+    mov [rdi+rdx+15], al; -1 from offset since affter rex prefis was added +25 was inc.
 _switch_r_rm_skip_rex:
     mov cl, [rdi]
     mov bl, cl
-    mov al, dl
-    or cl, 0xC0
-    or bl, 0x38
-    or al, 0x07
-    shl bl, 3
-    shr al, 3
+    mov al, cl
+    and cl, 0xC0
+    and bl, 0x38
+    and al, 0x07
+    shr bl, 3
+    shl al, 3
     or cl, bl
     or cl, al
     mov [rdi], cl
