@@ -1,6 +1,7 @@
 ; ins code struct (32 bytes)
-; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (8 bytes) prefix bytes, +24 post opcode bytes count,
-; +25 prefix bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
+; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (6 bytes) prefix bytes,
+; +22 16 bit addr prefix, +23 16 bit op prefix +24 post opcode bytes count,
+; +25 prefix buff bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
 ; +29 (4) opcode bytes, +33 opcode bytes count, +34 ins operands type, (1 byte reserved)
 ; +36 1st op reg, +40 2nd op reg, +44 3rd op reg, +48 4th op reg, +52 rex byte
 INS_CODE_STRUCT_SIZE equ 64
@@ -670,16 +671,29 @@ default_ins_assemble:
     call entry_array_curr_ptr
     mov rdi, rax
     mov r8, [rbp-16]
+    lea rsi, [r8+22]
+    movzx ecx, byte [r8+22]
+    shr ecx, 6
+    add rax, rcx
+    rep movsb
+    lea rsi, [r8+23]
+    movzx ecx, byte [r8+23]
+    shr ecx, 6
+    add rax, rcx
+    rep movsb
     lea rsi, [r8+16]
     movzx ecx, byte [r8+25]
     add rax, rcx
     rep movsb
-    mov rdi, rax
+    lea rsi, [r8+52]
+    movzx ecx, byte [r8+52]
+    shr ecx, 6
+    add rax, rcx
+    rep movsb
     lea rsi, [r8+29]
     movzx ecx, byte [r8+33]
     add rax, rcx
     rep movsb
-    mov rdi, rax
     mov rsi, r8
     movzx ecx, byte [r8+24]
     add rax, rcx
@@ -745,16 +759,11 @@ _gen_r_init_rm:
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_r_rex_check
-    mov byte [rsi+16], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_r_rex_check:
     test r9b, r9b
     jz _success_gen_r
-    movzx eax, byte [rsi+25]
-    mov [rsi+rax+16], r9b
-    mov [r10+52], r9b
-    inc al
-    mov [rsi+25], al
+    mov [rsi+52], r9b
 _success_gen_r:
     xor eax, eax
 _end_process_gen_r:
@@ -807,7 +816,6 @@ _gen_r_r_2rex_check:
     and ebx, REG_MASK_REG_IDX
 _gen_r_r_set_arg:
     xor r12, r12
-    lea r11, [rsi+16]
     shl ebx, 3
     or r12b, al
     or r12b, bl
@@ -817,16 +825,11 @@ _gen_r_r_set_arg:
     cmp edx, REG_MASK_VAL_16B
     jne _gen_r_r_set_prefix
 _gen_r_r16:
-    mov byte [r11], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_r_r_set_prefix:
     test r9b, r9b
     jz _success_gen_r_r
-    movzx eax, byte [rsi+25]
-    mov [r11+rax], r9b
     mov [rsi+52], r9b
-    inc eax
-    mov [rsi+25], al
     jmp _success_gen_r_r
 _err_gen_r_r_unrec_size:
 _err_gen_r_r_unmatch_size:
@@ -853,8 +856,7 @@ switch_reg_to_r_rm:
     shr cl, 2
     or al, cl
     or al, bl
-    movzx edx, byte [rdi+25]
-    mov [rdi+rdx+15], al; -1 from offset since affter rex prefis was added +25 was inc.
+    mov [rdi+52], al
 _switch_r_rm_skip_rex:
     mov cl, [rdi]
     mov bl, cl
@@ -995,23 +997,17 @@ _gen_rm_i_check_arg_th:
     and eax, REG_MASK_REG_IDX
 _gen_rm_i_set_arg:
     xor r12, r12
-    lea r11, [rsi+16]
     or r12b, MOD_REG
     or r12b, al
     mov [rsi], r12b
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_rm_i_set_prefix
-    mov byte [r11], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_rm_i_set_prefix:
     test r9b, r9b
     jz _gen_rm_i_set_postfix
-    movzx eax, byte [rsi+25]
-    mov [r11+rax], r9b
     mov [rsi+52], r9b
-    inc al
-    mov byte [rsi+25], al
 _gen_rm_i_set_postfix:
     mov rdi, r8
     mov ecx, edx
@@ -1469,8 +1465,7 @@ _gen_r_a_init_rm:
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_r_a_addr_check
-    mov byte [rsi+16], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_r_a_addr_check:
     add rdi, 15
     mov edx, r9d
@@ -1484,12 +1479,7 @@ _gen_r_a_addr_check:
     test r9b, r9b
     jz _success_gen_r_a
     mov rsi, [rbp-16]
-    lea r11, [rsi+16]
-    movzx eax, byte [rsi+25]
-    mov [r11+rax], r9b
     mov [rsi+52], r9b
-    inc al
-    mov [rsi+25], al
     jmp _success_gen_r_a
 _err_process_gen_r_a:
 _success_gen_r_a:
@@ -1531,8 +1521,7 @@ _gen_a_skip_size_check:
     mov al, [rsi+26]
     cmp al, REG_MASK_VAL_16B
     jne _gen_a_test_64
-    mov byte [rsi+16], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_a_test_64:
     cmp al, REG_MASK_VAL_64B
     jne _gen_a_test_rex
@@ -1543,11 +1532,7 @@ _gen_a_test_rex:
     test ebx, ebx
     jz _success_gen_a
 _gen_a_set_rex:
-    movzx eax, byte [rsi+25]
-    mov [rsi+rax+16], bl
-    mov [rsi+52], r9b
-    inc al
-    mov [rsi+25], al
+    mov [rsi+52], bl
     jmp _success_gen_a
 _err_gen_a_size_unspec:
 _err_process_gen_a:
@@ -1596,8 +1581,7 @@ _gen_a_r_init_rm:
     inc byte [rsi+24]
     cmp edx, REG_MASK_VAL_16B
     jne _gen_a_r_addr_check
-    mov byte [rsi+16], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_a_r_addr_check:
     mov edx, r9d
     xor ecx, ecx
@@ -1610,11 +1594,7 @@ _gen_a_r_addr_check:
     test r9b, r9b
     jz _success_gen_r_a
     mov rsi, [rbp-16]
-    movzx eax, byte [rsi+25]
-    mov [rsi+rax+16], r9b
     mov [rsi+52], r9b
-    inc al
-    mov [rsi+25], al
     jmp _success_gen_r_a
 _err_process_gen_a_r:
 _success_gen_a_r:
@@ -1651,8 +1631,7 @@ process_gen_a_i:
     mov al, [rsi+26]
     cmp al, REG_MASK_VAL_16B
     jne _gen_a_i_test_64
-    mov byte [rsi+16], PREFIX_16BIT
-    inc byte [rsi+25]
+    mov byte [rsi+23], PREFIX_16BIT
 _gen_a_i_test_64:
     cmp al, REG_MASK_VAL_64B
     jne _gen_a_i_test_rex
@@ -1663,11 +1642,7 @@ _gen_a_i_test_rex:
     test ebx, ebx
     jz _gen_a_i_skip_rex
 _gen_a_i_set_rex:
-    movzx eax, byte [rsi+25]
-    mov [rsi+rax+16], bl
     mov [rsi+52], r9b
-    inc al
-    mov [rsi+25], al
 _gen_a_i_skip_rex:
     mov rbx, [rbp-8]
     movzx eax, byte [rbx+2]
