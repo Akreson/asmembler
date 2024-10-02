@@ -2660,6 +2660,11 @@ _instemp2_load_opc:
     mov r9, [rbp-24]
     mov cx, word [r9]
     mov [r8+29], cx
+    mov al, [r9+2]
+    test al, al
+    jz _instemp2_assemble
+    mov [r8+16], al
+    mov byte [r8+25], 1
     jmp _instemp2_assemble
 _err_arg_size_instemp2:
 _err_invalid_argc_instemp2:
@@ -2686,7 +2691,7 @@ process_bsr:
     sub rsp, 192
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov word [rbp-64], 0xBD0F
+    mov dword [rbp-64], 0x0000BD0F
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2703,12 +2708,46 @@ process_bsf:
     sub rsp, 192
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov word [rbp-64], 0xBC0F
+    mov dword [rbp-64], 0x0000BC0F
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
     call process_ins_template2
 _end_process_bsf:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_lzcnt:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x00F3BD0F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template2
+_end_process_lzcnt:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_tzcnt:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x00F3BC0F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template2
+_end_process_tzcnt:
     add rsp, 192
     pop rbp
     ret
@@ -2727,7 +2766,7 @@ process_cmovcc:
     sub eax, ecx
     shl eax, 8
     add ebx, eax
-    mov word [rbp-64], bx
+    mov dword [rbp-64], ebx
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -2862,8 +2901,18 @@ _check_ins_rps15:
     jmp _start_loop_process_segment
 _check_ins_rps16:
     cmp ebx, INS_BSF
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps17
     call process_bsf
+    jmp _start_loop_process_segment
+_check_ins_rps17:
+    cmp ebx, INS_LZCNT
+    jne _check_ins_rps18
+    call process_lzcnt
+    jmp _start_loop_process_segment
+_check_ins_rps18:
+    cmp ebx, INS_TZCNT
+    jne _check_ins_rps_jmp
+    call process_tzcnt
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov edx, ebx

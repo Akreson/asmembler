@@ -67,6 +67,68 @@ segment readable executable
     bsf eax, [rsp]
     bsf eax, [r8]
 
+    lzcnt bx, cx
+    lzcnt esi, edi
+    lzcnt ax, r8w
+    lzcnt edx, r10d
+    lzcnt esi, r12d
+    lzcnt rax, rcx
+    lzcnt r8, rdi
+    lzcnt rsp, r10
+    lzcnt ax, [NAME_D+12]
+    lzcnt eax, [NAME_D-NAME_C]
+    lzcnt r12w, [r8+r11]
+    lzcnt r10d, [r8+r10*8]
+    lzcnt eax, [rax+rcx*2+14]
+    lzcnt edx, [rax+rdx*4-NAME_C]
+    lzcnt r12, [rbx+rdi]
+    lzcnt eax, [rbp+rax*NAME_C]
+    lzcnt eax, [rsp+rbp]
+    lzcnt al, [rdx+rcx*2]
+    lzcnt rdx, [NAME_D+22]
+    lzcnt eax, [NAME_D-0xffffff]
+    lzcnt eax, [rsp+NAME_C]
+    lzcnt eax, [rcx+12]
+    lzcnt eax, [rcx-1]
+    lzcnt eax, [rbp+8]
+    lzcnt eax, [rbp-8]
+    lzcnt eax, [rsp+123]
+    lzcnt eax, [NAME_D]
+    lzcnt eax, [rbp]
+    lzcnt eax, [rsp]
+    lzcnt eax, [r8]
+
+    tzcnt bx, cx
+    tzcnt esi, edi
+    tzcnt ax, r8w
+    tzcnt edx, r10d
+    tzcnt esi, r12d
+    tzcnt rax, rcx
+    tzcnt r8, rdi
+    tzcnt rsp, r10
+    tzcnt ax, [NAME_D+12]
+    tzcnt eax, [NAME_D-NAME_C]
+    tzcnt r12w, [r8+r11]
+    tzcnt r10d, [r8+r10*8]
+    tzcnt eax, [rax+rcx*2+14]
+    tzcnt edx, [rax+rdx*4-NAME_C]
+    tzcnt r12, [rbx+rdi]
+    tzcnt eax, [rbp+rax*NAME_C]
+    tzcnt eax, [rsp+rbp]
+    tzcnt al, [rdx+rcx*2]
+    tzcnt rdx, [NAME_D+22]
+    tzcnt eax, [NAME_D-0xffffff]
+    tzcnt eax, [rsp+NAME_C]
+    tzcnt eax, [rcx+12]
+    tzcnt eax, [rcx-1]
+    tzcnt eax, [rbp+8]
+    tzcnt eax, [rbp-8]
+    tzcnt eax, [rsp+123]
+    tzcnt eax, [NAME_D]
+    tzcnt eax, [rbp]
+    tzcnt eax, [rsp]
+    tzcnt eax, [r8]
+
     cmovo bx, cx
     cmovno bx, cx
     cmovb bx, cx
