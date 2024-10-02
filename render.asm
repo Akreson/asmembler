@@ -1592,10 +1592,10 @@ _gen_a_r_addr_check:
     jnz _err_process_gen_a_r
     mov r9d, ebx
     test r9b, r9b
-    jz _success_gen_r_a
+    jz _success_gen_a_r
     mov rsi, [rbp-16]
     mov [rsi+52], r9b
-    jmp _success_gen_r_a
+    jmp _success_gen_a_r
 _err_process_gen_a_r:
 _success_gen_a_r:
     xor rax, rax
@@ -1642,7 +1642,7 @@ _gen_a_i_test_rex:
     test ebx, ebx
     jz _gen_a_i_skip_rex
 _gen_a_i_set_rex:
-    mov [rsi+52], r9b
+    mov [rsi+52], bl
 _gen_a_i_skip_rex:
     mov rbx, [rbp-8]
     movzx eax, byte [rbx+2]
@@ -2062,6 +2062,7 @@ _end_process_idiv:
     add rsp, 192
     pop rbp
     ret
+
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_jumps:
     push rbp
