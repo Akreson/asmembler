@@ -545,7 +545,6 @@ get_ins_argc:
     call curr_token_buf_start_ptr
     movzx eax, byte [rax+rdi+31]
     ret
-   
 
 ;rdi - ptr to element buff with elements size of size 1, rsi - push from addr 
 push_direct:
@@ -659,7 +658,7 @@ _end_convert_digit_to_neg:
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
-;-84 temp token buf ptr / temp token buf offset, -92 temp var
+;-84 temp token buf ptr / temp token buf offset, -92 temp var, 
 ; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
@@ -691,6 +690,41 @@ _begin_ins_sp:
     mov esi, [rbp-52]
     call push_token_entry_header
     mov [rbp-76], ebx
+    mov edx, [rbp-8]
+    and edx, PREF_INS_TYPE_MASK
+    jz __ins_skip_prefix
+__ins_pref_check_sp:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_INS
+    jne _err_invalid_expr
+    mov ecx, [rbp-24]
+    and ecx, INS_CAN_HAS_PREFIX_MASK
+    test ecx, ecx
+    jz _err_invalid_expr
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    call push_direct
+    call curr_seg_ptr
+    mov rdi, rax
+    mov esi, 1
+    call entry_array_reserve_size
+    mov byte [rax], 0
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+    lea rsi, [rbp-32]
+    lea rdi, [rbp-16]
+    mov ecx, 16
+    rep movsb
+    jmp __ins_prefix_end
+__ins_skip_prefix:
     call curr_seg_ptr
     mov rdi, rax
     lea rsi, [rbp-16]
@@ -700,6 +734,10 @@ _begin_ins_sp:
     mov esi, 1
     call entry_array_reserve_size
     mov byte [rax], 0
+__ins_prefix_end:
+    mov ebx, [rbp-8]
+    and ebx, INS_ZERO_ARG_MASK
+    jnz __ins_set_token_group
 __get_ins_arg:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
@@ -753,7 +791,7 @@ __ins_kw_check_sp:
     jmp __ins_addr_tokens
 __ins_aux_check_sp:
     cmp eax, TOKEN_TYPE_AUX
-    jne __ins_pref_check_sp
+    jne __ins_name_check_sp
     mov ecx, [rbp-24]
     cmp ecx, AUX_LBRACKET
     jne ___ins_aux_check_sub_sp
@@ -775,18 +813,6 @@ ___ins_aux_check_sub_sp:
     test rax, rax
     jz _err_invalid_expr
     jmp ___ins_digit_set_sp
-__ins_pref_check_sp:
-    cmp eax, TOKEN_TYPE_INS
-    jne __ins_name_check_sp
-    mov ecx, [rbp-8]
-    and ecx, PREF_INS_TYPE_MASK
-    test ecx, ecx
-    jz _err_invalid_expr
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-32]
-    call push_direct
-    jmp __get_ins_arg
 __ins_name_check_sp:
     cmp eax, TOKEN_TYPE_NAME
     jne __ins_digit_check_sp
@@ -1015,6 +1041,19 @@ ___ins_addr_scale_set:
     or edx, esi
     mov [rbp-72], edx
     jmp ___ins_addr_def
+__ins_set_token_group:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne ___ins_next_arg_eof
+    mov ecx, [rbp-24]
+    cmp ecx, AUX_NEW_LINE
+    jne _err_invalid_expr
+    jmp ___ins_next_arg_set_body_size 
 __ins_next_arg_check:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
@@ -1027,6 +1066,7 @@ __ins_next_arg_check:
     mov ecx, [rbp-24]
     cmp ecx, AUX_NEW_LINE
     jne ___ins_next_arg_comma
+___ins_next_arg_set_body_size:
     mov edi, [rbp-76]
     call set_tbuf_body_size
     jmp _new_entry_start_ps

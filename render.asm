@@ -1,9 +1,11 @@
 ; ins code struct (32 bytes)
 ; 0 (16 bytes) post opcodes bytes (1st byte is ModR/M), +16 (6 bytes) prefix bytes,
-; +22 16 bit addr prefix, +23 16 bit op prefix +24 post opcode bytes count,
+; +22 16 bit addr prefix, +23 16 bit op prefix, +24 post opcode bytes count,
 ; +25 prefix buff bytes count, +26 1st arg size, +27 2nd arg size, +28 3rd arg size,
 ; +29 (4) opcode bytes, +33 opcode bytes count, +34 ins operands type, (1 byte reserved)
-; +36 1st op reg, +40 2nd op reg, +44 3rd op reg, +48 4th op reg, +52 rex byte
+; +36 1st op reg, +40 2nd op reg, +44 3rd op reg, +48 4th op reg, +52 rex byte,
+; +53 prefix flags
+
 INS_CODE_STRUCT_SIZE equ 64
 
 OP1_TYPE_R equ 0x1
@@ -46,6 +48,10 @@ ADDR_PATCH_TYPE_DEF_RIP equ 0x01
 ADDR_PATCH_TYPE_JMP_RIP equ 0x11
 ADDR_PATCH_TYPE_JCC_RIP equ 0x21
 ADDR_PATCH_TYPE_ABS     equ 0x02
+
+PREFIX_TYPE_REP  equ 0x01
+PREFIX_TYPE_REPN equ 0x02
+PREFIX_TYPE_LOCK equ 0x04
 
 segment readable writeable
 
@@ -1688,10 +1694,15 @@ process_mov:
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
-    je _mov_r
+    je _mov_direct
     cmp ebx, TOKEN_BUF_ADDR
     je _mov_a
     jmp _err_invalid_first_param_mov
+_mov_direct:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    je _mov_r
+    jmp _err_parse_mov
 _mov_r:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
@@ -1896,10 +1907,15 @@ process_ins_template1:
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
-    je _instemp1_r
+    je _instemp1_direct
     cmp ebx, TOKEN_BUF_ADDR
     je _instemp1_a
     jmp _err_instemp1_invalid_first_param
+_instemp1_direct:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    je _instemp1_r
+    jmp _err_instemp1_parse
 _instemp1_r:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
@@ -2256,6 +2272,11 @@ process_ins_template0:
     cmp ebx, TOKEN_BUF_ADDR
     je _instemp0_a
     jmp _err_invalid_first_param_instemp0
+_instemp0_direct:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    je _instemp0_r
+    jmp _err_parse_instemp0
 _instemp0_r:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
@@ -2559,7 +2580,6 @@ _end_process_cmp:
     add rsp, 192
     pop rbp
     ret
-
 
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_test:
