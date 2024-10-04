@@ -181,6 +181,18 @@ INS_CMOVGE  equ 0x12000043
 INS_CMOVLE  equ 0x12000044
 INS_CMOVG   equ 0x12000045
 
+INS_REP   equ 0x18000046
+INS_REPE  equ 0x18000047
+INS_REPZ  equ 0x18000048
+INS_REPNE equ 0x18000049
+INS_REPNZ equ 0x1800004A
+INS_LOCK  equ 0x1800004B
+
+INS_STOSB equ 0x1140004C
+INS_STOSW equ 0x1140004D
+INS_STOSD equ 0x1140004E
+INS_STOSQ equ 0x1140004F
+
 AUX_COLON     equ 0x20000000
 AUX_LPAREN    equ 0x20000001
 AUX_RPAREN    equ 0x20000002
@@ -302,13 +314,15 @@ STR_R14 db "r14"
 STR_R15 db "r15"
 
 
-;STR_REPS
-STR_REP   db "rep"
 STR_MOV   db "mov"
 STR_MOVSB db "movsb"
 STR_MOVSW db "movsw"
 STR_MOVSD db "movsd"
 STR_MOVSQ db "movsq"
+STR_STOSB db "stosb"
+STR_STOSW db "stosw"
+STR_STOSD db "stosd"
+STR_STOSQ db "stosq"
 STR_MOVZX db "movzx"
 STR_MOVSX db "movcx"
 STR_LEA   db "lea"
@@ -403,6 +417,13 @@ STR_CMOVLE  db "cmovle"
 STR_CMOVNG  db "cmovng"
 STR_CMOVG   db "cmovg"
 STR_CMOVNLE db "cmovnle"
+
+STR_REP   db "rep"
+STR_REPE  db "repe"
+STR_REPZ  db "repz"
+STR_REPNE db "repne"
+STR_REPNZ db "repnz"
+STR_LOCK  db "lock"
 
 STR_KW_DB db "db"
 STR_KW_DW db "dw"
@@ -540,11 +561,21 @@ def_symbol_m REG_R14, TOKEN_TYPE_REG, STR_R14, 3
 def_symbol_m REG_R15, TOKEN_TYPE_REG, STR_R15, 3
 
 def_symbol_m INS_REP, TOKEN_TYPE_INS, STR_REP, 3
+def_symbol_m INS_REPE, TOKEN_TYPE_INS, STR_REPE, 4
+def_symbol_m INS_REPZ, TOKEN_TYPE_INS, STR_REPZ, 4
+def_symbol_m INS_REPNE, TOKEN_TYPE_INS, STR_REPNE, 5
+def_symbol_m INS_REPNZ, TOKEN_TYPE_INS, STR_REPNZ, 5
+def_symbol_m INS_LOCK, TOKEN_TYPE_INS, STR_LOCK, 4
+
 def_symbol_m INS_MOV, TOKEN_TYPE_INS, STR_MOV, 3
 def_symbol_m INS_MOVSB, TOKEN_TYPE_INS, STR_MOVSB, 5
 def_symbol_m INS_MOVSW, TOKEN_TYPE_INS, STR_MOVSW, 5
 def_symbol_m INS_MOVSD, TOKEN_TYPE_INS, STR_MOVSD, 5
 def_symbol_m INS_MOVSQ, TOKEN_TYPE_INS, STR_MOVSQ, 5
+def_symbol_m INS_STOSB, TOKEN_TYPE_INS, STR_STOSB, 5
+def_symbol_m INS_STOSW, TOKEN_TYPE_INS, STR_STOSW, 5
+def_symbol_m INS_STOSD, TOKEN_TYPE_INS, STR_STOSD, 5
+def_symbol_m INS_STOSQ, TOKEN_TYPE_INS, STR_STOSQ, 5
 def_symbol_m INS_MOVZX, TOKEN_TYPE_INS, STR_MOVZX, 5
 def_symbol_m INS_MOVSX, TOKEN_TYPE_INS, STR_MOVSX, 5
 def_symbol_m INS_LEA, TOKEN_TYPE_INS, STR_LEA, 3

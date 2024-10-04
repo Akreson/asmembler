@@ -728,6 +728,37 @@ render_err_first_param:
     pop rbp
     ret
 
+; rdi - ptr to ins code struct, rsi - symbol of prefix
+set_def_pref_by_symbol:
+    cmp rsi, INS_REP
+    je __set_def_pref_bs_rep
+    cmp rsi, INS_REPE
+    je __set_def_pref_bs_rep
+    cmp rsi, INS_REPZ
+    jne _set_def_pref_bs_check_repn
+__set_def_pref_bs_rep:
+    mov bl, 0xF3
+    mov cl, PREFIX_TYPE_REP
+    jmp _end_set_def_pref_by_symbol
+_set_def_pref_bs_check_repn:
+    cmp rsi, INS_REPNE
+    je __set_def_pref_bs_repn
+    cmp rsi, INS_REPNZ
+    jne _set_def_pref_bs_lock
+__set_def_pref_bs_repn:
+    mov bl, 0xF2
+    mov cl, PREFIX_TYPE_REPN
+    jmp _end_set_def_pref_by_symbol
+_set_def_pref_bs_lock:
+    mov bl, 0xF0
+    mov cl, PREFIX_TYPE_LOCK
+_end_set_def_pref_by_symbol:
+    movzx eax, byte [rdi+25] 
+    mov [rdi+rax+16], bl
+    mov [rdi+53], cl
+    inc byte [rdi+25]
+    ret
+
 ; rdi - dest, rsi - source, ecx - size
 shift_and_clear_postfix_buf:
 
@@ -2797,6 +2828,127 @@ _end_process_cmovcc:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
+process_ins_template3:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    xor rax, rax
+    mov rdi, rdx
+    mov r8, rdx
+    rep stosb
+    xor r9b, r9b
+    mov byte [r8+33], 1
+    mov rcx, [rbp-24]
+    mov al, [rcx+2]
+    cmp al, 3
+    jne _instemp3_check_w
+    mov bl, [rcx]
+    jmp _instemp3_set_op
+_instemp3_check_w:
+    cmp al, 2
+    jne _instemp3_check_d
+    mov bl, [rcx+1]
+    mov byte [r8+23], PREFIX_16BIT 
+    jmp _instemp3_set_op
+_instemp3_check_d:
+    cmp al, 1
+    jne _instemp3_check_q
+    mov bl, [rcx+1]
+    jmp _instemp3_set_op
+_instemp3_check_q:
+    cmp al, 0
+    jne _err_instemp3_parse
+    mov bl, [rcx+1]
+    or r9b, REX
+    or r9b, REX_W
+_instemp3_set_op:
+    mov [r8+29], bl
+    mov [r8+52], r9b
+    movzx edx, word [rsi+12]
+    mov rax, rsi
+    add rax, TOKEN_HEADER_PLUS_INS_TOKEN 
+    add rsi, rdx
+    cmp rsi, rax
+    je _instemp3_assemble
+    mov dl, [rax]
+    cmp dl, TOKEN_BUF_DIRECT
+    jne _err_instemp3_parse
+    mov bl, [rax+13]
+    cmp bl, TOKEN_TYPE_INS
+    jne _err_instemp3_parse
+    mov esi, [rax+9]
+    mov rdi, r8
+    call set_def_pref_by_symbol
+_instemp3_assemble:
+    mov rdi, [rbp-32]
+    mov rsi, [rbp-16]
+    call default_ins_assemble
+    jmp _success_instemp3
+_err_instemp3_parse:
+    mov eax, 1
+    jmp _end_process_instemp3
+_success_instemp3:
+    xor eax, eax
+_end_process_instemp3:
+    add rsp, 32
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_movs:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov word [rbp-64], 0xA5A4
+    mov r9, rsi
+    add r9, TOKEN_HEADER_SIZE
+    mov eax, [r9+9]
+    mov ebx, INS_MOVSQ
+    sub ebx, eax
+    mov byte [rbp-62], bl
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template3
+_end_process_movs:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_stos:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov word [rbp-64], 0xABAA
+    mov r9, rsi
+    add r9, TOKEN_HEADER_SIZE
+    mov eax, [r9+9]
+    mov ebx, INS_STOSQ
+    sub ebx, eax
+    mov byte [rbp-62], bl
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template3
+_end_process_stos:
+    add rsp, 192
+    pop rbp
+    ret
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -2932,20 +3084,34 @@ _check_ins_rps17:
     jmp _start_loop_process_segment
 _check_ins_rps18:
     cmp ebx, INS_TZCNT
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps19
     call process_tzcnt
     jmp _start_loop_process_segment
+_check_ins_rps19:
+    cmp ebx, INS_MOVSB
+    jb _check_ins_rps20
+    cmp ebx, INS_MOVSQ
+    ja _check_ins_rps20
+    call process_movs
+    jmp _start_loop_process_segment
+_check_ins_rps20:
+    cmp ebx, INS_STOSB
+    jb _check_ins_rps_jmp
+    cmp ebx, INS_STOSQ
+    ja _check_ins_rps_jmp
+    call process_stos
+    jmp _start_loop_process_segment
 _check_ins_rps_jmp:
-    mov edx, ebx
-    and edx, INS_JMP_TYPE_MASK
-    test edx, edx
+    mov ecx, ebx
+    and ecx, INS_JMP_TYPE_MASK
+    test ecx, ecx
     jz _check_ins_rps_cmovcc 
     call process_jumps
     jmp _start_loop_process_segment
 _check_ins_rps_cmovcc:
-    mov edx, ebx
-    and edx, INS_CMOVCC_TYPE_MASK
-    test edx, edx
+    mov ecx, ebx
+    and ecx, INS_CMOVCC_TYPE_MASK
+    test ecx, ecx
     jz _err_processing_start_token 
     call process_cmovcc
     jmp _start_loop_process_segment

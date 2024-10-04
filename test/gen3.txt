@@ -1,0 +1,17 @@
+segment readable executable
+    movsb
+    movsw
+    movsd
+    movsq
+    rep movsb
+    rep movsw
+    repz movsd
+    repe movsq
+    stosb
+    stosw
+    stosd
+    stosq
+    rep stosb
+    rep stosw
+    repz stosd
+    repe stosq
