@@ -2301,15 +2301,14 @@ process_ins_template0:
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
-    je _instemp0_r
+    je _instemp0_direct
     cmp ebx, TOKEN_BUF_ADDR
     je _instemp0_a
     jmp _err_invalid_first_param_instemp0
 _instemp0_direct:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
-    je _instemp0_r
-    jmp _err_parse_instemp0
+    jne _err_parse_instemp0
 _instemp0_r:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
@@ -2415,7 +2414,7 @@ _instemp0_rm_rm:
     mov dl, [r8+26]
     cmp dl, REG_MASK_VAL_8B
     cmovne ecx, ebx ; already loaded
-    mov byte [r8+29], cl
+    mov [r8+29], cl
     jmp _instemp0_assemble
 _instemp0_rm_i:
     mov r9, [rbp-24]
@@ -2509,7 +2508,7 @@ process_add:
     mov [rbp-16], rsi
     mov dword [rbp-64], 0x81800504
     mov dword [rbp-60], 0x02010083
-    mov dword [rbp-56], 0x00000003 ; last opcode + reg mask
+    mov dword [rbp-56], 0x00000003 ; flag, (reserved), reg mask, last opcode
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
