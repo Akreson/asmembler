@@ -1,0 +1,599 @@
+segment readable executable
+    shl eax,cl
+    shr dword [NAME_D-NAME_C],23
+    shr qword [rax], cl
+    shr dword [NAME_D-NAME_C], cl
+    shr word [r8+r11], cl
+    shr byte [rax+rdx], cl
+    shr word [NAME_D+12], cl
+    shr word [r8+r11], cl
+    shr byte [rax+rdx+2], cl
+    shr dword [r8+r10*8], cl
+    shr dword [rax+rcx*2+14], cl
+    shr qword [rax+rdx*4-NAME_C], cl
+    shr qword [rbx+rdi], cl
+    shr dword [rbp+rax*NAME_C], cl
+    shr word [rsp+rbp], cl
+    shr byte [rdx+rcx*2], cl
+    shr dword [NAME_D+22], cl
+    shr byte [NAME_D-0xffffff], cl
+    shr dword [rsp+NAME_C], cl
+    shr byte [rcx+12], cl
+    shr byte [rcx-1], cl
+    shr byte [rbp+8], cl
+    shr byte [rbp-8], cl
+    shr byte [rsp+123], cl
+    shr byte [NAME_D], cl
+    shr byte [rbp], cl
+    shr byte [rsp], cl
+    shr byte [r11], cl
+    shr byte [r8], cl
+    shr byte [r9], cl
+    shr word [r8+r11],23
+    shr byte [rax+rdx],23
+    shr word [NAME_D+12],23
+    shr word [r8+r11],23
+    shr qword [rax],23
+    shr byte [rax+rdx+2],23
+    shr dword [r8+r10*8],23
+    shr dword [rax+rcx*2+14],23
+    shr qword [rax+rdx*4-NAME_C],23
+    shr qword [rbx+rdi],23
+    shr dword [rbp+rax*NAME_C],23
+    shr word [rsp+rbp],23
+    shr byte [rdx+rcx*2],23
+    shr dword [NAME_D+22],23
+    shr byte [NAME_D-0xffffff],23
+    shr dword [rsp+NAME_C],23
+    shr byte [rcx+12],23
+    shr byte [rcx-1],23
+    shr byte [rbp+8],23
+    shr byte [rbp-8],23
+    shr byte [rsp+123],23
+    shr byte [NAME_D],23
+    shr byte [rbp],23
+    shr byte [rsp],23
+    shr byte [r11],23
+    shr byte [r8],23
+    shr byte [r9],23
+    shr dword [NAME_D-NAME_C],1
+    shr word [r8+r11],1
+    shr byte [rax+rdx],1
+    shr word [NAME_D+12],1
+    shr word [r8+r11],1
+    shr qword [rax],1
+    shr byte [rax+rdx+2],1
+    shr dword [r8+r10*8],1
+    shr dword [rax+rcx*2+14],1
+    shr qword [rax+rdx*4-NAME_C],1
+    shr qword [rbx+rdi],1
+    shr dword [rbp+rax*NAME_C],1
+    shr word [rsp+rbp],1
+    shr byte [rdx+rcx*2],1
+    shr dword [NAME_D+22],1
+    shr byte [NAME_D-0xffffff],1
+    shr dword [rsp+NAME_C],1
+    shr byte [rcx+12],1
+    shr byte [rcx-1],1
+    shr byte [rbp+8],1
+    shr byte [rbp-8],1
+    shr byte [rsp+123],1
+    shr byte [NAME_D],1
+    shr byte [rbp],1
+    shr byte [rsp],1
+    shr byte [r11],1
+    shr byte [r8],1
+    shr byte [r9],1
+    shr eax,cl
+    shr rax,cl
+    shr r8d,cl
+    shr al,cl
+    shr bx,cl
+    shr esi,cl
+    shr r9b,cl
+    shr ax,cl
+    shr edx,cl
+    shr esi,cl
+    shr rax,cl
+    shr r9,cl
+    shr r8w,cl
+    shr r14b,cl
+    shr sil,cl
+    shr bpl,cl
+    shr dil,cl
+    shr al,cl
+    shr bx,cl
+    shr esi,cl
+    shr rsp,cl
+    shr eax,12
+    shr rax,12
+    shr r8d,12
+    shr al,12
+    shr bx,12
+    shr esi,12
+    shr r9b,12
+    shr ax,12
+    shr edx,12
+    shr esi,12
+    shr rax,12
+    shr r9,12
+    shr r8w,12
+    shr r14b,12
+    shr sil,12
+    shr bpl,12
+    shr dil,12
+    shr al,12
+    shr bx,12
+    shr esi,12
+    shr rsp,12
+    shr eax,1
+    shr rax,1
+    shr r8d,1
+    shr al,1
+    shr bx,1
+    shr esi,1
+    shr r9b,1
+    shr ax,1
+    shr edx,1
+    shr esi,1
+    shr rax,1
+    shr r9,1
+    shr r8w,1
+    shr r14b,1
+    shr sil,1
+    shr bpl,1
+    shr dil,1
+    shr al,1
+    shr bx,1
+    shr esi,1
+    shr rsp,1
+
+    shl dword [NAME_D-NAME_C],23
+    shl qword [rax], cl
+    shl dword [NAME_D-NAME_C], cl
+    shl word [r8+r11], cl
+    shl byte [rax+rdx], cl
+    shl word [NAME_D+12], cl
+    shl word [r8+r11], cl
+    shl byte [rax+rdx+2], cl
+    shl dword [r8+r10*8], cl
+    shl dword [rax+rcx*2+14], cl
+    shl qword [rax+rdx*4-NAME_C], cl
+    shl qword [rbx+rdi], cl
+    shl dword [rbp+rax*NAME_C], cl
+    shl word [rsp+rbp], cl
+    shl byte [rdx+rcx*2], cl
+    shl dword [NAME_D+22], cl
+    shl byte [NAME_D-0xffffff], cl
+    shl dword [rsp+NAME_C], cl
+    shl byte [rcx+12], cl
+    shl byte [rcx-1], cl
+    shl byte [rbp+8], cl
+    shl byte [rbp-8], cl
+    shl byte [rsp+123], cl
+    shl byte [NAME_D], cl
+    shl byte [rbp], cl
+    shl byte [rsp], cl
+    shl byte [r11], cl
+    shl byte [r8], cl
+    shl byte [r9], cl
+    shl word [r8+r11],23
+    shl byte [rax+rdx],23
+    shl word [NAME_D+12],23
+    shl word [r8+r11],23
+    shl qword [rax],23
+    shl byte [rax+rdx+2],23
+    shl dword [r8+r10*8],23
+    shl dword [rax+rcx*2+14],23
+    shl qword [rax+rdx*4-NAME_C],23
+    shl qword [rbx+rdi],23
+    shl dword [rbp+rax*NAME_C],23
+    shl word [rsp+rbp],23
+    shl byte [rdx+rcx*2],23
+    shl dword [NAME_D+22],23
+    shl byte [NAME_D-0xffffff],23
+    shl dword [rsp+NAME_C],23
+    shl byte [rcx+12],23
+    shl byte [rcx-1],23
+    shl byte [rbp+8],23
+    shl byte [rbp-8],23
+    shl byte [rsp+123],23
+    shl byte [NAME_D],23
+    shl byte [rbp],23
+    shl byte [rsp],23
+    shl byte [r11],23
+    shl byte [r8],23
+    shl byte [r9],23
+    shl dword [NAME_D-NAME_C],1
+    shl word [r8+r11],1
+    shl byte [rax+rdx],1
+    shl word [NAME_D+12],1
+    shl word [r8+r11],1
+    shl qword [rax],1
+    shl byte [rax+rdx+2],1
+    shl dword [r8+r10*8],1
+    shl dword [rax+rcx*2+14],1
+    shl qword [rax+rdx*4-NAME_C],1
+    shl qword [rbx+rdi],1
+    shl dword [rbp+rax*NAME_C],1
+    shl word [rsp+rbp],1
+    shl byte [rdx+rcx*2],1
+    shl dword [NAME_D+22],1
+    shl byte [NAME_D-0xffffff],1
+    shl dword [rsp+NAME_C],1
+    shl byte [rcx+12],1
+    shl byte [rcx-1],1
+    shl byte [rbp+8],1
+    shl byte [rbp-8],1
+    shl byte [rsp+123],1
+    shl byte [NAME_D],1
+    shl byte [rbp],1
+    shl byte [rsp],1
+    shl byte [r11],1
+    shl byte [r8],1
+    shl byte [r9],1
+    shl eax,cl
+    shl rax,cl
+    shl r8d,cl
+    shl al,cl
+    shl bx,cl
+    shl esi,cl
+    shl r9b,cl
+    shl ax,cl
+    shl edx,cl
+    shl esi,cl
+    shl rax,cl
+    shl r9,cl
+    shl r8w,cl
+    shl r14b,cl
+    shl sil,cl
+    shl bpl,cl
+    shl dil,cl
+    shl al,cl
+    shl bx,cl
+    shl esi,cl
+    shl rsp,cl
+    shl eax,12
+    shl rax,12
+    shl r8d,12
+    shl al,12
+    shl bx,12
+    shl esi,12
+    shl r9b,12
+    shl ax,12
+    shl edx,12
+    shl esi,12
+    shl rax,12
+    shl r9,12
+    shl r8w,12
+    shl r14b,12
+    shl sil,12
+    shl bpl,12
+    shl dil,12
+    shl al,12
+    shl bx,12
+    shl esi,12
+    shl rsp,12
+    shl eax,1
+    shl rax,1
+    shl r8d,1
+    shl al,1
+    shl bx,1
+    shl esi,1
+    shl r9b,1
+    shl ax,1
+    shl edx,1
+    shl esi,1
+    shl rax,1
+    shl r9,1
+    shl r8w,1
+    shl r14b,1
+    shl sil,1
+    shl bpl,1
+    shl dil,1
+    shl al,1
+    shl bx,1
+    shl esi,1
+    shl rsp,1
+
+    sal dword [NAME_D-NAME_C],23
+    sal qword [rax], cl
+    sal dword [NAME_D-NAME_C], cl
+    sal word [r8+r11], cl
+    sal byte [rax+rdx], cl
+    sal word [NAME_D+12], cl
+    sal word [r8+r11], cl
+    sal byte [rax+rdx+2], cl
+    sal dword [r8+r10*8], cl
+    sal dword [rax+rcx*2+14], cl
+    sal qword [rax+rdx*4-NAME_C], cl
+    sal qword [rbx+rdi], cl
+    sal dword [rbp+rax*NAME_C], cl
+    sal word [rsp+rbp], cl
+    sal byte [rdx+rcx*2], cl
+    sal dword [NAME_D+22], cl
+    sal byte [NAME_D-0xffffff], cl
+    sal dword [rsp+NAME_C], cl
+    sal byte [rcx+12], cl
+    sal byte [rcx-1], cl
+    sal byte [rbp+8], cl
+    sal byte [rbp-8], cl
+    sal byte [rsp+123], cl
+    sal byte [NAME_D], cl
+    sal byte [rbp], cl
+    sal byte [rsp], cl
+    sal byte [r11], cl
+    sal byte [r8], cl
+    sal byte [r9], cl
+    sal word [r8+r11],23
+    sal byte [rax+rdx],23
+    sal word [NAME_D+12],23
+    sal word [r8+r11],23
+    sal qword [rax],23
+    sal byte [rax+rdx+2],23
+    sal dword [r8+r10*8],23
+    sal dword [rax+rcx*2+14],23
+    sal qword [rax+rdx*4-NAME_C],23
+    sal qword [rbx+rdi],23
+    sal dword [rbp+rax*NAME_C],23
+    sal word [rsp+rbp],23
+    sal byte [rdx+rcx*2],23
+    sal dword [NAME_D+22],23
+    sal byte [NAME_D-0xffffff],23
+    sal dword [rsp+NAME_C],23
+    sal byte [rcx+12],23
+    sal byte [rcx-1],23
+    sal byte [rbp+8],23
+    sal byte [rbp-8],23
+    sal byte [rsp+123],23
+    sal byte [NAME_D],23
+    sal byte [rbp],23
+    sal byte [rsp],23
+    sal byte [r11],23
+    sal byte [r8],23
+    sal byte [r9],23
+    sal dword [NAME_D-NAME_C],1
+    sal word [r8+r11],1
+    sal byte [rax+rdx],1
+    sal word [NAME_D+12],1
+    sal word [r8+r11],1
+    sal qword [rax],1
+    sal byte [rax+rdx+2],1
+    sal dword [r8+r10*8],1
+    sal dword [rax+rcx*2+14],1
+    sal qword [rax+rdx*4-NAME_C],1
+    sal qword [rbx+rdi],1
+    sal dword [rbp+rax*NAME_C],1
+    sal word [rsp+rbp],1
+    sal byte [rdx+rcx*2],1
+    sal dword [NAME_D+22],1
+    sal byte [NAME_D-0xffffff],1
+    sal dword [rsp+NAME_C],1
+    sal byte [rcx+12],1
+    sal byte [rcx-1],1
+    sal byte [rbp+8],1
+    sal byte [rbp-8],1
+    sal byte [rsp+123],1
+    sal byte [NAME_D],1
+    sal byte [rbp],1
+    sal byte [rsp],1
+    sal byte [r11],1
+    sal byte [r8],1
+    sal byte [r9],1
+    sal eax,cl
+    sal rax,cl
+    sal r8d,cl
+    sal al,cl
+    sal bx,cl
+    sal esi,cl
+    sal r9b,cl
+    sal ax,cl
+    sal edx,cl
+    sal esi,cl
+    sal rax,cl
+    sal r9,cl
+    sal r8w,cl
+    sal r14b,cl
+    sal sil,cl
+    sal bpl,cl
+    sal dil,cl
+    sal al,cl
+    sal bx,cl
+    sal esi,cl
+    sal rsp,cl
+    sal eax,12
+    sal rax,12
+    sal r8d,12
+    sal al,12
+    sal bx,12
+    sal esi,12
+    sal r9b,12
+    sal ax,12
+    sal edx,12
+    sal esi,12
+    sal rax,12
+    sal r9,12
+    sal r8w,12
+    sal r14b,12
+    sal sil,12
+    sal bpl,12
+    sal dil,12
+    sal al,12
+    sal bx,12
+    sal esi,12
+    sal rsp,12
+    sal eax,1
+    sal rax,1
+    sal r8d,1
+    sal al,1
+    sal bx,1
+    sal esi,1
+    sal r9b,1
+    sal ax,1
+    sal edx,1
+    sal esi,1
+    sal rax,1
+    sal r9,1
+    sal r8w,1
+    sal r14b,1
+    sal sil,1
+    sal bpl,1
+    sal dil,1
+    sal al,1
+    sal bx,1
+    sal esi,1
+    sal rsp,1
+
+    sar dword [NAME_D-NAME_C],23
+    sar qword [rax], cl
+    sar dword [NAME_D-NAME_C], cl
+    sar word [r8+r11], cl
+    sar byte [rax+rdx], cl
+    sar word [NAME_D+12], cl
+    sar word [r8+r11], cl
+    sar byte [rax+rdx+2], cl
+    sar dword [r8+r10*8], cl
+    sar dword [rax+rcx*2+14], cl
+    sar qword [rax+rdx*4-NAME_C], cl
+    sar qword [rbx+rdi], cl
+    sar dword [rbp+rax*NAME_C], cl
+    sar word [rsp+rbp], cl
+    sar byte [rdx+rcx*2], cl
+    sar dword [NAME_D+22], cl
+    sar byte [NAME_D-0xffffff], cl
+    sar dword [rsp+NAME_C], cl
+    sar byte [rcx+12], cl
+    sar byte [rcx-1], cl
+    sar byte [rbp+8], cl
+    sar byte [rbp-8], cl
+    sar byte [rsp+123], cl
+    sar byte [NAME_D], cl
+    sar byte [rbp], cl
+    sar byte [rsp], cl
+    sar byte [r11], cl
+    sar byte [r8], cl
+    sar byte [r9], cl
+    sar word [r8+r11],23
+    sar byte [rax+rdx],23
+    sar word [NAME_D+12],23
+    sar word [r8+r11],23
+    sar qword [rax],23
+    sar byte [rax+rdx+2],23
+    sar dword [r8+r10*8],23
+    sar dword [rax+rcx*2+14],23
+    sar qword [rax+rdx*4-NAME_C],23
+    sar qword [rbx+rdi],23
+    sar dword [rbp+rax*NAME_C],23
+    sar word [rsp+rbp],23
+    sar byte [rdx+rcx*2],23
+    sar dword [NAME_D+22],23
+    sar byte [NAME_D-0xffffff],23
+    sar dword [rsp+NAME_C],23
+    sar byte [rcx+12],23
+    sar byte [rcx-1],23
+    sar byte [rbp+8],23
+    sar byte [rbp-8],23
+    sar byte [rsp+123],23
+    sar byte [NAME_D],23
+    sar byte [rbp],23
+    sar byte [rsp],23
+    sar byte [r11],23
+    sar byte [r8],23
+    sar byte [r9],23
+    sar dword [NAME_D-NAME_C],1
+    sar word [r8+r11],1
+    sar byte [rax+rdx],1
+    sar word [NAME_D+12],1
+    sar word [r8+r11],1
+    sar qword [rax],1
+    sar byte [rax+rdx+2],1
+    sar dword [r8+r10*8],1
+    sar dword [rax+rcx*2+14],1
+    sar qword [rax+rdx*4-NAME_C],1
+    sar qword [rbx+rdi],1
+    sar dword [rbp+rax*NAME_C],1
+    sar word [rsp+rbp],1
+    sar byte [rdx+rcx*2],1
+    sar dword [NAME_D+22],1
+    sar byte [NAME_D-0xffffff],1
+    sar dword [rsp+NAME_C],1
+    sar byte [rcx+12],1
+    sar byte [rcx-1],1
+    sar byte [rbp+8],1
+    sar byte [rbp-8],1
+    sar byte [rsp+123],1
+    sar byte [NAME_D],1
+    sar byte [rbp],1
+    sar byte [rsp],1
+    sar byte [r11],1
+    sar byte [r8],1
+    sar byte [r9],1
+    sar eax,cl
+    sar rax,cl
+    sar r8d,cl
+    sar al,cl
+    sar bx,cl
+    sar esi,cl
+    sar r9b,cl
+    sar ax,cl
+    sar edx,cl
+    sar esi,cl
+    sar rax,cl
+    sar r9,cl
+    sar r8w,cl
+    sar r14b,cl
+    sar sil,cl
+    sar bpl,cl
+    sar dil,cl
+    sar al,cl
+    sar bx,cl
+    sar esi,cl
+    sar rsp,cl
+    sar eax,12
+    sar rax,12
+    sar r8d,12
+    sar al,12
+    sar bx,12
+    sar esi,12
+    sar r9b,12
+    sar ax,12
+    sar edx,12
+    sar esi,12
+    sar rax,12
+    sar r9,12
+    sar r8w,12
+    sar r14b,12
+    sar sil,12
+    sar bpl,12
+    sar dil,12
+    sar al,12
+    sar bx,12
+    sar esi,12
+    sar rsp,12
+    sar eax,1
+    sar rax,1
+    sar r8d,1
+    sar al,1
+    sar bx,1
+    sar esi,1
+    sar r9b,1
+    sar ax,1
+    sar edx,1
+    sar esi,1
+    sar rax,1
+    sar r9,1
+    sar r8w,1
+    sar r14b,1
+    sar sil,1
+    sar bpl,1
+    sar dil,1
+    sar al,1
+    sar bx,1
+    sar esi,1
+    sar rsp,1
+
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0
