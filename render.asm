@@ -838,6 +838,7 @@ process_gen_r_r:
     and ecx, REG_MASK_BITS
     mov [rsi+26], dl
     mov [rsi+27], cl
+    or ecx, edx
     cmp ecx, REG_MASK_VAL_64B
     jne _gen_r_r_check_arg_th
     or r9b, REX_W
@@ -1602,24 +1603,16 @@ process_gen_a_r:
     and eax, REG_MASK_REG_VAL
     and edx, REG_MASK_BITS
     mov [rsi+27], dl
-    cmp edx, REG_MASK_VAL_64B
-    jne _gen_a_r_arg_th
-    or r9b, REX_W
-_gen_a_r_arg_th:
     cmp eax, REG_REX_TH
-    jb _gen_a_r_init_rm
+    jb _gen_a_r_addr_check
     or r9b, REX_R
     and eax, REG_MASK_REG_IDX
-_gen_a_r_init_rm:
+_gen_a_r_addr_check:
     xor r12, r12
     shl eax, 3
     or r12b, al
     mov byte [rsi], r12b
     inc byte [rsi+24]
-    cmp edx, REG_MASK_VAL_16B
-    jne _gen_a_r_addr_check
-    mov byte [rsi+23], PREFIX_16BIT
-_gen_a_r_addr_check:
     mov edx, r9d
     xor ecx, ecx
     mov r8d, 1
@@ -1628,9 +1621,19 @@ _gen_a_r_addr_check:
     test rax, rax
     jnz _err_process_gen_a_r
     mov r9d, ebx
+    mov rsi, [rbp-16]
+    mov dl, [rsi+26]
+    cmp dl, REG_MASK_VAL_64B
+    jne _gen_a_r_check_16
+    or r9b, REX_W
+_gen_a_r_check_16:
+    cmp dl, REG_MASK_VAL_16B
+    jne _gen_a_r_check_rex
+    mov byte [rsi+23], PREFIX_16BIT
+_gen_a_r_check_rex:
     test r9b, r9b
     jz _success_gen_a_r
-    mov rsi, [rbp-16]
+    or r9b, REX
     mov [rsi+52], r9b
     jmp _success_gen_a_r
 _err_process_gen_a_r:
@@ -1674,7 +1677,6 @@ _gen_a_i_test_64:
     jne _gen_a_i_test_rex
     or bl, REX
     or bl, REX_W
-    jmp _gen_a_i_set_rex
 _gen_a_i_test_rex:
     test ebx, ebx
     jz _gen_a_i_skip_rex
