@@ -2476,11 +2476,8 @@ process_ins_template0:
 _instemp0_direct:
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
-    jne _err_parse_instemp0
-_instemp0_r:
-    movzx eax, byte [rsi+13]
-    cmp eax, TOKEN_TYPE_REG
     jne _err_invalid_first_param_instemp0
+_instemp0_r:
     lea r9, [rsi+15]
     movzx ecx, byte [r9]
     cmp ecx, TOKEN_BUF_ADDR
