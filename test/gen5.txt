@@ -1,0 +1,129 @@
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0
+
+segment readable executable
+    movzx bx, cl
+    movzx esi, dl
+    movzx ax, r8b
+    movzx edx, r10b
+    movzx esi, r12b
+    movzx rax, cl
+    movzx r8, dl
+    movzx rsp, r10b
+    movzx ax, byte [NAME_D+12]
+    movzx eax, byte [NAME_D-NAME_C]
+    movzx r12w, byte [r8+r11]
+    movzx r10d, byte [r8+r10*8]
+    movzx eax, byte [rax+rcx*2+14]
+    movzx edx, byte [rax+rdx*4-NAME_C]
+    movzx r12, byte [rbx+rdi]
+    movzx eax, byte [rbp+rax*NAME_C]
+    movzx eax, byte [rsp+rbp]
+    movzx r10d, byte [rdx+rcx*2]
+    movzx rdx, byte [NAME_D+22]
+    movzx eax, byte [NAME_D-0xffffff]
+    movzx eax, byte [rsp+NAME_C]
+    movzx eax, byte [rcx+12]
+    movzx eax, byte [rcx-1]
+    movzx eax, byte [rbp+8]
+    movzx eax, byte [rbp-8]
+    movzx eax, byte [rsp+123]
+    movzx eax, byte [NAME_D]
+    movzx eax, byte [rbp]
+    movzx eax, byte [rsp]
+    movzx eax, byte [r8]
+
+    movzx ebx, cx
+    movzx esi, dx
+    movzx eax, r8w
+    movzx edx, r10w
+    movzx esi, r12w
+    movzx rax, cx
+    movzx r8, dx
+    movzx rsp, r10w
+    movzx eax, word [NAME_D-NAME_C]
+    movzx r12w, word [r8+r11]
+    movzx r10d, word [r8+r10*8]
+    movzx eax, word [rax+rcx*2+14]
+    movzx edx, word [rax+rdx*4-NAME_C]
+    movzx r12, word [rbx+rdi]
+    movzx eax, word [rbp+rax*NAME_C]
+    movzx eax, word [rsp+rbp]
+    movzx r10d, word [rdx+rcx*2]
+    movzx rdx, word [NAME_D+22]
+    movzx eax, word [NAME_D-0xffffff]
+    movzx eax, word [rsp+NAME_C]
+    movzx eax, word [rcx+12]
+    movzx eax, word [rcx-1]
+    movzx eax, word [rbp+8]
+    movzx eax, word [rbp-8]
+    movzx eax, word [rsp+123]
+    movzx eax, word [NAME_D]
+    movzx eax, word [rbp]
+    movzx eax, word [rsp]
+    movzx eax, word [r8]
+
+    movsx bx, cl
+    movsx esi, dl
+    movsx ax, r8b
+    movsx edx, r10b
+    movsx esi, r12b
+    movsx rax, cl
+    movsx r8, dl
+    movsx rsp, r10b
+    movsx ax, byte [NAME_D+12]
+    movsx eax, byte [NAME_D-NAME_C]
+    movsx r12w, byte [r8+r11]
+    movsx r10d, byte [r8+r10*8]
+    movsx eax, byte [rax+rcx*2+14]
+    movsx edx, byte [rax+rdx*4-NAME_C]
+    movsx r12, byte [rbx+rdi]
+    movsx eax, byte [rbp+rax*NAME_C]
+    movsx eax, byte [rsp+rbp]
+    movsx r10d, byte [rdx+rcx*2]
+    movsx rdx, byte [NAME_D+22]
+    movsx eax, byte [NAME_D-0xffffff]
+    movsx eax, byte [rsp+NAME_C]
+    movsx eax, byte [rcx+12]
+    movsx eax, byte [rcx-1]
+    movsx eax, byte [rbp+8]
+    movsx eax, byte [rbp-8]
+    movsx eax, byte [rsp+123]
+    movsx eax, byte [NAME_D]
+    movsx eax, byte [rbp]
+    movsx eax, byte [rsp]
+    movsx eax, byte [r8]
+
+    movsx ebx, cx
+    movsx esi, dx
+    movsx eax, r8w
+    movsx edx, r10w
+    movsx esi, r12w
+    movsx rax, cx
+    movsx r8, dx
+    movsx rsp, r10w
+    movsx eax, word [NAME_D-NAME_C]
+    movsx r12w, word [r8+r11]
+    movsx r10d, word [r8+r10*8]
+    movsx eax, word [rax+rcx*2+14]
+    movsx edx, word [rax+rdx*4-NAME_C]
+    movsx r12, word [rbx+rdi]
+    movsx eax, word [rbp+rax*NAME_C]
+    movsx eax, word [rsp+rbp]
+    movsx r10d, word [rdx+rcx*2]
+    movsx rdx, word [NAME_D+22]
+    movsx eax, word [NAME_D-0xffffff]
+    movsx eax, word [rsp+NAME_C]
+    movsx eax, word [rcx+12]
+    movsx eax, word [rcx-1]
+    movsx eax, word [rbp+8]
+    movsx eax, word [rbp-8]
+    movsx eax, word [rsp+123]
+    movsx eax, word [NAME_D]
+    movsx eax, word [rbp]
+    movsx eax, word [rsp]
+    movsx eax, word [r8]
+

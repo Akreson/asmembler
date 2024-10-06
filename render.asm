@@ -3109,7 +3109,7 @@ _end_process_stos:
     add rsp, 192
     pop rbp
     ret
-    
+
 ; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
 ; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
 process_ins_template4:
@@ -3332,6 +3332,138 @@ _end_process_sar:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
+process_ins_template5:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 40
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
+    mov [r8+24], rdi
+    mov [r8+16], rsi
+    movzx eax, byte [rsi+31]
+    cmp eax, 2
+    jne _err_invalid_argc_instemp5
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    mov rdi, rdx
+    mov r8, rdx
+    rep stosb
+    mov byte [r8+33], 1
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _err_invalid_first_param_instemp5
+_instemp5_r:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    jne _err_invalid_first_param_instemp5
+    lea r9, [rsi+15]
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_ADDR
+    je __instemp5_r_a
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_instemp5
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    je __instemp5_r_r
+    jmp _err_invalid_second_param_instemp5
+__instemp5_r_r:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    call process_gen_r_r
+    test eax, eax
+    jnz _err_parse_instemp5
+    mov rdi, [rbp-16]
+    call switch_reg_to_r_rm
+    jmp _instemp5_check_args_size
+__instemp5_r_a:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_instemp5
+    jmp _instemp5_check_args_size
+_instemp5_check_args_size:
+    mov r9, [rbp-24]
+    mov r8, [rbp-16]
+    movzx eax, byte [r8+26]
+    movzx ebx, byte [r8+27]
+    cmp eax, REG_MASK_VAL_8B
+    je _err_arg_size_instemp5
+    cmp ebx, REG_MASK_VAL_8B
+    je _instemp5_check_8b_src
+    cmp ebx, REG_MASK_VAL_16B
+    jne _err_arg_size_instemp5
+_instemp5_check_16b_src:
+    mov dx, [r9+2]
+    cmp eax, REG_MASK_VAL_32B
+    jb _err_arg_size_instemp5
+    jmp _instemp5_set_op
+_instemp5_check_8b_src:
+    mov dx, [r9]
+_instemp5_set_op:
+    mov [r8+29], dx
+    mov byte [r8+33], 2
+    jmp _instemp5_assemble
+_err_arg_size_instemp5:
+_err_instemp5_r_i_overflow:
+_err_invalid_argc_instemp5:
+_err_invalid_second_param_instemp5:
+_err_invalid_first_param_instemp5:
+_err_parse_instemp5:
+    mov eax, 1
+    jmp _end_process_instemp5
+_instemp5_assemble:
+    mov rdi, [rbp-32]
+    mov rsi, [rbp-16]
+    call default_ins_assemble
+_success_process_instemp5:
+    xor eax, eax
+_end_process_instemp5:
+    add rsp, 40 
+    pop rbp
+    ret
+
+process_movzx:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0xB70FB60F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template5
+_end_process_movzx:
+    add rsp, 192
+    pop rbp
+    ret
+
+process_movsx:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0xBF0FBE0F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template5
+_end_process_movsx:
+    add rsp, 192
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -3506,8 +3638,18 @@ _check_ins_rps24:
     jmp _start_loop_process_segment
 _check_ins_rps25:
     cmp ebx, INS_IMUL
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps26
     call process_imul
+    jmp _start_loop_process_segment
+_check_ins_rps26:
+    cmp ebx, INS_MOVZX
+    jne _check_ins_rps27
+    call process_movzx
+    jmp _start_loop_process_segment
+_check_ins_rps27:
+    cmp ebx, INS_MOVSX
+    jne _check_ins_rps_jmp
+    call process_movsx
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx
