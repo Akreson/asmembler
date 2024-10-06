@@ -1,0 +1,145 @@
+segment readable executable
+    imul dword [NAME_D-NAME_C]
+    imul word [r8+r11]
+    imul byte [rax+rdx]
+    imul word [NAME_D+12]
+    imul word [r8+r11]
+    imul qword [rax]
+    imul byte [rax+rdx]
+    imul dword [r8+r10*8]
+    imul dword [rax+rcx*2+14]
+    imul qword [rax+rdx*4-NAME_C]
+    imul qword [rbx+rdi]
+    imul dword [rbp+rax*NAME_C]
+    imul word [rsp+rbp]
+    imul byte [rdx+rcx*2]
+    imul dword [NAME_D+22]
+    imul byte [NAME_D-0xffffff]
+    imul dword [rsp+NAME_C]
+    imul byte [rcx+12]
+    imul byte [rcx-1]
+    imul byte [rbp+8]
+    imul byte [rbp-8]
+    imul byte [rsp+123]
+    imul byte [NAME_D]
+    imul byte [rbp]
+    imul byte [rsp]
+    imul byte [r11]
+    imul byte [r8]
+    imul byte [r9]
+    imul bx
+    imul esi
+    imul eax
+    imul rax
+    imul r8w
+    imul r8d
+    imul r9b
+    imul ax
+    imul edx
+    imul esi
+    imul r9
+    imul r8w
+    imul r14b
+    imul sil
+    imul bpl
+    imul bl
+    imul ah
+    imul bx
+    imul esi
+    imul r9b
+    imul ax
+    imul esi
+    imul rsp
+    imul bx, cx
+    imul esi, edi
+    imul ax, r8w
+    imul edx, r10d
+    imul esi, r12d
+    imul rax, rcx
+    imul r8, rdi
+    imul rsp, r10
+    imul ax, [NAME_D+12]
+    imul eax, [NAME_D-NAME_C]
+    imul r12w, [r8+r11]
+    imul r10d, [r8+r10*8]
+    imul eax, [rax+rcx*2+14]
+    imul edx, [rax+rdx*4-NAME_C]
+    imul r12, [rbx+rdi]
+    imul eax, [rbp+rax*NAME_C]
+    imul eax, [rsp+rbp]
+    imul eax, [NAME_D+22]
+    imul eax, [NAME_D-0xffffff]
+    imul eax, [rsp+NAME_C]
+    imul eax, [rcx+12]
+    imul eax, [rcx-1]
+    imul eax, [rbp+8]
+    imul eax, [rbp-8]
+    imul eax, [rsp+123]
+    imul eax, [NAME_D]
+    imul eax, [rbp]
+    imul eax, [rsp]
+    imul eax, [r8]
+    imul bx, cx, 128
+    imul esi, edi, 128
+    imul ax, r8w, 128
+    imul edx, r10d, 128
+    imul esi, r12d, 128
+    imul rax, rcx, 128
+    imul r8, rdi, 128
+    imul rsp, r10, 128
+    imul ax, [NAME_D+12], 128
+    imul eax, [NAME_D-NAME_C], 128
+    imul r12w, [r8+r11], 128
+    imul r10d, [r8+r10*8], 128
+    imul eax, [rax+rcx*2+14], 128
+    imul edx, [rax+rdx*4-NAME_C], 128
+    imul r12, [rbx+rdi], 128
+    imul eax, [rbp+rax*NAME_C], 128
+    imul eax, [rsp+rbp], 128
+    imul eax, [NAME_D+22], 128
+    imul eax, [NAME_D-0xffffff], 128
+    imul eax, [rsp+NAME_C], 128
+    imul eax, [rcx+12], 128
+    imul eax, [rcx-1], 128
+    imul eax, [rbp+8], 128
+    imul eax, [rbp-8], 128
+    imul eax, [rsp+123], 128
+    imul eax, [NAME_D], 128
+    imul eax, [rbp], 128
+    imul eax, [rsp], 128
+    imul eax, [r8], 128
+    imul bx, cx, 0xfff
+    imul esi, edi, 0xffff
+    imul ax, r8w, 0xff
+    imul edx, r10d, 0xff
+    imul esi, r12d, 0xffffffff
+    imul rax, rcx, 0xff
+    imul r8, rdi, 0xffffffff
+    imul rsp, r10, 0xfff
+    imul ax, [NAME_D+12], 0xff
+    imul eax, [NAME_D-NAME_C], 0xff
+    imul r12w, [r8+r11], 0xffff
+    imul r10d, [r8+r10*8], 0xffff
+    imul eax, [rax+rcx*2+14], 0xffff
+    imul edx, [rax+rdx*4-NAME_C], 0xffff
+    imul r12, [rbx+rdi], 0xffff
+    imul eax, [rbp+rax*NAME_C], 0xffff
+    imul eax, [rsp+rbp], 0xffff
+    imul eax, [NAME_D+22], 0xffff
+    imul eax, [NAME_D-0xffffff], 0xffff
+    imul eax, [rsp+NAME_C], 0xffff
+    imul eax, [rcx+12], 0xffff
+    imul eax, [rcx-1], 0xffff
+    imul eax, [rbp+8], 0xffff
+    imul eax, [rbp-8], 0xffff
+    imul eax, [rsp+123], 0xffff
+    imul eax, [NAME_D], 0xffff
+    imul eax, [rbp], 0xffff
+    imul eax, [rsp], 0xffff
+    imul eax, [r8], 0xffff
+
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0

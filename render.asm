@@ -2114,6 +2114,173 @@ _end_process_idiv:
     ret
 
 ; rdi - segment ptr, rsi - ptr to token entry to process
+process_imul:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    lea r8, [rbp-128]
+    mov rdi, r8
+    rep stosb
+    mov al, byte [rsi+31]
+    mov [rbp-33], al
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    cmp al, 1
+    je _imul_1op
+    cmp al, 2
+    je _imul_2op
+    cmp al, 3
+    je _imul_2op
+    jmp _err_invalid_argc_imul
+_imul_1op:
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    je __imul_1op_r
+    cmp ebx, TOKEN_BUF_ADDR
+    je __imul_1op_a
+    jmp _err_invalid_first_param_imul
+__imul_1op_r:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    call process_gen_r
+    test eax, eax
+    jnz _err_parse_imul
+    jmp _imul_set_1op
+__imul_1op_a:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
+    call process_gen_a
+    test rax, rax
+    jnz _err_parse_imul
+_imul_set_1op:
+    lea r8, [rbp-128]
+    mov byte [r8+33], 1
+    mov eax, 0xF6
+    mov ebx, 0xF7
+    mov cl, [r8+26]
+    cmp cl, REG_MASK_VAL_8B
+    cmovg eax, ebx
+    mov [r8+29], al
+    mov dl, 5
+    shl dl, 3
+    mov al, [r8]
+    or al, dl
+    mov [r8], al
+    jmp _imul_assemble
+_imul_2op:
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _err_invalid_first_param_imul
+    mov al, [rsi+13]
+    cmp al, TOKEN_TYPE_REG
+    jne _err_invalid_first_param_imul
+    lea r9, [rsi+15]
+    mov [rbp-24], r9
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_ADDR
+    je __imul_2op_r_a
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_imul
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    jne _err_invalid_second_param_imul
+__imul_2op_r_r:
+    mov byte [r8+34], OP12_TYPE_R_R
+    mov rdi, rsi
+    mov rsi, r8
+    call process_gen_r_r
+    test eax, eax
+    jnz _err_parse_imul
+    lea rdi, [rbp-128]
+    call switch_reg_to_r_rm
+    jmp __imul_2op_check_op_size
+__imul_2op_r_a:
+    mov byte [r8+34], OP12_TYPE_R_A
+    mov rdi, rsi
+    mov rsi, r8
+    mov rdx, [rbp-8]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_imul
+__imul_2op_check_op_size:
+    lea r8, [rbp-128]
+    movzx ebx, byte [r8+26]
+    movzx eax, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_imul
+    or eax, ebx
+    cmp eax, REG_MASK_VAL_8B
+    je _err_arg_size_imul
+    mov dl, [rbp-33]
+    cmp dl, 3
+    je _imul_3op
+_imul_set_2op:
+    mov byte [r8+33], 2
+    mov word [r8+29], 0xAF0F
+    jmp _imul_assemble
+_imul_3op:
+    mov rbx, [rbp-24]
+    mov al, [r8+34]
+    cmp al, OP12_TYPE_R_R
+    je _imul_3op_r_r
+    movzx eax, byte [rbx+2]
+    lea rdi, [rbx+rax]
+    jmp _imul_3op_parse_digit
+_imul_3op_r_r:
+    lea rdi, [rbx+15]
+_imul_3op_parse_digit:
+    mov edx, 2
+    movzx ecx, byte [r8+26]
+    mov r8, [rbp-16]
+    call render_process_imm
+    test rax, rax
+    jnz _err_parse_imul
+    lea r8, [rbp-128]
+    mov byte [r8+33], 1
+    movzx esi, byte [r8+28]
+    cmp esi, REG_MASK_VAL_64B
+    je _err_imul_i_overflow
+    cmp esi, REG_MASK_VAL_8B
+    jne _imul_3op_non_b
+    mov byte [r8+29], 0x6B
+    jmp _imul_assemble
+_imul_3op_non_b:
+    mov byte [r8+29], 0x69
+    movzx edi, byte [r8+26]
+    mov ebx, REG_MASK_VAL_32B
+    cmp edi, ebx
+    cmovg edi, ebx
+    call line_up_d_s_size
+    add [r8+24], al
+    jmp _imul_assemble
+_err_invalid_first_param_imul:
+_err_invalid_second_param_imul:
+_err_invalid_argc_imul:
+_err_imul_i_overflow:
+_err_arg_size_imul:
+_err_parse_imul:
+    mov eax, 1
+    jmp _end_process_imul
+_imul_assemble:
+    mov rdi, [rbp-32]
+    lea rsi, [rbp-128]
+    call default_ins_assemble
+_success_process_imul:
+    xor eax, eax
+_end_process_imul:
+    add rsp, 128
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
 process_jumps:
     push rbp
     mov rbp, rsp
@@ -3343,8 +3510,13 @@ _check_ins_rps23:
     jmp _start_loop_process_segment
 _check_ins_rps24:
     cmp ebx, INS_SAR
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps25
     call process_sar
+    jmp _start_loop_process_segment
+_check_ins_rps25:
+    cmp ebx, INS_IMUL
+    jne _check_ins_rps_jmp
+    call process_imul
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx
