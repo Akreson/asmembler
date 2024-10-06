@@ -3398,24 +3398,37 @@ __instemp5_r_a:
 _instemp5_check_args_size:
     mov r9, [rbp-24]
     mov r8, [rbp-16]
-    movzx eax, byte [r8+26]
-    movzx ebx, byte [r8+27]
+    mov al, [r8+26]
+    mov bl, [r8+27]
     cmp eax, REG_MASK_VAL_8B
     je _err_arg_size_instemp5
-    cmp ebx, REG_MASK_VAL_8B
-    je _instemp5_check_8b_src
-    cmp ebx, REG_MASK_VAL_16B
+    mov cl, [r9+4]
+    mov dl, [r9+5]
+    cmp bl, cl
+    je _instemp5_check_1st_src
+    cmp bl, dl
     jne _err_arg_size_instemp5
-_instemp5_check_16b_src:
-    mov dx, [r9+2]
-    cmp eax, REG_MASK_VAL_32B
+_instemp5_check_2nd_src:
+    mov cl, [r9+8]
+    mov dl, [r9+9]
+    cmp al, cl
     jb _err_arg_size_instemp5
+    cmp al, dl
+    jg _err_arg_size_instemp5
+    mov dx, [r9+2]
     jmp _instemp5_set_op
-_instemp5_check_8b_src:
+_instemp5_check_1st_src:
+    mov cl, [r9+6]
+    mov dl, [r9+7]
+    cmp al, cl
+    jb _err_arg_size_instemp5
+    cmp al, dl
+    jg _err_arg_size_instemp5
     mov dx, [r9]
 _instemp5_set_op:
     mov [r8+29], dx
-    mov byte [r8+33], 2
+    mov bl, [r9+10]
+    mov byte [r8+33], bl
     jmp _instemp5_assemble
 _err_arg_size_instemp5:
 _err_instemp5_r_i_overflow:
@@ -3443,6 +3456,8 @@ process_movzx:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov dword [rbp-64], 0xB70FB60F
+    mov dword [rbp-60], 0x30101000
+    mov dword [rbp-56], 0x00023020
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
@@ -3459,11 +3474,31 @@ process_movsx:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov dword [rbp-64], 0xBF0FBE0F
+    mov dword [rbp-60], 0x30101000
+    mov dword [rbp-56], 0x00023020
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
     call process_ins_template5
 _end_process_movsx:
+    add rsp, 192
+    pop rbp
+    ret
+
+process_movsxd:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x00630063
+    mov dword [rbp-60], 0x10102010
+    mov dword [rbp-56], 0x00013020
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template5
+_end_process_movsxd:
     add rsp, 192
     pop rbp
     ret
@@ -3717,6 +3752,11 @@ _check_ins_rps27:
     call process_movsx
     jmp _start_loop_process_segment
 _check_ins_rps28:
+    cmp ebx, INS_MOVSXD
+    jne _check_ins_rps29
+    call process_movsxd
+    jmp _start_loop_process_segment
+_check_ins_rps29:
     cmp ebx, INS_LEA
     jne _check_ins_rps_jmp
     call process_lea

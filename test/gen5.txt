@@ -127,3 +127,38 @@ segment readable executable
     movsx eax, word [rsp]
     movsx eax, word [r8]
 
+    movsxd rax, cx
+    movsxd bx, cx
+    movsxd ax, r8w
+    movsxd r9w, r10w
+    movsxd ax, word [NAME_D+12]
+    movsxd r12w, word [r8+r11]
+    movsxd rbx, edx
+    movsxd esi, edx
+    movsxd eax, r8d
+    movsxd edx, r10d
+    movsxd esi, r12d
+    movsxd r9, ecx
+    movsxd r8, r9d
+    movsxd rsp, r10d
+    movsxd eax, dword [NAME_D-NAME_C]
+    movsxd r12, dword [r8+r11]
+    movsxd r10d, dword [r8+r10*8]
+    movsxd eax, dword [rax+rcx*2+14]
+    movsxd edx, dword [rax+rdx*4-NAME_C]
+    movsxd r12, dword [rbx+rdi]
+    movsxd eax, dword [rbp+rax*NAME_C]
+    movsxd eax, dword [rsp+rbp]
+    movsxd r10d, dword [rdx+rcx*2]
+    movsxd rdx, dword [NAME_D+22]
+    movsxd eax, dword [NAME_D-0xffffff]
+    movsxd eax, dword [rsp+NAME_C]
+    movsxd eax, dword [rcx+12]
+    movsxd eax, dword [rcx-1]
+    movsxd eax, dword [rbp+8]
+    movsxd eax, dword [rbp-8]
+    movsxd eax, dword [rsp+123]
+    movsxd eax, dword [NAME_D]
+    movsxd eax, dword [rbp]
+    movsxd eax, dword [rsp]
+    movsxd eax, dword [r8]
