@@ -661,13 +661,6 @@ remove_modrm_byte:
     rep movsb
     ret
 
-apply_reg_mask_to_modrm:
-    mov r11b, [r9+9]
-    shl r11b, 3
-    mov r12b, [r8]
-    or r11b, r12b
-    mov [r8], r11b
-
 ; rdi - ptr to render entry array, rsi - ptr to ins code struct
 default_ins_assemble:
     push rbp
@@ -758,6 +751,35 @@ _end_set_def_pref_by_symbol:
     mov [rdi+rax+16], bl
     mov [rdi+53], cl
     inc byte [rdi+25]
+    ret
+
+; rdi - ptr to ins code struct
+switch_reg_to_r_rm:
+    mov al, [rdi+52]
+    test al, al
+    jz _switch_r_rm_skip_rex
+    mov bl, al
+    mov cl, al
+    and al, 0x78
+    and bl, REX_B
+    shl bl, 2
+    and cl, REX_R
+    shr cl, 2
+    or al, cl
+    or al, bl
+    mov [rdi+52], al
+_switch_r_rm_skip_rex:
+    mov cl, [rdi]
+    mov bl, cl
+    mov al, cl
+    and cl, 0xC0
+    and bl, 0x38
+    and al, 0x07
+    shr bl, 3
+    shl al, 3
+    or cl, bl
+    or cl, al
+    mov [rdi], cl
     ret
 
 ; rdi - dest, rsi - source, ecx - size
@@ -879,35 +901,6 @@ _success_gen_r_r:
 _end_process_gen_r_r:
     add rsp, 16
     pop rbp
-    ret
-
-; rdi - ptr to ins code struct
-switch_reg_to_r_rm:
-    mov al, [rdi+52]
-    test al, al
-    jz _switch_r_rm_skip_rex
-    mov bl, al
-    mov cl, al
-    and al, 0x78
-    and bl, REX_B
-    shl bl, 2
-    and cl, REX_R
-    shr cl, 2
-    or al, cl
-    or al, bl
-    mov [rdi+52], al
-_switch_r_rm_skip_rex:
-    mov cl, [rdi]
-    mov bl, cl
-    mov al, cl
-    and cl, 0xC0
-    and bl, 0x38
-    and al, 0x07
-    shr bl, 3
-    shl al, 3
-    or cl, bl
-    or cl, al
-    mov [rdi], cl
     ret
 
 ; rdi - ptr to imm token, rsi - ptr to ins code struct,
@@ -1914,371 +1907,6 @@ _end_process_mov:
     pop rbp
     ret
 
-; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
-; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
-process_ins_template1:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 40
-    movzx eax, byte [rsi+31]
-    cmp eax, 1
-    jne _err_instemp1_invalid_argc
-    mov eax, [rdi+28]
-    mov [rsi], eax
-    xor rax, rax
-    mov [rbp-8], rsi
-    mov [rbp-16], rdx
-    mov [rbp-24], rcx
-    mov [r8+24], rdi
-    mov [r8+16], rsi
-    add rdi, ENTRY_ARRAY_DATA_SIZE
-    mov [rbp-32], rdi
-    mov ecx, INS_CODE_STRUCT_SIZE
-    mov rdi, rdx
-    mov r8, rdx
-    rep stosb
-    mov byte [r8+33], 1
-    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
-    movzx ebx, byte [rsi]
-    cmp ebx, TOKEN_BUF_DIRECT
-    je _instemp1_direct
-    cmp ebx, TOKEN_BUF_ADDR
-    je _instemp1_a
-    jmp _err_instemp1_invalid_first_param
-_instemp1_direct:
-    movzx eax, byte [rsi+13]
-    cmp eax, TOKEN_TYPE_REG
-    je _instemp1_r
-    jmp _err_instemp1_parse
-_instemp1_r:
-    movzx eax, byte [rsi+13]
-    cmp eax, TOKEN_TYPE_REG
-    jne _err_instemp1_invalid_first_param 
-    mov rdi, rsi
-    mov rsi, [rbp-16]
-    call process_gen_r
-    test eax, eax
-    jnz _err_instemp1_parse
-    jmp _instemp1_assemble
-_instemp1_a:
-    mov rdi, rsi
-    mov rsi, [rbp-16]
-    mov rdx, [rbp-8]
-    call process_gen_a
-    test rax, rax
-    jnz _err_instemp1_parse
-_instemp1_assemble:
-    mov r9, [rbp-24]
-    mov rsi, [rbp-16]
-    mov bl, [rsi+26]
-    movzx eax, byte [r9]
-    movzx ecx, byte [r9+1]
-    cmp bl, REG_MASK_VAL_8B
-    cmovg eax, ecx
-    mov byte [rsi+29], al
-    mov dl, [r9+2]
-    shl dl, 3
-    mov cl, [rsi]
-    or cl, dl
-    mov [rsi], cl
-    mov rdi, [rbp-32]
-    call default_ins_assemble
-    jmp _end_instemp1_process
-_err_instemp1_invalid_argc:
-_err_instemp1_invalid_first_param:
-_err_instemp1_parse:
-_err_instemp1_exit:
-    exit_m -6
-_end_instemp1_process:
-    add rsp, 40
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_inc:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x00FFFE
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_inc:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_dec:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x01FFFE
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_dec:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_neg:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x03F7F6
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_neg:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_not:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x02F7F6
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_not:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_mul:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x04F7F6
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_mul:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_div:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x06F7F6
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_div:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_idiv:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x07F7F6
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template1
-_end_process_idiv:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_imul:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 128
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov eax, [rdi+28]
-    mov [rsi], eax
-    xor rax, rax
-    add rdi, ENTRY_ARRAY_DATA_SIZE
-    mov [rbp-32], rdi
-    mov ecx, INS_CODE_STRUCT_SIZE
-    lea r8, [rbp-128]
-    mov rdi, r8
-    rep stosb
-    mov al, byte [rsi+31]
-    mov [rbp-33], al
-    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
-    cmp al, 1
-    je _imul_1op
-    cmp al, 2
-    je _imul_2op
-    cmp al, 3
-    je _imul_2op
-    jmp _err_invalid_argc_imul
-_imul_1op:
-    movzx ebx, byte [rsi]
-    cmp ebx, TOKEN_BUF_DIRECT
-    je __imul_1op_r
-    cmp ebx, TOKEN_BUF_ADDR
-    je __imul_1op_a
-    jmp _err_invalid_first_param_imul
-__imul_1op_r:
-    mov rdi, rsi
-    lea rsi, [rbp-128]
-    call process_gen_r
-    test eax, eax
-    jnz _err_parse_imul
-    jmp _imul_set_1op
-__imul_1op_a:
-    mov rdi, rsi
-    lea rsi, [rbp-128]
-    mov rdx, [rbp-16]
-    call process_gen_a
-    test rax, rax
-    jnz _err_parse_imul
-_imul_set_1op:
-    lea r8, [rbp-128]
-    mov byte [r8+33], 1
-    mov eax, 0xF6
-    mov ebx, 0xF7
-    mov cl, [r8+26]
-    cmp cl, REG_MASK_VAL_8B
-    cmovg eax, ebx
-    mov [r8+29], al
-    mov dl, 5
-    shl dl, 3
-    mov al, [r8]
-    or al, dl
-    mov [r8], al
-    jmp _imul_assemble
-_imul_2op:
-    movzx ebx, byte [rsi]
-    cmp ebx, TOKEN_BUF_DIRECT
-    jne _err_invalid_first_param_imul
-    mov al, [rsi+13]
-    cmp al, TOKEN_TYPE_REG
-    jne _err_invalid_first_param_imul
-    lea r9, [rsi+15]
-    mov [rbp-24], r9
-    movzx ecx, byte [r9]
-    cmp ecx, TOKEN_BUF_ADDR
-    je __imul_2op_r_a
-    cmp ecx, TOKEN_BUF_DIRECT
-    jne _err_invalid_second_param_imul
-    movzx ebx, byte [r9+13]
-    cmp ebx, TOKEN_TYPE_REG
-    jne _err_invalid_second_param_imul
-__imul_2op_r_r:
-    mov byte [r8+34], OP12_TYPE_R_R
-    mov rdi, rsi
-    mov rsi, r8
-    call process_gen_r_r
-    test eax, eax
-    jnz _err_parse_imul
-    lea rdi, [rbp-128]
-    call switch_reg_to_r_rm
-    jmp __imul_2op_check_op_size
-__imul_2op_r_a:
-    mov byte [r8+34], OP12_TYPE_R_A
-    mov rdi, rsi
-    mov rsi, r8
-    mov rdx, [rbp-8]
-    call process_gen_r_a
-    test eax, eax
-    jnz _err_parse_imul
-__imul_2op_check_op_size:
-    lea r8, [rbp-128]
-    movzx ebx, byte [r8+26]
-    movzx eax, byte [r8+27]
-    cmp eax, ebx
-    jne _err_arg_size_imul
-    or eax, ebx
-    cmp eax, REG_MASK_VAL_8B
-    je _err_arg_size_imul
-    mov dl, [rbp-33]
-    cmp dl, 3
-    je _imul_3op
-_imul_set_2op:
-    mov byte [r8+33], 2
-    mov word [r8+29], 0xAF0F
-    jmp _imul_assemble
-_imul_3op:
-    mov rbx, [rbp-24]
-    mov al, [r8+34]
-    cmp al, OP12_TYPE_R_R
-    je _imul_3op_r_r
-    movzx eax, byte [rbx+2]
-    lea rdi, [rbx+rax]
-    jmp _imul_3op_parse_digit
-_imul_3op_r_r:
-    lea rdi, [rbx+15]
-_imul_3op_parse_digit:
-    mov edx, 2
-    movzx ecx, byte [r8+26]
-    mov r8, [rbp-16]
-    call render_process_imm
-    test rax, rax
-    jnz _err_parse_imul
-    lea r8, [rbp-128]
-    mov byte [r8+33], 1
-    movzx esi, byte [r8+28]
-    cmp esi, REG_MASK_VAL_64B
-    je _err_imul_i_overflow
-    cmp esi, REG_MASK_VAL_8B
-    jne _imul_3op_non_b
-    mov byte [r8+29], 0x6B
-    jmp _imul_assemble
-_imul_3op_non_b:
-    mov byte [r8+29], 0x69
-    movzx edi, byte [r8+26]
-    mov ebx, REG_MASK_VAL_32B
-    cmp edi, ebx
-    cmovg edi, ebx
-    call line_up_d_s_size
-    add [r8+24], al
-    jmp _imul_assemble
-_err_invalid_first_param_imul:
-_err_invalid_second_param_imul:
-_err_invalid_argc_imul:
-_err_imul_i_overflow:
-_err_arg_size_imul:
-_err_parse_imul:
-    mov eax, 1
-    jmp _end_process_imul
-_imul_assemble:
-    mov rdi, [rbp-32]
-    lea rsi, [rbp-128]
-    call default_ins_assemble
-_success_process_imul:
-    xor eax, eax
-_end_process_imul:
-    add rsp, 128
-    pop rbp
-    ret
 
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_jumps:
@@ -2799,6 +2427,372 @@ process_test:
 _test_proc_invalid_op:
 _end_process_test:
     add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
+process_ins_template1:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 40
+    movzx eax, byte [rsi+31]
+    cmp eax, 1
+    jne _err_instemp1_invalid_argc
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
+    mov [r8+24], rdi
+    mov [r8+16], rsi
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    mov rdi, rdx
+    mov r8, rdx
+    rep stosb
+    mov byte [r8+33], 1
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    je _instemp1_direct
+    cmp ebx, TOKEN_BUF_ADDR
+    je _instemp1_a
+    jmp _err_instemp1_invalid_first_param
+_instemp1_direct:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    je _instemp1_r
+    jmp _err_instemp1_parse
+_instemp1_r:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    jne _err_instemp1_invalid_first_param 
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    call process_gen_r
+    test eax, eax
+    jnz _err_instemp1_parse
+    jmp _instemp1_assemble
+_instemp1_a:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_a
+    test rax, rax
+    jnz _err_instemp1_parse
+_instemp1_assemble:
+    mov r9, [rbp-24]
+    mov rsi, [rbp-16]
+    mov bl, [rsi+26]
+    movzx eax, byte [r9]
+    movzx ecx, byte [r9+1]
+    cmp bl, REG_MASK_VAL_8B
+    cmovg eax, ecx
+    mov byte [rsi+29], al
+    mov dl, [r9+2]
+    shl dl, 3
+    mov cl, [rsi]
+    or cl, dl
+    mov [rsi], cl
+    mov rdi, [rbp-32]
+    call default_ins_assemble
+    jmp _end_instemp1_process
+_err_instemp1_invalid_argc:
+_err_instemp1_invalid_first_param:
+_err_instemp1_parse:
+_err_instemp1_exit:
+    exit_m -6
+_end_instemp1_process:
+    add rsp, 40
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_inc:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x00FFFE
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_inc:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_dec:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x01FFFE
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_dec:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_neg:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x03F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_neg:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_not:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x02F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_not:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_mul:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x04F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_mul:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_div:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x06F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_div:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_idiv:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x07F7F6
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template1
+_end_process_idiv:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_imul:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    lea r8, [rbp-128]
+    mov rdi, r8
+    rep stosb
+    mov al, byte [rsi+31]
+    mov [rbp-33], al
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    cmp al, 1
+    je _imul_1op
+    cmp al, 2
+    je _imul_2op
+    cmp al, 3
+    je _imul_2op
+    jmp _err_invalid_argc_imul
+_imul_1op:
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    je __imul_1op_r
+    cmp ebx, TOKEN_BUF_ADDR
+    je __imul_1op_a
+    jmp _err_invalid_first_param_imul
+__imul_1op_r:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    call process_gen_r
+    test eax, eax
+    jnz _err_parse_imul
+    jmp _imul_set_1op
+__imul_1op_a:
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    mov rdx, [rbp-16]
+    call process_gen_a
+    test rax, rax
+    jnz _err_parse_imul
+_imul_set_1op:
+    lea r8, [rbp-128]
+    mov byte [r8+33], 1
+    mov eax, 0xF6
+    mov ebx, 0xF7
+    mov cl, [r8+26]
+    cmp cl, REG_MASK_VAL_8B
+    cmovg eax, ebx
+    mov [r8+29], al
+    mov dl, 5
+    shl dl, 3
+    mov al, [r8]
+    or al, dl
+    mov [r8], al
+    jmp _imul_assemble
+_imul_2op:
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _err_invalid_first_param_imul
+    mov al, [rsi+13]
+    cmp al, TOKEN_TYPE_REG
+    jne _err_invalid_first_param_imul
+    lea r9, [rsi+15]
+    mov [rbp-24], r9
+    movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_ADDR
+    je __imul_2op_r_a
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_invalid_second_param_imul
+    movzx ebx, byte [r9+13]
+    cmp ebx, TOKEN_TYPE_REG
+    jne _err_invalid_second_param_imul
+__imul_2op_r_r:
+    mov byte [r8+34], OP12_TYPE_R_R
+    mov rdi, rsi
+    mov rsi, r8
+    call process_gen_r_r
+    test eax, eax
+    jnz _err_parse_imul
+    lea rdi, [rbp-128]
+    call switch_reg_to_r_rm
+    jmp __imul_2op_check_op_size
+__imul_2op_r_a:
+    mov byte [r8+34], OP12_TYPE_R_A
+    mov rdi, rsi
+    mov rsi, r8
+    mov rdx, [rbp-8]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_imul
+__imul_2op_check_op_size:
+    lea r8, [rbp-128]
+    movzx ebx, byte [r8+26]
+    movzx eax, byte [r8+27]
+    cmp eax, ebx
+    jne _err_arg_size_imul
+    or eax, ebx
+    cmp eax, REG_MASK_VAL_8B
+    je _err_arg_size_imul
+    mov dl, [rbp-33]
+    cmp dl, 3
+    je _imul_3op
+_imul_set_2op:
+    mov byte [r8+33], 2
+    mov word [r8+29], 0xAF0F
+    jmp _imul_assemble
+_imul_3op:
+    mov rbx, [rbp-24]
+    mov al, [r8+34]
+    cmp al, OP12_TYPE_R_R
+    je _imul_3op_r_r
+    movzx eax, byte [rbx+2]
+    lea rdi, [rbx+rax]
+    jmp _imul_3op_parse_digit
+_imul_3op_r_r:
+    lea rdi, [rbx+15]
+_imul_3op_parse_digit:
+    mov edx, 2
+    movzx ecx, byte [r8+26]
+    mov r8, [rbp-16]
+    call render_process_imm
+    test rax, rax
+    jnz _err_parse_imul
+    lea r8, [rbp-128]
+    mov byte [r8+33], 1
+    movzx esi, byte [r8+28]
+    cmp esi, REG_MASK_VAL_64B
+    je _err_imul_i_overflow
+    cmp esi, REG_MASK_VAL_8B
+    jne _imul_3op_non_b
+    mov byte [r8+29], 0x6B
+    jmp _imul_assemble
+_imul_3op_non_b:
+    mov byte [r8+29], 0x69
+    movzx edi, byte [r8+26]
+    mov ebx, REG_MASK_VAL_32B
+    cmp edi, ebx
+    cmovg edi, ebx
+    call line_up_d_s_size
+    add [r8+24], al
+    jmp _imul_assemble
+_err_invalid_first_param_imul:
+_err_invalid_second_param_imul:
+_err_invalid_argc_imul:
+_err_imul_i_overflow:
+_err_arg_size_imul:
+_err_parse_imul:
+    mov eax, 1
+    jmp _end_process_imul
+_imul_assemble:
+    mov rdi, [rbp-32]
+    lea rsi, [rbp-128]
+    call default_ins_assemble
+_success_process_imul:
+    xor eax, eax
+_end_process_imul:
+    add rsp, 128
     pop rbp
     ret
 
