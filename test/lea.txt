@@ -1,0 +1,29 @@
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0
+
+segment readable executable
+    lea rax, [NAME_D+12]
+    lea rdx, [NAME_D-NAME_C]
+    lea r12w, [r8+r11]
+    lea r10d, [r8+r10*8]
+    lea eax, [rax+rcx*2+14]
+    lea edx, [rax+r8*4-NAME_C]
+    lea r12, [rbx+rdi]
+    lea eax, [rbp+rax*NAME_C]
+    lea eax, [rsp+rbp]
+    lea rax, [NAME_D+22]
+    lea rax, [NAME_D-0xffffff]
+    lea rax, [rsp+NAME_C]
+    lea rax, [rcx+12]
+    lea rax, [rcx-1]
+    lea rax, [rbp+8]
+    lea rax, [rbp-8]
+    lea rax, [rsp+123]
+    lea rax, [NAME_D]
+    lea rax, [rbp]
+    lea rax, [rsp]
+    lea rax, [r8]
+    lea r8, [r9]

@@ -2663,6 +2663,9 @@ _imul_1op:
     je __imul_1op_a
     jmp _err_invalid_first_param_imul
 __imul_1op_r:
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    jne _err_instemp1_invalid_first_param 
     mov rdi, rsi
     lea rsi, [rbp-128]
     call process_gen_r
@@ -3332,6 +3335,7 @@ _end_process_sar:
     pop rbp
     ret
 
+; TODO: check source operand size specificator
 ; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
 ; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
 process_ins_template5:
@@ -3461,6 +3465,67 @@ process_movsx:
     call process_ins_template5
 _end_process_movsx:
     add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_lea:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    lea r8, [rbp-128]
+    mov rdi, r8
+    rep stosb
+    mov al, byte [rsi+31]
+    cmp al, 2
+    jne _err_invalid_argc_lea
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _err_invalid_first_param_lea
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    jne _err_instemp1_invalid_first_param 
+    movzx ecx, byte [rsi+15]
+    cmp ecx, TOKEN_BUF_ADDR
+    jne _err_invalid_second_param_lea
+    mov rdi, rsi
+    mov rsi, r8
+    mov rdx, [rbp-8]
+    call process_gen_r_a
+    test eax, eax
+    jnz _err_parse_lea
+    lea r8, [rbp-128]
+    mov bl, [r8+26]
+    cmp bl, REG_MASK_VAL_8B
+    je _err_invalid_arg_size_lea
+    mov byte [r8+33], 1
+    mov byte [r8+29], 0x8D
+    jmp _lea_assemble
+_err_invalid_first_param_lea:
+_err_invalid_second_param_lea:
+_err_invalid_argc_lea:
+_err_invalid_arg_size_lea:
+_err_arg_size_lea:
+_err_parse_lea:
+    mov eax, 1
+    jmp _end_process_lea
+_lea_assemble:
+    mov rdi, [rbp-32]
+    lea rsi, [rbp-128]
+    call default_ins_assemble
+_success_process_lea:
+    xor eax, eax
+_end_process_lea:
+    add rsp, 128
     pop rbp
     ret
 
@@ -3648,8 +3713,13 @@ _check_ins_rps26:
     jmp _start_loop_process_segment
 _check_ins_rps27:
     cmp ebx, INS_MOVSX
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps28
     call process_movsx
+    jmp _start_loop_process_segment
+_check_ins_rps28:
+    cmp ebx, INS_LEA
+    jne _check_ins_rps_jmp
+    call process_lea
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx
