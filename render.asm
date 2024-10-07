@@ -26,6 +26,7 @@ OP12_TYPE_A_I equ 0xB
 
 MOD_RM_RM_MASK equ 0x07
 EXCL_REG_FIELD_MASK equ 0xC7
+EXCL_REX_W_MASK equ 0xF7
 
 REX   equ 0x40
 REX_W equ 0x08
@@ -3503,6 +3504,168 @@ _end_process_movsxd:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
+; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
+process_ins_template6:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 40
+    movzx eax, byte [rsi+31]
+    cmp eax, 1
+    jne _err_instemp6_invalid_argc
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    mov [rbp-8], rsi
+    mov [rbp-16], rdx
+    mov [rbp-24], rcx
+    mov [r8+24], rdi
+    mov [r8+16], rsi
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    mov rdi, rdx
+    mov r8, rdx
+    rep stosb
+    mov byte [r8+33], 1
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _instemp6_check_a
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_REG
+    je _instemp6_r
+    jmp _instemp6_check_i
+_instemp6_check_a:
+    cmp ebx, TOKEN_BUF_ADDR
+    je _instemp6_a
+_instemp6_check_i:
+    mov r9, [rbp-24]
+    mov dl, [r9+3]
+    test dl, dl
+    jz _err_instemp6_invalid_first_param  
+    cmp ebx, TOKEN_BUF_PTR_OFFSET; gonna be false if rip comes from *TYPE_REG cmp
+    je _instemp6_i
+    cmp eax, TOKEN_TYPE_DIGIT
+    je _instemp6_i
+    jmp _err_instemp6_invalid_first_param
+_instemp6_i:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov edx, 0
+    mov ecx, REG_MASK_VAL_32B
+    mov r8, [rbp-8]
+    call render_process_imm
+    test rax, rax
+    jnz _err_instemp6_parse
+    mov rsi, [rbp-16]
+    mov r9, [rbp-24]
+    mov al, [rsi+26]
+    movzx ebx, byte [r9+4]
+    movzx ecx, byte [r9+5]
+    cmp al, REG_MASK_VAL_8B
+    cmovg ebx, ecx
+    mov [rsi+29], bl
+    xor edx, edx
+    mov ecx, PREFIX_16BIT
+    cmp al, REG_MASK_VAL_16B
+    cmovne ecx, edx
+    mov [rsi+23], cl
+    jmp _instemp6_assemble_end
+_instemp6_r:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    call process_gen_r
+    test rax, rax
+    jnz _err_instemp6_parse
+    mov rsi, [rbp-16]
+    mov r9, [rbp-24]
+    mov byte [rsi+24], 0
+    mov cl, [r9+1]
+    mov edx, [rsi+36]
+    and edx, REG_MASK_REG_IDX
+    or cl, dl
+    mov [rsi+29], cl
+    jmp _instemp6_assemble
+_instemp6_a:
+    mov rdi, rsi
+    mov rsi, [rbp-16]
+    mov rdx, [rbp-8]
+    call process_gen_a
+    test rax, rax
+    jnz _err_instemp6_parse
+    mov rsi, [rbp-16]
+    mov r9, [rbp-24]
+    mov dl, [r9+2]
+    mov al, [r9]
+    shl dl, 3
+    mov cl, [rsi]
+    or cl, dl
+    mov [rsi+29], al
+    mov [rsi], cl
+_instemp6_assemble:
+    mov bl, [rsi+26]
+    cmp bl, REG_MASK_VAL_32B
+    je _err_instemp6_invalid_arg_size
+    movzx eax, byte [rsi+52]
+    mov ecx, eax
+    xor ebx, ebx
+    and ecx, EXCL_REX_W_MASK
+    and eax, REX_B
+    cmp eax, 0
+    test eax, eax
+    cmovnz ebx, ecx
+    mov [rsi+52], bl
+_instemp6_assemble_end:
+    mov rdi, [rbp-32] 
+    call default_ins_assemble
+    jmp _end_instemp6_process
+_err_instemp6_invalid_argc:
+_err_instemp6_invalid_arg_size:
+_err_instemp6_invalid_first_param:
+_err_instemp6_parse:
+_err_instemp6_exit:
+    exit_m -6
+_end_instemp6_process:
+    add rsp, 40
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_push:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x010650FF
+    mov dword [rbp-60], 0x0000686A
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template6
+_end_process_push:
+    add rsp, 192
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_pop:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x0000588F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template6
+_end_process_pop:
+    add rsp, 192
+    pop rbp
+    ret
+
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_lea:
     push rbp
@@ -3758,8 +3921,18 @@ _check_ins_rps28:
     jmp _start_loop_process_segment
 _check_ins_rps29:
     cmp ebx, INS_LEA
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps30
     call process_lea
+    jmp _start_loop_process_segment
+_check_ins_rps30:
+    cmp ebx, INS_PUSH
+    jne _check_ins_rps31
+    call process_push
+    jmp _start_loop_process_segment
+_check_ins_rps31:
+    cmp ebx, INS_POP
+    jne _check_ins_rps_jmp
+    call process_pop
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx

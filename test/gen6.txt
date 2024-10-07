@@ -1,0 +1,148 @@
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0
+
+segment readable executable
+    push 0xf
+    push 0xfff
+    push 0xfffff
+    push NAME_D
+    push qword [NAME_D-NAME_C]
+    push qword [r8+r11]
+    push qword [rax+rdx]
+    push qword [NAME_D+12]
+    push qword [r8+r11]
+    push qword [rax]
+    push qword [rax+rdx]
+    push qword [r8+r10*8]
+    push qword [rax+rcx*2+14]
+    push qword [rax+rdx*4-NAME_C]
+    push qword [rbx+rdi]
+    push qword [rbp+rax*NAME_C]
+    push qword [rsp+rbp]
+    push qword [rdx+rcx*2]
+    push qword [NAME_D+22]
+    push qword [NAME_D-0xffffff]
+    push qword [rsp+NAME_C]
+    push qword [rcx+12]
+    push qword [rcx-1]
+    push qword [rbp+8]
+    push qword [rbp-8]
+    push qword [rsp+123]
+    push qword [NAME_D]
+    push qword [rbp]
+    push qword [rsp]
+    push qword [r11]
+    push qword [r8]
+    push qword [r9]
+    push rax
+    push rsi
+    push r15
+    push r8
+    push rsp
+    push rbp
+
+    push word [NAME_D-NAME_C]
+    push word [r8+r11]
+    push word [rax+rdx]
+    push word [NAME_D+12]
+    push word [r8+r11]
+    push word [rax]
+    push word [rax+rdx]
+    push word [r8+r10*8]
+    push word [rax+rcx*2+14]
+    push word [rax+rdx*4-NAME_C]
+    push word [rbx+rdi]
+    push word [rbp+rax*NAME_C]
+    push word [rsp+rbp]
+    push word [rdx+rcx*2]
+    push word [NAME_D+22]
+    push word [NAME_D-0xffffff]
+    push word [rsp+NAME_C]
+    push word [rcx+12]
+    push word [rcx-1]
+    push word [rbp+8]
+    push word [rbp-8]
+    push word [rsp+123]
+    push word [NAME_D]
+    push word [rbp]
+    push word [rsp]
+    push word [r11]
+    push word [r8]
+    push word [r9]
+    push ax
+    push r15w
+    push r8
+    push sp
+    push bp
+
+    pop qword [NAME_D-NAME_C]
+    pop qword [r8+r11]
+    pop qword [rax+rdx]
+    pop qword [NAME_D+12]
+    pop qword [r8+r11]
+    pop qword [rax]
+    pop qword [rax+rdx]
+    pop qword [r8+r10*8]
+    pop qword [rax+rcx*2+14]
+    pop qword [rax+rdx*4-NAME_C]
+    pop qword [rbx+rdi]
+    pop qword [rbp+rax*NAME_C]
+    pop qword [rsp+rbp]
+    pop qword [rdx+rcx*2]
+    pop qword [NAME_D+22]
+    pop qword [NAME_D-0xffffff]
+    pop qword [rsp+NAME_C]
+    pop qword [rcx+12]
+    pop qword [rcx-1]
+    pop qword [rbp+8]
+    pop qword [rbp-8]
+    pop qword [rsp+123]
+    pop qword [NAME_D]
+    pop qword [rbp]
+    pop qword [rsp]
+    pop qword [r11]
+    pop qword [r8]
+    pop qword [r9]
+    pop rax
+    pop rsi
+    pop r15
+    pop r8
+    pop rsp
+    pop rbp
+
+    pop word [NAME_D-NAME_C]
+    pop word [r8+r11]
+    pop word [rax+rdx]
+    pop word [NAME_D+12]
+    pop word [r8+r11]
+    pop word [rax]
+    pop word [rax+rdx]
+    pop word [r8+r10*8]
+    pop word [rax+rcx*2+14]
+    pop word [rax+rdx*4-NAME_C]
+    pop word [rbx+rdi]
+    pop word [rbp+rax*NAME_C]
+    pop word [rsp+rbp]
+    pop word [rdx+rcx*2]
+    pop word [NAME_D+22]
+    pop word [NAME_D-0xffffff]
+    pop word [rsp+NAME_C]
+    pop word [rcx+12]
+    pop word [rcx-1]
+    pop word [rbp+8]
+    pop word [rbp-8]
+    pop word [rsp+123]
+    pop word [NAME_D]
+    pop word [rbp]
+    pop word [rsp]
+    pop word [r11]
+    pop word [r8]
+    pop word [r9]
+    pop ax
+    pop r15w
+    pop r8
+    pop sp
+    pop bp
