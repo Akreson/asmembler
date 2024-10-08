@@ -3727,6 +3727,130 @@ _end_process_lea:
     pop rbp
     ret
 
+; NOTE: only near call
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_ret:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-8], rdi
+    call entry_array_curr_ptr
+    mov byte [rax], 0xC3
+    inc rax
+    mov rsi, rax
+    mov rdi, [rbp-8]
+    call entry_array_commit_size
+_end_process_ret:
+    add rsp, 8
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_syscall:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-8], rdi
+    call entry_array_curr_ptr
+    mov word [rax], 0x050F
+    add rax, 2
+    mov rsi, rax
+    mov rdi, [rbp-8]
+    call entry_array_commit_size
+_end_process_syscall:
+    add rsp, 8
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_int:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    xor rax, rax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-32], rdi
+    mov ecx, INS_CODE_STRUCT_SIZE
+    lea r8, [rbp-128]
+    mov rdi, r8
+    rep stosb
+    mov al, byte [rsi+31]
+    cmp al, 1
+    jne _err_invalid_argc_int
+    add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
+    movzx ebx, byte [rsi]
+    cmp ebx, TOKEN_BUF_DIRECT
+    jne _err_invalid_first_param_int
+    movzx eax, byte [rsi+13]
+    cmp eax, TOKEN_TYPE_DIGIT
+    jne _err_instemp1_invalid_first_param 
+    mov rdi, rsi
+    lea rsi, [rbp-128]
+    mov edx, 0
+    mov ecx, REG_MASK_VAL_8B
+    mov r8, [rbp-16]
+    call render_process_imm
+    test rax, rax
+    jnz _err_parse_int
+    lea rsi, [rbp-128]
+    mov al, [rsi+26]
+    mov byte [rsi+29], 0xCD
+    mov byte [rsi+33], 1
+    mov rdi, [rbp-32]
+    call default_ins_assemble
+    xor rax, rax
+    jmp _end_process_int
+_err_invalid_argc_int:
+_err_invalid_first_param_int:
+_err_parse_int:
+    mov eax, 1
+_end_process_int:
+    add rsp, 128
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_int3:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-8], rdi
+    call entry_array_curr_ptr
+    mov byte [rax], 0xCC
+    inc rax
+    mov rsi, rax
+    mov rdi, [rbp-8]
+    call entry_array_commit_size
+_end_process_int3:
+    add rsp, 8
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
+process_int1:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-8], rdi
+    call entry_array_curr_ptr
+    mov byte [rax], 0xF1
+    inc rax
+    mov rsi, rax
+    mov rdi, [rbp-8]
+    call entry_array_commit_size
+_end_process_int1:
+    add rsp, 8
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -3931,8 +4055,33 @@ _check_ins_rps30:
     jmp _start_loop_process_segment
 _check_ins_rps31:
     cmp ebx, INS_POP
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps32
     call process_pop
+    jmp _start_loop_process_segment
+_check_ins_rps32:
+    cmp ebx, INS_RET
+    jne _check_ins_rps33
+    call process_ret
+    jmp _start_loop_process_segment
+_check_ins_rps33:
+    cmp ebx, INS_SYSCALL
+    jne _check_ins_rps34
+    call process_syscall
+    jmp _start_loop_process_segment
+_check_ins_rps34:
+    cmp ebx, INS_INT
+    jne _check_ins_rps35
+    call process_int
+    jmp _start_loop_process_segment
+_check_ins_rps35:
+    cmp ebx, INS_INT3
+    jne _check_ins_rps36
+    call process_int3
+    jmp _start_loop_process_segment
+_check_ins_rps36:
+    cmp ebx, INS_INT1
+    jne _check_ins_rps_jmp
+    call process_int1
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx
