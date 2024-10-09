@@ -2,14 +2,6 @@ FILE_ENTRY_SIZE equ 64
 
 segment readable writeable
 
-ERR_NOT_A_FILE db ": is not a regular file", 0
-FILE_MISS db ": unable to get info about file", 0
-ACCES_DENIED db ": access denied", 0
-ERROR_ACCESS db ": error on access file", 0
-READ_ERR db ": error during file reading", 0
-
-ALREADY_INCLUDED db ": already included", 0
-
 ;file array
 ;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
 ;+32 inode, +40 name len (20 bytes reserved) 
@@ -151,10 +143,10 @@ _len_pach_check_lfbp:
     jz _stat_success_lfbp
     mov rdi, rsp
     call print_zero_str
-    mov rdi, FILE_MISS
+    mov rdi, ERR_FILE_MISS
     call print_zero_str
     call print_new_line
-    jmp _exit_load_file_by_path
+    jmp _error_exit_lfbp
 _stat_success_lfbp:
     mov rax, [rbp-96]; file size
     test rax, rax
@@ -169,7 +161,7 @@ _stat_success_lfbp:
     mov rdi, ERR_NOT_A_FILE
     call print_zero_str
     call print_new_line
-    jmp _exit_load_file_by_path
+    jmp _error_exit_lfbp
 _check_is_file_exit_lfbp:
     mov rdi, [rbp-136]
     call check_if_inode_exist
@@ -179,7 +171,7 @@ _check_is_file_exit_lfbp:
     mov rdi, [rbp-160]
     mov esi, [rbp-152]
     call print_len_str
-    mov rdi, ALREADY_INCLUDED
+    mov rdi, ERR_ALREADY_INCLUDED
     call print_zero_str
     jmp _error_exit_lfbp 
 _get_file_entry_lfbp:
@@ -196,10 +188,10 @@ _get_file_entry_lfbp:
     sub rbx, EACCES
     cmp rax, rbx
     jne _err1_lfbp
-    mov rdi, ACCES_DENIED
+    mov rdi, ERR_ACCES_DENIED
     jmp _error_exit_lfbp
 _err1_lfbp:
-    mov rdi, ERROR_ACCESS
+    mov rdi, ERR_ERROR_ACCESS
     call print_zero_str
     jmp _error_exit_lfbp
 _alloc_file_mem_lfbp:
@@ -210,7 +202,7 @@ _alloc_file_mem_lfbp:
     mov rsi, rax
     xor rax, rax
     cmp rsi, rax
-    jl _exit_load_file_by_path
+    jl _error_exit_lfbp
 _read_up_file_lfbp:
     mov [rbp-184], rsi; mem
     mov rdx, [rbp-96]
@@ -220,7 +212,7 @@ _read_up_file_lfbp:
     jg _save_read_file_lfbp
     mov rdi, rsp
     call print_zero_str
-    mov rdi, READ_ERR
+    mov rdi, ERR_READ_ERR
     call print_zero_str
     call print_new_line
     jmp _error_exit_lfbp
@@ -241,8 +233,7 @@ _save_read_file_lfbp:
     mov ebx, [rbp-188]
     jmp _exit_load_file_by_path
 _error_exit_lfbp:
-    call print_new_line
-    xor rax, rax
+    exit_m -1
 _exit_load_file_by_path:
     mov rdi, [rbp-176]
     test rdi, rdi

@@ -1,4 +1,5 @@
 segment readable
+NEW_LINE db 10, 0
 DIGIT_MAP db "0123456789ABCDEF", 0
 PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
@@ -217,5 +218,13 @@ print_file_line:
     call print_new_line
 _ent_print_file_line:
     add rsp, 8
+    pop rbp
+    ret
+
+err_print:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+    add rsp, 32
     pop rbp
     ret

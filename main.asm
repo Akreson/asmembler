@@ -1,14 +1,10 @@
 format ELF64 executable
 
+include 'err_msg.asm'
+
 segment readable writeable
 
-NEW_LINE db 10, 0
-
-INVALID_HASH db "Invalid hash for: ", 0
-MMAP_FAILED db "mmap have failed", 0
-MUNMAP_FAILED db "munmap have failed", 0
-DBL_DEF_SYM db "Doubled default symbol: ", 0
-ERR_ADD_HT db "Error on adding entry to hash table", 0
+CURR_FILE_ENTRY_OFFSET dd 0
 
 TEST_STR db "./out.bin", 0
 TEST_STR2 db "./ins.bin", 0
@@ -60,7 +56,7 @@ _calc_hash_init_def_sym_init:
     call hash_str
     test eax, eax
     jnz _add_loop_init_def_sym
-    mov rdi, INVALID_HASH
+    mov rdi, ERR_INVALID_HASH
     call print_zero_str
     mov rdi, [rbp-24]
     mov esi, [rbp-28]
@@ -77,7 +73,7 @@ _add_loop_init_def_sym:
     mov rbx, [rax]
     test rbx, rbx
     jz _add_init_def_sym 
-    mov rdi, DBL_DEF_SYM
+    mov rdi, ERR_DBL_DEF_SYM
     push rbx
     call print_zero_str
     pop rbx
@@ -142,7 +138,7 @@ _start:
     mov rdi, TEST_STR
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]
-    add r8, 260 
+    add r8, 312 
     mov rdi, rax
     mov rsi, [r8]
     mov edx, [r8+8]

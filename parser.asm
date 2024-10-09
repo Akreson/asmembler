@@ -69,11 +69,10 @@ TOKEN_HEADER_SIZE equ 16
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
 ;TODO: finish format description
+; (4) count of bytes for body, size mark token, count of token for curr size mark
+; token
 
 CURR_SEG_OFFSET dd 0
-
-ERR_SEG_INV_DEF db "ERR: invalid definition of segment", 0
-ERR_INV_EXP db "ERR: invalid expresion", 0
 
 segment readable executable
 
@@ -1405,21 +1404,29 @@ _next_test_sp:
     jmp _new_entry_start_ps
 
 _err_segment_not_set:
+    mov qword [rbp-92], ERR_SEGMENT_NOT_SET
+    jmp _err_start_parser
 _err_out_of_range_value:
+    mov qword [rbp-92], ERR_STATIC_DIGIT_OVERFLOW
+    jmp _err_start_parser
 _err_invalid_const_value:
+    mov qword [rbp-92], ERR_INV_CONST_DEF
+    jmp _err_start_parser
 _err_defined_symbol:
+    mov qword [rbp-92], ERR_DEF_SYM
+    jmp _err_start_parser
 _err_invalid_addr_expr:
+    mov qword [rbp-92], ERR_INV_ADDR
+    jmp _err_start_parser
 _err_invalid_expr:
-    mov rdi, [rbp-40]
-    call print_file_line
-    mov rdi, ERR_INV_EXP
-    call print_zero_str
-    call print_new_line
-    exit_m -6
+    mov qword [rbp-92], ERR_INV_EXP
+    jmp _err_start_parser
 _err_seg_inv_def:
+    mov qword [rbp-92], ERR_SEG_INV_DEF
+_err_start_parser:
     mov rdi, [rbp-40]
     call print_file_line
-    mov rdi, ERR_SEG_INV_DEF
+    mov rdi, [rbp-92]
     call print_zero_str
     call print_new_line
     exit_m -6
