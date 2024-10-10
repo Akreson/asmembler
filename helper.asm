@@ -1,7 +1,6 @@
 segment readable
 NEW_LINE db 10, 0
 DIGIT_MAP db "0123456789ABCDEF", 0
-PRINT_BASE_ERR db "Unsupported base for print_digit", 0
 
 MIN_INT8 equ 0x80
 MAX_INT8 equ 0x7F
@@ -112,7 +111,7 @@ print_u_digit:
     je _begin_loop_print_digit
     cmp rsi, r9
     je _begin_loop_print_digit
-    mov rdi, PRINT_BASE_ERR
+    mov rdi, ERR_PRINT_BASE
     call print_zero_str
     jmp _end_print_digit
 _begin_loop_print_digit:
