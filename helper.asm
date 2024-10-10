@@ -179,11 +179,14 @@ _end_print_ht_sym_str:
     ret
 
 ;rdi - curr file entry ptr
+;esi - line num to print (0 if curr), rcx - offset in file (if ecx 0 then it do not counts),
 print_file_line:
     push rbp
     mov rbp, rsp
-    sub rsp, 8
+    sub rsp, 20
     mov [rbp-8], rdi
+    mov [rbp-16], rcx
+    mov [rbp-20], esi
     mov rbx, rdi
     mov rdi, [rbx+24]
     mov esi, [rbx+40]
@@ -194,7 +197,8 @@ print_file_line:
     mov rdi, STR_LBRACKET
     mov esi, 1
     call print_len_str
-    mov edi, dword [LAST_LINE_NUM]
+    mov rax, [rbp-8]
+    mov edi, [rax+44]
     mov esi, 10
     call print_u_digit
     mov rdi, STR_RBRACKET
@@ -216,14 +220,40 @@ print_file_line:
     call print_len_str
     call print_new_line
 _ent_print_file_line:
-    add rsp, 8
+    add rsp, 20
     pop rbp
     ret
 
+; edi - offset to file entry, rsi - ptr to zero end str of err,
+; rdx - ptr to pre err zero end str, ecx - line num to print (0 if curr)
+; r8 - offset in file (if ecx 0 then it do not counts), r9 - exit val
 err_print:
     push rbp
     mov rbp, rsp
     sub rsp, 32
+    mov [rbp-4], edi
+    mov [rbp-16], rsi
+    mov [rbp-24], rdx
+    mov [rbp-32], r9
+    test edi, edi
+    jz _err_print_skip_file_name
+    mov rax, [FILES_ARRAY]
+    lea rdi, [rax+rdi]
+    mov esi, ecx
+    mov rdx, r8
+    call print_file_line
+_err_print_skip_file_name:
+    mov rdi, ERR_HEADER_STR
+    call print_zero_str
+    mov rdi, [rbp-24]
+    test rdi, rdi
+    jz _err_print_skip_pre_err
+    call print_zero_str
+_err_print_skip_pre_err:
+    mov rdi, [rbp-16]
+    call print_zero_str
+    call print_new_line
     add rsp, 32
     pop rbp
-    ret
+    mov rcx, [rbp-32]
+    exit_m rcx

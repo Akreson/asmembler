@@ -19,6 +19,8 @@ PARSER_ADDR_FLAG_DIGIT     equ 0x8
 
 segment readable writeable
 
+LAST_LINE_NUM dd 0
+
 ; entry
 ; 0 (4b) linked list entry offset to a chain of patch location, 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
@@ -1424,12 +1426,18 @@ _err_invalid_expr:
 _err_seg_inv_def:
     mov qword [rbp-92], ERR_SEG_INV_DEF
 _err_start_parser:
-    mov rdi, [rbp-40]
-    call print_file_line
-    mov rdi, [rbp-92]
-    call print_zero_str
-    call print_new_line
-    exit_m -6
+;    mov rdi, [rbp-40]
+;    call print_file_line
+;    mov rdi, [rbp-92]
+;    call print_zero_str
+;    call print_new_line
+;    exit_m -6
+    mov edi, [rbp-52]
+    mov rsi, [rbp-92]
+    xor rdx, rdx
+    xor ecx, ecx
+    mov r9, -4
+    call err_print
 _end_start_parser:
     add rsp, 256
     pop rbp
