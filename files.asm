@@ -92,11 +92,7 @@ _len_pach_check_lfbp:
     call stat
     test eax, eax
     jz _stat_success_lfbp
-    mov rdi, rsp
-    call print_zero_str
-    mov rdi, ERR_FILE_MISS
-    call print_zero_str
-    call print_new_line
+    mov rsi, ERR_FILE_MISS
     jmp _error_exit_lfbp
 _stat_success_lfbp:
     mov rax, [rbp-96]; file size
@@ -107,11 +103,7 @@ _stat_success_lfbp:
     mov ebx, S_IFREG
     cmp eax, ebx
     je _check_is_file_exit_lfbp
-    mov rdi, rsp
-    call print_zero_str
-    mov rdi, ERR_NOT_A_FILE
-    call print_zero_str
-    call print_new_line
+    mov rsi, ERR_NOT_A_FILE
     jmp _error_exit_lfbp
 _check_is_file_exit_lfbp:
     mov rdi, [rbp-136]
@@ -119,12 +111,8 @@ _check_is_file_exit_lfbp:
     test rax, rax
     ;TODO: better report?
     jz _get_file_entry_lfbp
-    mov rdi, [rbp-160]
-    mov esi, [rbp-152]
-    call print_len_str
-    mov rdi, ERR_ALREADY_INCLUDED
-    call print_zero_str
-    jmp _error_exit_lfbp 
+    mov rsi, ERR_ALREADY_INCLUDED
+    jmp _error_exit_lfbp
 _get_file_entry_lfbp:
     mov rdi, FILES_ARRAY
     mov esi, 1
@@ -141,11 +129,11 @@ _get_file_entry_lfbp:
     sub rbx, EACCES
     cmp rax, rbx
     jne _err1_lfbp
-    mov rdi, ERR_ACCES_DENIED
+    mov rsi, ERR_ACCES_DENIED
     jmp _error_exit_lfbp
 _err1_lfbp:
-    mov rdi, ERR_ERROR_ACCESS
-    call print_zero_str
+    mov rdx, rsp
+    mov rsi, ERR_ERROR_ACCESS 
     jmp _error_exit_lfbp
 _alloc_file_mem_lfbp:
     mov [rbp-176], rax;fd
@@ -163,11 +151,8 @@ _read_up_file_lfbp:
     xor rbx, rbx
     cmp rax, rbx;TODO: check properly
     jg _save_read_file_lfbp
-    mov rdi, rsp
-    call print_zero_str
-    mov rdi, ERR_READ_ERR
-    call print_zero_str
-    call print_new_line
+    mov rdx, rsp
+    mov rsi, ERR_READ_ERR 
     jmp _error_exit_lfbp
 _save_read_file_lfbp:
     mov rax, [rbp-168];entry ptr
@@ -187,7 +172,12 @@ _save_read_file_lfbp:
     mov ebx, [rbp-188]
     jmp _exit_load_file_by_path
 _error_exit_lfbp:
-    exit_m -1
+    xor ecx, ecx
+    xor r8, r8
+    mov r9, -2
+    mov edi, [CURR_FILE_ENTRY_OFFSET]
+    mov rdx, rsp
+    call err_print
 _exit_load_file_by_path:
     mov rdi, [rbp-176]
     test rdi, rdi
