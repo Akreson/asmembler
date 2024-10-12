@@ -179,13 +179,13 @@ _end_print_ht_sym_str:
     ret
 
 ;rdi - curr file entry ptr
-;esi - line num to print (0 if curr), rcx - offset in file (if ecx 0 then it do not counts),
+;esi - line num to print (0 if curr), rdx - offset in file (if ecx 0 then it do not counts),
 print_file_line:
     push rbp
     mov rbp, rsp
     sub rsp, 20
     mov [rbp-8], rdi
-    mov [rbp-16], rcx
+    mov [rbp-16], rdx
     mov [rbp-20], esi
     mov rbx, rdi
     mov rdi, [rbx+24]
@@ -198,7 +198,7 @@ print_file_line:
     mov esi, 1
     call print_len_str
     mov rax, [rbp-8]
-    mov edi, [rax+44]
+    mov edi, [rbp-20]
     mov esi, 10
     call print_u_digit
     mov rdi, STR_RBRACKET
@@ -212,6 +212,7 @@ print_file_line:
     mov esi, 1
     call print_len_str
     mov rdi, [rbp-8]
+    mov rsi, [rbp-16]
     call get_curr_line_start_end
     mov r8, [rbp-8]
     mov rdi, [r8]

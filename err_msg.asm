@@ -55,7 +55,7 @@ ERR_INV_ADDR_ARGC db "Invalid amount of parameters for address field", 0
 ERR_INS_INV_1ST_PARAM db "Invalid 1st parameter of instruction", 0
 ERR_INS_INV_2ND_PARAM db "Invalid 2nd parameter of instruction", 0
 ERR_INS_INV_ARGC db "Invalid amount of parameters for this instruction", 0
-ERR_INS_INV_ARGS_SIZE db "Arguments size must be the same size", 0
+ERR_INS_INV_ARGS_SIZE db "Arguments size must be the same", 0
 ERR_INS_INV_ARG_SIZE db "Invalid argument size", 0
 ERR_INS_INV_RIP_REF db "Invalid rip ref. is used", 0
 ERR_INS_INV_REG_SIZE db "Invalid reg size", 0
