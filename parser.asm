@@ -20,7 +20,6 @@ PARSER_ADDR_FLAG_DIGIT     equ 0x8
 segment readable writeable
 
 LAST_LINE_NUM dd 0
-
 ; entry
 ; 0 (4b) linked list entry offset to a chain of patch location, 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
@@ -29,8 +28,6 @@ UNK_ENTRY_SIZE equ 32
 UNKNOWN_NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, UNK_ENTRY_SIZE
 
-NAME_CONST_ENTRY_SIZE equ 46
-NAME_DATA_ENTRY_SIZE equ 40
 ; entry
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
 ; +12 line num in file
@@ -41,6 +38,8 @@ NAME_DATA_ENTRY_SIZE equ 40
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
 ;+32 segment offset, +36 offest to entry header in seg token buf
+NAME_CONST_ENTRY_SIZE equ 46
+NAME_DATA_ENTRY_SIZE equ 40
 NAME_SYM_REF_HEADER_SIZE equ 32
 NAME_SYM_REF_ARRAY dq 0
 dd 0, 0, 1
@@ -61,10 +60,15 @@ PATCH_LIST dq 0
 dd 0, 0, 0
 dd 0, 0
 
-TOKEN_HEADER_PLUS_INS_TOKEN equ 32 ;16+1+14+1
-TOKEN_HEADER_SIZE equ 16
+TOKEN_OFFSET_TO_INS_ARGC equ 35
+TOKEN_HEADER_PLUS_INS_TOKEN equ 36 ;20+1+14+1
+TOKEN_HEADER_SIZE equ 20
 ; token buf
-; (header)(16b)
+; (header)(20b)
+; 0(4) offset in render buf, +4(2) file entry id, +6 skip flag (is token group represent renderable info.),
+; +7 (count of rendered bytes for TOKEN_TYPE_INS), +8(4) line num, +12(4) entry size in bytes
+; token buf, +16 offset to line in file buff
+; (header)(b)
 ; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
 ; +14 skip flag (is token group represent renderable info.),
 ; +15 (count of rendered bytes for TOKEN_TYPE_INS)
@@ -101,23 +105,30 @@ _end_token_buf_push_size:
 push_token_entry_header:
     push rbp
     mov rbp, rsp
-    sub rsp, 24
+    sub rsp, 28
+    mov [rbp-28], rdi
     mov rbx, rdi
     xor eax, eax
-    xor ecx, ecx
-    mov rdi, rsp
-    mov cl, 24
+    lea rdi, [rbp-20]
+    mov ecx, TOKEN_HEADER_SIZE 
     rep stosb
-    mov rdi, rbx
-    ;mov [rbp-8], rdi
-    ;mov [rbp-20], esi
-    mov ecx, dword [LAST_LINE_NUM]
-    ;mov [rbp-16], ecx
-    mov rdx, rsp
+    mov r8, [FILES_ARRAY]
+    lea rax, [r8+rsi]
+    mov r9, rax
+    sub rax, r8
+    mov rcx, FILE_ARRAY_ENTRY_SIZE
+    div rcx
+    mov [rbp-16], ax
+    mov edx, [r9+16]
+    mov ebx, [r9+44]
+    mov [rbp-12], ebx
+    mov [rbp-4], edx
+    mov rdi, [rbp-28]
+    lea rdx, [rbp-20] 
     mov esi, TOKEN_HEADER_SIZE
     call token_buf_push_size
 _end_push_render_entry_header:
-    add rsp, 24
+    add rsp, 28
     pop rbp
     ret
 
@@ -526,25 +537,19 @@ set_tbuf_body_size:
     call curr_token_buf_ptr
     sub ebx, edi
     sub rax, rbx
-    ;sub ebx, 16
-    mov ecx, 65535
-    cmp ebx, ecx
-    jbe _end_set_tbuf_body_size
-    exit_m -8
-_end_set_tbuf_body_size:
-    mov word [rax+12], bx
+    mov [rax+12], ebx
     ret
 
 ; edi - offset of header of token group
 inc_ins_argc:
     call curr_token_buf_start_ptr
-    inc byte [rax+rdi+31]; header + buf type + direct
+    inc byte [rax+rdi+TOKEN_OFFSET_TO_INS_ARGC]; header + buf type + direct
     ret
 
 ; edi - offset of header of token group
 get_ins_argc:
     call curr_token_buf_start_ptr
-    movzx eax, byte [rax+rdi+31]
+    movzx eax, byte [rax+rdi+TOKEN_OFFSET_TO_INS_ARGC]
     ret
 
 ;rdi - ptr to element buff with elements size of size 1, rsi - push from addr 
@@ -622,7 +627,7 @@ _end_push_name_ptr_offset:
 set_name_token_type:
     mov rax, [NAME_SYM_REF_ARRAY]
     add rax, rdi
-    mov byte [rax+30], sil 
+    mov [rax+30], sil 
     ret
 
 ; rdi - ptr to file entry, rsi - ptr to token temp mem
@@ -667,6 +672,7 @@ start_parser:
     sub rsp, 256
     mov [rbp-40], rdi
     mov [rbp-52], esi
+    mov [CURR_FILE_ENTRY_OFFSET], esi
 _new_entry_start_ps:
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -1152,20 +1158,21 @@ ___name_data_def:
     ;mov [r8+8], ebx
     mov [rbp-76], ebx
 ___name_data_qul_read:
-    mov byte [rbp-67], 0
     call curr_seg_ptr
     mov rdi, rax
-    mov esi, 16
+    mov esi, 24
     call entry_array_reserve_size
+    add rax, 4
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax
     lea rsi, [rbp-32]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
-    add ebx, 15
+    add ebx, 20
     mov [rbp-92], ebx 
     mov edx, [rbp-24]
+    ;TODO: change to cmovcc
     cmp edx, KW_DB
     jne ___n_size_check2
     mov byte [rbp-68], 1
@@ -1406,34 +1413,27 @@ _next_test_sp:
     jmp _new_entry_start_ps
 
 _err_segment_not_set:
-    mov qword [rbp-92], ERR_SEGMENT_NOT_SET
+    mov rsi, ERR_SEGMENT_NOT_SET
     jmp _err_start_parser
 _err_out_of_range_value:
-    mov qword [rbp-92], ERR_STATIC_DIGIT_OVERFLOW
+    mov rsi, ERR_STATIC_DIGIT_OVERFLOW
     jmp _err_start_parser
 _err_invalid_const_value:
-    mov qword [rbp-92], ERR_INV_CONST_DEF
+    mov rsi, ERR_INV_CONST_DEF
     jmp _err_start_parser
 _err_defined_symbol:
-    mov qword [rbp-92], ERR_DEF_SYM
+    mov rsi, ERR_DEF_SYM
     jmp _err_start_parser
 _err_invalid_addr_expr:
-    mov qword [rbp-92], ERR_INV_ADDR
+    mov rsi, ERR_INV_ADDR
     jmp _err_start_parser
 _err_invalid_expr:
-    mov qword [rbp-92], ERR_INV_EXP
+    mov rsi, ERR_INV_EXP
     jmp _err_start_parser
 _err_seg_inv_def:
-    mov qword [rbp-92], ERR_SEG_INV_DEF
+    mov rsi, ERR_SEG_INV_DEF
 _err_start_parser:
-;    mov rdi, [rbp-40]
-;    call print_file_line
-;    mov rdi, [rbp-92]
-;    call print_zero_str
-;    call print_new_line
-;    exit_m -6
     mov edi, [rbp-52]
-    mov rsi, [rbp-92]
     xor rdx, rdx
     xor ecx, ecx
     mov r9, -4

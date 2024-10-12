@@ -152,9 +152,9 @@ segment readable executable
     neg esi
     neg r9b
     neg ax
-    neg esi
+    neg esi 
+    neg rsp
     
-    not rsp
     not dword [NAME_D-NAME_C]
     not word [r8+r11]
     not byte [rax+rdx]

@@ -269,7 +269,7 @@ reduce_ins_offset:
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-20], ecx
-    movzx ebx, byte [rdx+15]
+    movzx ebx, byte [rdx+7]
     mov eax, [rdx]
     add eax, ebx
     mov r8, [rsi]
@@ -285,14 +285,14 @@ reduce_ins_offset:
     add r8, r9
     mov ecx, [rbp-20]
     neg ecx ; TODO: revisit
-    movzx eax, word [rdx+12]
+    mov eax, [rdx+12]
     add rdx, rax
 _start_loop_reduce_io:
     cmp rdx, r8
     jge _end_reduce_ins_offset
     mov rsi, rdx
-    movzx eax, word [rdx+12]
-    mov bl, [rdx+14]
+    mov eax, [rdx+12]
+    mov bl, [rdx+7]
     add rdx, rax
     test bl, bl
     jnz _start_loop_reduce_io
@@ -375,7 +375,7 @@ _start_loop_seg_rpsa:
     jl _next_patch_entry_rpsa
 _skip_bound_cheks_rpsa:
     mov r9d, edi
-    movzx ebx, byte [r8+15]
+    movzx ebx, byte [r8+7]
     add edi, ebx
     sub eax, edi
     mov rdx, [rbp-64]
@@ -413,7 +413,7 @@ __check_jcc_patch_min_set:
     sub bl, 0x10
     mov [rcx], bl
     mov [rcx+1], al
-    mov byte [r8+15], 2
+    mov byte [r8+7], 2
     mov ecx, r9d
     jmp _reduce_buffers_rpsa
 __check_jcc_max_patch_rpsa:
@@ -445,7 +445,7 @@ __check_jmp_patch_min_set:
     mov eax, r10d
     or byte [rcx], 0x2
     mov [rcx+1], al
-    mov byte [r8+15], 2
+    mov byte [r8+7], 2
     mov ecx, r9d
     jmp _reduce_buffers_rpsa
 __check_jmp_max_patch_rpsa:
@@ -541,7 +541,7 @@ set_collate_seg_ptr:
     xor r9, r9
     mov r8, [SEG_ENTRY_ARRAY]
     mov ecx, SEG_ENTRY_SIZE
-    mov eax, 6
+    mov eax, 5
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -561,7 +561,7 @@ _set_collate_sg_check2:
     mov [rdi], rbx
     add rdi, 8
 _set_collate_sg_check3:
-    mov eax, 5
+    mov eax, 6
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -714,15 +714,7 @@ set_rendered_size:
     add al, byte [rsi+24]
     add al, byte [rsi+25]
     add al, byte [rsi+33]
-    mov [rdi+15], al
-    ret
-
-; TODO: complete
-; rdi - ptr to token entry
-render_err_first_param:
-    push rbp
-    mov rbp, rsp
-    pop rbp
+    mov [rdi+7], al
     ret
 
 ; rdi - ptr to ins code struct, rsi - symbol of prefix
@@ -1719,7 +1711,7 @@ process_mov:
     push rbp
     mov rbp, rsp
     sub rsp, 128
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 2
     jne _err_invalid_argc_mov
     mov eax, [rdi+28]
@@ -1936,7 +1928,7 @@ process_jumps:
     push rbp
     mov rbp, rsp
     sub rsp, 128
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 1
     jne _err_invalid_argc_jumps
     mov eax, [rdi+28]
@@ -2112,7 +2104,7 @@ process_ins_template0:
     mov [rbp-24], rcx
     mov [r8+24], rdi
     mov [r8+16], rsi
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 2
     jne _err_invalid_argc_instemp0
     mov eax, [rdi+28]
@@ -2476,7 +2468,7 @@ process_ins_template1:
     push rbp
     mov rbp, rsp
     sub rsp, 40
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 1
     jne _err_instemp1_invalid_argc
     mov eax, [rdi+28]
@@ -2687,7 +2679,7 @@ process_imul:
     lea r8, [rbp-128]
     mov rdi, r8
     rep stosb
-    mov al, byte [rsi+31]
+    mov al, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     mov [rbp-33], al
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     cmp al, 1
@@ -2862,7 +2854,7 @@ process_ins_template2:
     mov [rbp-24], rcx
     mov [r8+24], rdi
     mov [r8+16], rsi
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 2
     jne _err_invalid_argc_instemp2
     mov eax, [rdi+28]
@@ -3036,7 +3028,7 @@ process_cmovcc:
     mov [rbp-16], rsi
     xor ebx, ebx
     mov bx, 0x400F
-    mov eax, [rsi+25]; header_size + type + ptr to str
+    mov eax, [rsi+29]; header_size + type + ptr to str
     mov ecx, INS_CMOVO
     sub eax, ecx
     shl eax, 8
@@ -3097,7 +3089,7 @@ _instemp3_check_q:
 _instemp3_set_op:
     mov [r8+29], bl
     mov [r8+52], r9b
-    movzx edx, word [rsi+12]
+    mov edx, [rsi+12]
     mov rax, rsi
     add rax, TOKEN_HEADER_PLUS_INS_TOKEN 
     add rsi, rdx
@@ -3185,7 +3177,7 @@ process_ins_template4:
     mov [rbp-24], rcx
     mov [r8+24], rdi
     mov [r8+16], rsi
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 2
     jne _err_invalid_argc_instemp4
     mov eax, [rdi+28]
@@ -3415,7 +3407,7 @@ process_ins_template5:
     mov [rbp-24], rcx
     mov [r8+24], rdi
     mov [r8+16], rsi
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 2
     jne _err_invalid_argc_instemp5
     mov eax, [rdi+28]
@@ -3586,7 +3578,7 @@ process_ins_template6:
     push rbp
     mov rbp, rsp
     sub rsp, 40
-    movzx eax, byte [rsi+31]
+    movzx eax, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp eax, 1
     jne _err_instemp6_invalid_argc
     mov eax, [rdi+28]
@@ -3762,7 +3754,7 @@ process_lea:
     lea r8, [rbp-128]
     mov rdi, r8
     rep stosb
-    mov al, byte [rsi+31]
+    mov al, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp al, 2
     jne _err_invalid_argc_lea
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
@@ -3866,7 +3858,7 @@ process_int:
     lea r8, [rbp-128]
     mov rdi, r8
     rep stosb
-    mov al, byte [rsi+31]
+    mov al, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
     cmp al, 1
     jne _err_invalid_argc_int
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
@@ -3968,13 +3960,13 @@ _start_loop_process_segment:
     mov rdx, [r8]
     lea r9, [rdx+rcx]
     mov [rbp-24], r9
-    movzx esi, word [r9+12]
+    mov esi, [r9+12]
     add ecx, esi
     mov [rbp-12], ecx
-    lea r10, [r9+16]
+    lea r10, [r9+TOKEN_HEADER_SIZE]
     movzx ebx, byte [r10]
     cmp ebx, TOKEN_BUF_DIRECT
-    jne _err_processing_start_token
+    jne _start_loop_process_segment
     movzx eax, byte [r10+13]
     cmp eax, TOKEN_TYPE_INS
     je _check_ins_rps
