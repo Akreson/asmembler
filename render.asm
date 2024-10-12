@@ -777,9 +777,18 @@ _switch_r_rm_skip_rex:
     mov [rdi], cl
     ret
 
-; rdi - dest, rsi - source, ecx - size
-shift_and_clear_postfix_buf:
-
+; rdi - ptr to token entry
+set_reg_for_err_print:
+    mov r10, rdi
+    movzx eax, word [r10+4]
+    mov ecx, FILE_ARRAY_ENTRY_SIZE
+    mul ecx
+    mov edi, eax
+    xor rdx, rdx
+    mov ecx, [r10+8]
+    mov r8d, [r10+16]
+    mov r9, -5
+    ret
 ; rdi - ptr to ins param, rsi - pt to ins code struct
 ; return eax - 0 if success
 process_gen_r:
@@ -1913,10 +1922,9 @@ _err_invalid_first_param_mov:
 _err_invalid_second_param_mov:
     mov rsi, ERR_INS_INV_2ND_PARAM
 _err_exit_mov:
-    exit_m -4
-;    mov edi, [rax+4]
-;    mov r9, -4
-;    call err_print
+    mov rdi, [rbp-16]
+    call set_reg_for_err_print
+    call err_print
 _end_process_mov:
     add rsp, 128
     pop rbp
@@ -2087,7 +2095,9 @@ _err_parse_invalid_arg_jumps:
 _err_invalid_argc_jumps:
     mov rsi, ERR_INS_INV_ARGC
 _err_parse_jumps:
-    exit_m -6
+    mov rdi, [rbp-16]
+    call set_reg_for_err_print
+    call err_print
 _end_process_jumps:
     add rsp, 128
     pop rbp
@@ -2311,8 +2321,9 @@ _err_invalid_second_param_instemp0:
 _err_invalid_first_param_instemp0:
     mov rsi, ERR_INS_INV_1ST_PARAM
 _err_parse_instemp0:
-    mov eax, 1
-    jmp _end_process_instemp0
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _instemp0_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
@@ -2538,7 +2549,9 @@ _err_instemp1_invalid_argc:
 _err_instemp1_invalid_first_param:
     mov rsi, ERR_INS_INV_1ST_PARAM 
 _err_instemp1_exit:
-    exit_m -6
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _end_instemp1_process:
     add rsp, 40
     pop rbp
@@ -2897,7 +2910,7 @@ __instemp2_r_r:
     cmp eax, ebx
     jne _err_arg_size_instemp2
     cmp eax, REG_MASK_VAL_8B
-    je _err_arg_size_instemp2
+    je _err_invalid_arg_size_instemp2
     mov rdi, r8
     call switch_reg_to_r_rm
     jmp _instemp2_load_opc
@@ -2914,7 +2927,7 @@ __instemp2_r_a:
     cmp eax, ebx
     jne _err_arg_size_instemp2
     cmp eax, REG_MASK_VAL_8B
-    je _err_arg_size_instemp2
+    je _err_invalid_arg_size_instemp2
 _instemp2_load_opc:
     mov r9, [rbp-24]
     mov cx, word [r9]
@@ -2937,9 +2950,12 @@ _err_invalid_second_param_instemp2:
 _err_invalid_first_param_instemp2:
     mov rsi, ERR_INS_INV_1ST_PARAM
     jmp _err_parse_instemp2
+_err_invalid_arg_size_instemp2:
+    mov rsi, ERR_INS_INV_ARG_SIZE
 _err_parse_instemp2:
-    mov eax, 1
-    jmp _end_process_instemp2
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _instemp2_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
@@ -3104,15 +3120,16 @@ _instemp3_set_op:
     mov esi, [rax+9]
     mov rdi, r8
     call set_def_pref_by_symbol
+    jmp _success_instemp3
+_err_instemp3_parse:
+    mov rsi, ERR_INS_FORMAT
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _instemp3_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
     call default_ins_assemble
-    jmp _success_instemp3
-_err_instemp3_parse:
-    mov rsi, ERR_INS_FORMAT
-    mov eax, 1
-    jmp _end_process_instemp3
 _success_instemp3:
     xor eax, eax
 _end_process_instemp3:
@@ -3322,8 +3339,9 @@ _err_invalid_second_param_instemp4:
 _err_invalid_argc_instemp4:
     mov rsi, ERR_INS_INV_ARGC
 _err_instemp4_parse:
-    mov eax, 1
-    jmp _end_process_ins_template4
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _instemp4_assemble:
     mov r10b, [r9+6]
     shl r10b, 3
@@ -3505,8 +3523,9 @@ _err_invalid_second_param_instemp5:
 _err_invalid_first_param_instemp5:
     mov rsi, ERR_INS_INV_1ST_PARAM
 _err_parse_instemp5:
-    mov eax, 1
-    jmp _end_process_instemp5
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _instemp5_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
@@ -3697,7 +3716,9 @@ _err_instemp6_invalid_arg_size:
 _err_instemp6_invalid_first_param:
     mov rsi, ERR_INS_INV_1ST_PARAM
 _err_instemp6_exit:
-    exit_m -6
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _end_instemp6_process:
     add rsp, 40
     pop rbp
@@ -3792,8 +3813,9 @@ _err_invalid_argc_lea:
 _err_invalid_arg_size_lea:
     mov rsi, ERR_INS_INV_ARGS_SIZE
 _err_parse_lea:
-    mov eax, 1
-    jmp _end_process_lea
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _lea_assemble:
     mov rdi, [rbp-32]
     lea rsi, [rbp-128]
@@ -4180,7 +4202,9 @@ _check_ins_rps_cmovcc:
     jmp _start_loop_process_segment
 _err_processing_start_token:
     mov rsi, ERR_INS_UNSUPPORT
-    exit_m -6
+    mov rdi, [rbp-8]
+    call set_reg_for_err_print
+    call err_print
 _end_render_process_segment:
     add rsp, 128
     pop rbp
