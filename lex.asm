@@ -194,15 +194,15 @@ _end_valid_sym_char:
     pop rbp
     ret
 
-;TODO: add line info
-;rdi - file entry ptr, rsi - ptr to space for symbol entry
+; TODO: add line info
+; rdi - file entry ptr, rsi - ptr to space for symbol entry
 ; -8 passed rdi, -16 passed rsi, -24 ptr to buff, -32 size of buff
 ; -40 curr read ptr; -48 cahed last read char, -56 ptr to aux token
 ; -64 offset for start of token, -72 building digit / hash of token / str quote sym
 next_token:
     push rbp
     mov rbp, rsp
-    sub rsp, 84
+    sub rsp, 128
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov rbx, [rdi]
@@ -490,20 +490,25 @@ __finish_scan_str:
     inc r10
     mov [rbp-40], r10
     jmp _end_next_token
-
+_eof_nt:
+    mov rdi, [rbp-16]
+    mov qword [rdi], 0
+    mov dword [rdi+8], 0
+    mov byte [rdi+12], TOKEN_TYPE_EOF
+    mov byte [rdi+13], 0
+    mov rax, 1
+    jmp _end_next_token
 _err_digit_format:
-    mov rdi, ERR_LEXER_NUMBER_FORMAT
+    mov rbx, ERR_LEXER_NUMBER_FORMAT
     jmp __err_digit_end_nt
 _err_out_of_base_digit:
-    mov rdi, ERR_LEXER_NUMBER_ORDER
+    mov rbx, ERR_LEXER_NUMBER_ORDER
     jmp __err_digit_end_nt
 _err_digit_overflow:
-    mov rdi, ERR_LEXER_NUM_TO_BIG
+    mov rbx, ERR_LEXER_NUM_TO_BIG
     jmp __err_digit_end_nt
 __err_digit_end_nt:
-    mov [rbp-40], rcx
-    call print_zero_str
-    mov rcx, [rbp-40]
+    mov [rbp-128], rbx
     mov rbx, [rbp-24]
     mov esi, dword [SPACE_CHAR_4B]
 __loop_err_digit_end_nt:
@@ -517,48 +522,55 @@ __loop_err_digit_end_nt:
     jnz __finish_loop_err_digit_end_nt
     jmp __loop_err_digit_end_nt
 __finish_loop_err_digit_end_nt:
-    mov rsi, rcx
     mov rax, [rbp-64]
-    sub rsi, rax
+    sub rcx, rax
     lea rdi, [rbx+rax]
-    call print_len_str
-    xor rax, rax
-    jmp _end_next_token
-_eof_nt:
-    mov rdi, [rbp-16]
-    mov qword [rdi], 0
-    mov dword [rdi+8], 0
-    mov byte [rdi+12], TOKEN_TYPE_EOF
-    mov byte [rdi+13], 0
-    mov rax, 1
-    jmp _end_next_token
+    mov [rbp-120], rcx
+    mov [rbp-112], rdi
+    jmp _err_end_next_token
 _err_string_parsing:
-    ;TODO: add error
+    mov rsi, ERR_LEXER_STR_PARSE
+    jmp _err_next_token
 _unrec_char_nt:
-    mov rdi, ERR_LEXER_INVALID_CHAR
-    call print_zero_str
-    xor rax, rax
-    jmp _end_next_token
+    mov rsi, ERR_LEXER_INVALID_CHAR
+    jmp _err_next_token
 _err_to_long_sym_nt:
-    movzx edi, byte [rbx+rcx]
-    inc rcx
-    call is_valid_sym_char
-    test rax, rax
-    jnz _err_to_long_sym_nt
-    mov [rbp-40], rcx
-    mov rdi, ERR_LEXER_TO_LONG_NAME
+    mov rsi, ERR_LEXER_TO_LONG_NAME
+_err_next_token:
+    mov edi, [CURR_FILE_ENTRY_OFFSET]
+    xor rdx, rdx
+    xor ecx, ecx
+    mov r9, -3
+    call err_print
+_err_end_next_token:
+    mov edi, [CURR_FILE_ENTRY_OFFSET]
+    mov rax, [FILES_ARRAY]
+    lea rdi, [rax+rdi]
+    xor esi, esi
+    xor rdx, rdx
+    call print_file_line
+    mov rdi, ERR_HEADER_STR
     call print_zero_str
-    mov rdx, [rbp-40]
-    mov rax, [rbp-64]
-    lea rdi, [rdx+rax]
-    sub rdx, rax
+    mov rdi, STR_DQM
+    mov esi, 1
     call print_len_str
-    xor rax, rax
+    mov rdi, [rbp-112]
+    mov rsi, [rbp-120]
+    call print_len_str
+    mov rdi, STR_DQM
+    mov esi, 1
+    call print_len_str
+    mov rdi, _STR_TAB
+    mov esi, 1
+    call print_len_str
+    mov rdi, [rbp-128]
+    call print_zero_str
+    exit_m -3
 _end_next_token:
     mov rcx, [rbp-40]
     mov rax, [rbp-8]
     mov ebx, [rbp-84]
     mov [rax+16], rcx
-    add rsp, 84 
+    add rsp, 128 
     pop rbp
     ret

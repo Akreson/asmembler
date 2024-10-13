@@ -199,6 +199,9 @@ print_file_line:
     call print_len_str
     mov rax, [rbp-8]
     mov edi, [rbp-20]
+    mov ebx, [rax+44]
+    cmp edi, 0
+    cmove edi, ebx
     mov esi, 10
     call print_u_digit
     mov rdi, STR_RBRACKET
@@ -213,6 +216,10 @@ print_file_line:
     call print_len_str
     mov rdi, [rbp-8]
     mov rsi, [rbp-16]
+    mov rbx, [rdi+16]
+    mov eax, [rbp-20]
+    cmp eax, 0
+    cmove rsi, rbx
     call get_curr_line_start_end
     mov r8, [rbp-8]
     mov rdi, [r8]

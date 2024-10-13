@@ -25,6 +25,7 @@ ERR_LEXER_NUM_TO_BIG db "Number overflow 64-bit reg", 10, 0
 ERR_LEXER_NUMBER_FORMAT db "Invalid digit format", 10, 0
 ERR_LEXER_NUMBER_ORDER db "Invalid symbol for choosen base of digit", 10, 0
 ERR_LEXER_INVALID_CHAR db "Unsupported char", 10, 0
+ERR_LEXER_STR_PARSE db "Unable to parse string", 0
 
 ; PARSER
 ERR_SEG_INV_DEF db "Invalid definition of segment", 0
