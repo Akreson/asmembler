@@ -1,0 +1,2 @@
+segment readable writeable
+NAME_D db 0xff, "sdffs", 0xff

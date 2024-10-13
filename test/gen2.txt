@@ -22,7 +22,6 @@ segment readable executable
     bsr r12, [rbx+rdi]
     bsr eax, [rbp+rax*NAME_C]
     bsr eax, [rsp+rbp]
-    bsr al, [rdx+rcx*2]
     bsr rdx, [NAME_D+22]
     bsr eax, [NAME_D-0xffffff]
     bsr eax, [rsp+NAME_C]
@@ -53,7 +52,6 @@ segment readable executable
     bsf r12, [rbx+rdi]
     bsf eax, [rbp+rax*NAME_C]
     bsf eax, [rsp+rbp]
-    bsf al, [rdx+rcx*2]
     bsf rdx, [NAME_D+22]
     bsf eax, [NAME_D-0xffffff]
     bsf eax, [rsp+NAME_C]
@@ -84,7 +82,6 @@ segment readable executable
     lzcnt r12, [rbx+rdi]
     lzcnt eax, [rbp+rax*NAME_C]
     lzcnt eax, [rsp+rbp]
-    lzcnt al, [rdx+rcx*2]
     lzcnt rdx, [NAME_D+22]
     lzcnt eax, [NAME_D-0xffffff]
     lzcnt eax, [rsp+NAME_C]
@@ -115,7 +112,6 @@ segment readable executable
     tzcnt r12, [rbx+rdi]
     tzcnt eax, [rbp+rax*NAME_C]
     tzcnt eax, [rsp+rbp]
-    tzcnt al, [rdx+rcx*2]
     tzcnt rdx, [NAME_D+22]
     tzcnt eax, [NAME_D-0xffffff]
     tzcnt eax, [rsp+NAME_C]
@@ -190,37 +186,6 @@ segment readable executable
     cmovng esi, edi
     cmovg esi, edi
     cmovnle esi, edi
-
-    cmovo r9b, r15b
-    cmovno r9b, r15b
-    cmovb r9b, r15b
-    cmovc r9b, r15b
-    cmovnae r9b, r15b
-    cmovae r9b, r15b
-    cmovnb r9b, r15b
-    cmovnc r9b, r15b
-    cmove r9b, r15b
-    cmovz r9b, r15b
-    cmovne r9b, r15b
-    cmovnz r9b, r15b
-    cmovbe r9b, r15b
-    cmovna r9b, r15b
-    cmova r9b, r15b
-    cmovnbe r9b, r15b
-    cmovs r9b, r15b
-    cmovns r9b, r15b
-    cmovp r9b, r15b
-    cmovpe r9b, r15b
-    cmovnp r9b, r15b
-    cmovpo r9b, r15b
-    cmovl r9b, r15b
-    cmovnge r9b, r15b
-    cmovge r9b, r15b
-    cmovnl r9b, r15b
-    cmovle r9b, r15b
-    cmovng r9b, r15b
-    cmovg r9b, r15b
-    cmovnle r9b, r15b
 
     cmovo ax, r8w
     cmovno ax, r8w
@@ -499,4 +464,4 @@ segment readable executable
     cmovle eax, [r8]
     cmovng eax, [r8]
     cmovg eax, [r8]
-    cmovnle eax, [r8]
+    cmovnle ax, [r8]
