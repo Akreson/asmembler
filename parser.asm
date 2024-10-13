@@ -63,20 +63,15 @@ dd 0, 0
 TOKEN_OFFSET_TO_INS_ARGC equ 35
 TOKEN_HEADER_PLUS_INS_TOKEN equ 36 ;20+1+14+1
 TOKEN_HEADER_SIZE equ 20
+;TODO: finish format description
 ; token buf
 ; (header)(20b)
 ; 0(4) offset in render buf, +4(2) file entry id, +6 skip flag (is token group represent renderable info.),
 ; +7 (count of rendered bytes for TOKEN_TYPE_INS), +8(4) line num, +12(4) entry size in bytes
 ; token buf, +16 offset to line in file buff
-; (header)(b)
-; 0(4) offset in render buf, +4(4) file entry offset, +8(4) line num, +12(2) entry size in byte
-; +14 skip flag (is token group represent renderable info.),
-; +15 (count of rendered bytes for TOKEN_TYPE_INS)
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
-;TODO: finish format description
-; (4) count of bytes for body, size mark token, count of token for curr size mark
-; token
+; token type, qul size keyword token,(1) size of unit in bytes, direct/str token ... [n times]
 
 CURR_SEG_OFFSET dd 0
 
@@ -1160,36 +1155,30 @@ ___name_data_def:
 ___name_data_qul_read:
     call curr_seg_ptr
     mov rdi, rax
-    mov esi, 24
+    mov esi, 16
     call entry_array_reserve_size
-    add rax, 4
     mov byte [rax], TOKEN_BUF_DIRECT
     inc rax
     mov rdi, rax
     lea rsi, [rbp-32]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
-    add ebx, 20
-    mov [rbp-92], ebx 
+    add rax, 14
+    mov [rbp-92], rax
     mov edx, [rbp-24]
-    ;TODO: change to cmovcc
-    cmp edx, KW_DB
-    jne ___n_size_check2
-    mov byte [rbp-68], 1
-    jmp ___name_data_read_val
-___n_size_check2:
+    mov eax, 1 ; KW_DB by default
+    mov ecx, 2
+    mov esi, 4
+    mov ebx, 8
     cmp edx, KW_DW
-    jne ___n_size_check4
-    mov byte [rbp-68], 2
-    jmp ___name_data_read_val
-___n_size_check4:
+    cmove eax, ecx
     cmp edx, KW_DD
-    jne ___n_size_check8
-    mov byte [rbp-68], 4
-    jmp ___name_data_read_val
-___n_size_check8:
+    cmove eax, esi
     cmp edx, KW_DQ
-    mov byte [rbp-68], 8
+    cmove eax, ebx
+    mov byte [rbp-68], al
+    mov rdx, [rbp-92]
+    mov [rdx], al
 ___name_data_read_val:
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -1225,7 +1214,6 @@ ___name_data_read_digit_overflow_check:
     cmp esi, ebx
     ja _err_out_of_range_value
 ___name_data_read_next:
-    inc byte [rbp-67]
     call curr_seg_ptr
     mov rdi, rax
     mov rsi, [rbp-40]
@@ -1243,10 +1231,6 @@ ___name_data_read_next:
     cmp ebx, AUX_NEW_LINE
     jne _err_invalid_expr
     call curr_token_buf_start_ptr
-    movzx edx, byte [rbp-67]
-    mov ecx, [rbp-92]
-    add rax, rcx
-    mov byte [rax], dl
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
@@ -1408,8 +1392,6 @@ __assign_segment_collate:
     mov rdx, qword [SEG_ENTRY_ARRAY]
     add rdx, rax
     mov [rdx+48], ebx
-    jmp _new_entry_start_ps
-_next_test_sp:
     jmp _new_entry_start_ps
 
 _err_segment_not_set:

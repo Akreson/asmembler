@@ -541,7 +541,7 @@ set_collate_seg_ptr:
     xor r9, r9
     mov r8, [SEG_ENTRY_ARRAY]
     mov ecx, SEG_ENTRY_SIZE
-    mov eax, 5
+    mov eax, 6
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -561,7 +561,7 @@ _set_collate_sg_check2:
     mov [rdi], rbx
     add rdi, 8
 _set_collate_sg_check3:
-    mov eax, 6
+    mov eax, 5
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -789,6 +789,7 @@ set_reg_for_err_print:
     mov r8d, [r10+16]
     mov r9, -5
     ret
+
 ; rdi - ptr to ins param, rsi - pt to ins code struct
 ; return eax - 0 if success
 process_gen_r:
@@ -3954,6 +3955,24 @@ _end_process_int1:
     pop rbp
     ret
 
+; rdi - segment ptr, rsi -ptr to token entry to process
+process_data_define:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-24], rdi
+    mov rbx, rsi
+    mov eax, [rsi+12]
+    add rbx, rax
+    mov [rbp-32], rbx
+_end_process_data_define:
+    add rsp, 32
+    pop rbp
+    ret
+
 ; -8 passed rdi, -12 curr token buff offset, -16 reserve
 ; -24 curr token buf ptr; -32 ptr to render segm buff
 ; rdi - segment ptr
@@ -3988,16 +4007,16 @@ _start_loop_process_segment:
     lea r10, [r9+TOKEN_HEADER_SIZE]
     movzx ebx, byte [r10]
     cmp ebx, TOKEN_BUF_DIRECT
-    jne _start_loop_process_segment
+    jne _err_processing_start_token
+    mov rdi, [rbp-8]
+    mov rsi, r9
+    mov ebx, [r10+9]
     movzx eax, byte [r10+13]
     cmp eax, TOKEN_TYPE_INS
     je _check_ins_rps
     cmp eax, TOKEN_TYPE_KEYWORD
-    jmp _end_render_process_segment
+    jmp _check_kw_rps
 _check_ins_rps:
-    mov ebx, [r10+9]
-    mov rdi, [rbp-8]
-    mov rsi, r9
     cmp ebx, INS_MOV
     jne _check_ins_rps1
     call process_mov
@@ -4199,6 +4218,13 @@ _check_ins_rps_cmovcc:
     test ecx, ecx
     jz _err_processing_start_token 
     call process_cmovcc
+    jmp _start_loop_process_segment
+_check_kw_rps:
+    mov ecx, ebx
+    and ecx, DATA_QUL_TYPE_MASK
+    test ecx, ecx
+    jz _err_processing_start_token  
+    call process_data_define
     jmp _start_loop_process_segment
 _err_processing_start_token:
     mov rsi, ERR_INS_UNSUPPORT
