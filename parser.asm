@@ -61,9 +61,10 @@ dd 0, 0, 0
 dd 0, 0
 
 TOKEN_OFFSET_TO_INS_ARGC equ 35
+TOKEN_HEADER_PLUS_TYPE equ 21
 TOKEN_HEADER_PLUS_INS_TOKEN equ 36 ;20+1+14+1
 TOKEN_HEADER_SIZE equ 20
-;TODO: finish format description
+; TODO: finish format description
 ; token buf
 ; (header)(20b)
 ; 0(4) offset in render buf, +4(2) file entry id, +6 skip flag (is token group represent renderable info.),

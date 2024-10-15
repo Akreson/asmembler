@@ -197,7 +197,7 @@ _end_valid_sym_char:
 ; TODO: add line info
 ; rdi - file entry ptr, rsi - ptr to space for symbol entry
 ; -8 passed rdi, -16 passed rsi, -24 ptr to buff, -32 size of buff
-; -40 curr read ptr; -48 cahed last read char, -56 ptr to aux token
+; -40 curr read offset, -48 cached last read char, -56 ptr to aux token
 ; -64 offset for start of token, -72 building digit / hash of token / str quote sym
 next_token:
     push rbp
@@ -485,7 +485,7 @@ __finish_scan_str:
     mov rdi, [rbp-16]
     lea r9, [rbx+rsi]
     mov [rdi], r9
-    mov [rdi+8], rcx
+    mov [rdi+8], ecx
     mov byte [rdi+12], TOKEN_TYPE_STR
     inc r10
     mov [rbp-40], r10

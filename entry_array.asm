@@ -103,10 +103,12 @@ _update_eaefs:
     mov rdi, [rbp-28]
     call entry_array_dealloc
     mov rdi, [rbp-28]
+    mov r8, rdi
     lea rsi, [rbp-20]
     mov ecx, 20
+    mov rdi, r8
 _success_eaec:
-    mov eax, 1
+    call entry_array_curr_ptr   
 _end_entry_array_ensure_free_space:
     add rsp, 32
     pop rbp

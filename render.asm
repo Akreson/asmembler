@@ -3955,21 +3955,91 @@ _end_process_int1:
     pop rbp
     ret
 
-; rdi - segment ptr, rsi -ptr to token entry to process
+; TODO: handle const ref
+; rdi - segment ptr, rsi - ptr to token entry to process
 process_data_define:
     push rbp
     mov rbp, rsp
-    sub rsp, 32
+    sub rsp, 64
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     add rdi, ENTRY_ARRAY_DATA_SIZE
     mov [rbp-24], rdi
+    mov ebx, [rdi+8]
+    mov [rsi], ebx
     mov rbx, rsi
     mov eax, [rsi+12]
     add rbx, rax
     mov [rbp-32], rbx
+    add rsi, TOKEN_HEADER_PLUS_TYPE
+    mov [rbp-40], rsi
+_start_loop_data_define_proc:
+    mov rdx, [rbp-32]
+    cmp rsi, rdx
+    jae _end_process_data_define
+    mov ecx, [rsi+8]
+    and ecx, DATA_QUL_TYPE_MASK
+    test ecx, ecx
+    jz _err_process_data_define
+    mov al, [rsi+14]
+    mov [rbp-41], al
+    add rsi, 15
+    mov [rbp-40], rsi
+    mov rdi, [rbp-24]
+_loop_process_data_define:
+    mov rsi, [rbp-40]
+    mov rdx, [rbp-32]
+    cmp rsi, rdx
+    jae _end_process_data_define
+    movzx ecx, byte [rsi]
+    cmp ecx, TOKEN_BUF_DIRECT
+    jne _err_process_data_define
+    inc rsi
+    mov [rbp-40], rsi
+    ;TOKEN_BUF_PTR_OFFSET
+    movzx edx, byte [rsi+12]
+    cmp edx, TOKEN_TYPE_DIGIT
+    je _process_data_define_digit
+    cmp edx, TOKEN_TYPE_STR
+    je _process_data_define_str
+    cmp edx, TOKEN_TYPE_KEYWORD
+    je _start_loop_data_define_proc
+    jmp _err_process_data_define
+_process_data_define_digit:
+    mov rdi, [rbp-24]
+    mov esi, 8
+    call entry_array_ensure_free_space
+    mov rsi, [rbp-40]
+    mov rdx, [rsi]
+    mov [rax], rdx
+    movzx ebx, byte [rbp-41]
+    add rax, rbx
+    add rsi, 14
+    mov [rbp-40], rsi
+    mov rdi, [rbp-24]
+    mov rsi, rax
+    call entry_array_commit_size
+    jmp _loop_process_data_define
+_process_data_define_str:
+    mov rdi, [rbp-24]
+    mov esi, [rsi+8]
+    call entry_array_ensure_free_space
+    mov r8, [rbp-40]
+    mov rsi, [r8]
+    mov ecx, [r8+8]
+    mov rdi, rax
+    rep movsb
+    add r8, 14
+    mov [rbp-40], r8
+    mov rsi, rdi
+    mov rdi, [rbp-24]
+    call entry_array_commit_size
+    jmp _loop_process_data_define
+_err_process_data_define:
+    mov rax, 0
+    mov qword [rax], 1
 _end_process_data_define:
-    add rsp, 32
+    add rsp, 64
     pop rbp
     ret
 
@@ -4213,9 +4283,8 @@ _check_ins_rps_jmp:
     call process_jumps
     jmp _start_loop_process_segment
 _check_ins_rps_cmovcc:
-    mov ecx, ebx
-    and ecx, INS_CMOVCC_TYPE_MASK
-    test ecx, ecx
+    and ebx, INS_CMOVCC_TYPE_MASK
+    test ebx, ebx
     jz _err_processing_start_token 
     call process_cmovcc
     jmp _start_loop_process_segment
