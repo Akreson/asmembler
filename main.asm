@@ -8,14 +8,13 @@ CURR_FILE_ENTRY_OFFSET dd 0
 
 TEST_STR db "./out.bin", 0
 TEST_STR2 db "./ins.bin", 0
-; hash table: 0 ptr, +8 count, +12 capacity (in 8-byte ptr)
-; ptr point to array of pointers
-DEF_SYM_HASH_TABLE dq 0
-dd 0, 0
 
 include 'sys_call.asm'
 include 'helper.asm'
 include 'hash_table.asm'
+
+hash_table_data_m DEF_SYM_HASH_TABLE, 1
+
 include 'entry_array.asm'
 include 'list.asm'
 include 'files.asm'
@@ -35,6 +34,7 @@ init_def_sym_table:
     mov rdi, DEF_SYM_HASH_TABLE
     mov [rbp-16], rdi
     mov rsi, SIZE_HASH_DEF_SYM_TABLE
+    mov rdx, rdx
     call hash_table_init
     test rax, rax
     jnz _start_loop_init_def_sym

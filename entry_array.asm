@@ -3,9 +3,9 @@ segment readable executable
 ENTRY_ARRAY_DATA_SIZE equ 20
 
 ;0 ptr to buff, +8 count, +12 capacity, +16 entry size (20b) 
-macro entry_array_data_m size
+macro entry_array_data_m name, size
 {
-    dq 0
+    name dq 0
     dd 0, 0, size
 }
 

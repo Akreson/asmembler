@@ -8,6 +8,7 @@ TOKEN_NAME_CONST     equ 1
 TOKEN_NAME_CONST_MUT equ 2
 TOKEN_NAME_JMP       equ 3
 TOKEN_NAME_DATA      equ 4
+TOKEN_NAME_MACR      equ 5
 
 PARSER_ADDR_FLAG_BITS      equ 4
 PARSER_ADDR_FLAG_MASK      equ 0xF
@@ -17,16 +18,21 @@ PARSER_ADDR_FLAG_REG_SCALE equ 0x3
 PARSER_ADDR_FLAG_NAME      equ 0x4
 PARSER_ADDR_FLAG_DIGIT     equ 0x8
 
+MACRO_COPY_ENTRY_TEXT equ 1
+MACRO_COPY_ENtRY_ARG  equ 2
+
 segment readable writeable
 
 LAST_LINE_NUM dd 0
+CURR_SEG_OFFSET dd 0
+
+entry_array_data_m TEMP_PARSER_ARR, 1
+
 ; entry
 ; 0 (4b) linked list entry offset to a chain of patch location, 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
-; ptr, count in entries, capacity in entries, entry size
-UNKNOWN_NAME_SYM_REF_ARRAY dq 0
-dd 0, 0, UNK_ENTRY_SIZE
+entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 
 ; entry
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
@@ -37,21 +43,20 @@ dd 0, 0, UNK_ENTRY_SIZE
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
-;+32 segment offset, +36 offest to entry header in seg token buf
-NAME_CONST_ENTRY_SIZE equ 46
-NAME_DATA_ENTRY_SIZE equ 40
+; +32 segment offset, +36 offest to entry header in seg token buf
+;(TOKEN_NAME_MACR)
+; copy entires ((1) type, [MACRO_COPY_ENTRY_TEXT - 4 offset from, 4 len |
+;   MACRO_COPY_ENtRY_ARG - 1 arg num])
+NAME_CONST_ENTRY_SIZE    equ 46
+NAME_DATA_ENTRY_SIZE     equ 40
 NAME_SYM_REF_HEADER_SIZE equ 32
-NAME_SYM_REF_ARRAY dq 0
-dd 0, 0, 1
+entry_array_data_m NAME_SYM_REF_ARRAY, 1
 
 ; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
 ; +40 file array id start, +44 file array id end, +48 mod (4b) (52b total)
 SEG_ENTRY_SIZE equ 52
-SEG_ENTRY_ARRAY dq 0
-dd 0, 0, SEG_ENTRY_SIZE
-
-NAME_SYM_HASH_TABLE dq 0
-dd 0, 0
+entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
+hash_table_data_m NAME_SYM_HASH_TABLE, 1
 
 ; linked list entry body - +4 offset in file array, +8 **ptr of buf to offset from, +16 offset in buff,
 ; +20 second indirectional offset (must be 0 if not set)
@@ -60,10 +65,10 @@ PATCH_LIST dq 0
 dd 0, 0, 0
 dd 0, 0
 
-TOKEN_OFFSET_TO_INS_ARGC equ 35
-TOKEN_HEADER_PLUS_TYPE equ 21
+TOKEN_OFFSET_TO_INS_ARGC    equ 35
+TOKEN_HEADER_PLUS_TYPE      equ 21
 TOKEN_HEADER_PLUS_INS_TOKEN equ 36 ;20+1+14+1
-TOKEN_HEADER_SIZE equ 20
+TOKEN_HEADER_SIZE           equ 20
 ; TODO: finish format description
 ; token buf
 ; (header)(20b)
@@ -73,8 +78,6 @@ TOKEN_HEADER_SIZE equ 20
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
 ; token type, qul size keyword token,(1) size of unit in bytes, direct/str token ... [n times]
-
-CURR_SEG_OFFSET dd 0
 
 segment readable executable
 
@@ -660,7 +663,7 @@ _end_convert_digit_to_neg:
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
-;-84 temp token buf ptr / temp token buf offset, -92 temp var, 
+;-84 temp token buf ptr / temp token buf offset, -92 temp var, -100 temp var 
 ; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
@@ -1346,6 +1349,8 @@ _begin_kw_sp:
     mov eax, [rbp-8]
     cmp eax, KW_SEGMT
     je __kw_segm_sp
+    cmp eax, KW_MACR
+    je __kw_macr
     jmp _err_invalid_expr
 __kw_segm_sp:
     ;TODO: catch wrong combination?
@@ -1394,7 +1399,105 @@ __assign_segment_collate:
     add rdx, rax
     mov [rdx+48], ebx
     jmp _new_entry_start_ps
-
+__kw_macr:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
+    mov rdi, NAME_SYM_HASH_TABLE
+    mov rsi, [rbp-16]
+    movzx edx, byte [rbp-3]
+    mov ecx, [rbp-8]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jnz _err_defined_symbol
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
+    call push_name_to_defined
+    mov [rbp-84], rax
+    mov [rbp-72], ebx
+    mov byte [rax+30], TOKEN_NAME_MACRO
+    mov r8, [TEMP_PARSER_ARR]
+    mov rdi, r8
+    mov ecx, HT_MAIN_BLOCK_SIZE
+    xor eax, eax
+    stosb
+    mov byte [r8+17], 1
+    mov [rbp-92], r8
+    lea rdi, [r8+HT_MAIN_BLOCK_SIZE]
+    mov esi, 8
+    call align_to_pow2
+    mov [rbp-100], rax
+    mov r8, rax
+    mov rdi, rax
+    mov esi, 256; 32<<3
+    xor rax, rax
+    stosb
+    mov rbx, rdi
+    mov rdi, [rbp-92]
+    sub rbx, rdi
+    mov dword [TEMP_PARSER_ARR+8], ebx
+    mov rdx, r8
+    mov esi, 32; must be 1 byte size max
+    call hash_table_init
+__kw_macro_arg_loop:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_NAME
+    jne _err_invalid_expr
+    mov rdi, [rbp-92]
+    mov rsi, [rbp-16]
+    movzx edx, byte [rbp-3]
+    mov ecx, [rbp-8]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jnz _err_macro_arg_rep
+    mov [rbp-108], rax
+    mov rdi, TEMP_PARSER_ARR
+    mov esi, 15
+    call entry_array_reserve_size
+    mov rdx, rax
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov ecx, 14 
+    rep movsb
+    mov rdi, [rbp-92]
+    mov al, [rdi+8]
+    mov [rdx+14], al
+    mov rsi, [rbp-108]
+    call hash_table_add_entry 
+    test rax, rax
+    jz _err_macro_to_many_arg
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne ___ins_next_arg_eof
+    mov ecx, [rbp-24]
+    cmp ecx, AUX_COMMA
+    je __kw_macro_arg_loop
+    cmp ecx, AUX_NEW_LINE
+    je __kw_macro_exect_lbrace
+    cmp ecx, AUX_LBRACE
+    je __kw_macro_set_entries
+__kw_macro_exect_lbrace:
+__kw_macro_set_entries:
+_err_macro_arg_rep:
+_err_macro_to_many_arg:
 _err_segment_not_set:
     mov rsi, ERR_SEGMENT_NOT_SET
     jmp _err_start_parser
@@ -1447,8 +1550,12 @@ segment_entry_init:
 init_parser_data:
     push rbp
     mov rbp, rsp
+    mov rdi, TEMP_PARSER_ARR
+    mov rsi, 2048
+    call init_entry_array
     mov rdi, NAME_SYM_HASH_TABLE
     mov rsi, 2048
+    xor rdx, rdx
     call hash_table_init
     test rax, rax
     jz _fail_exit_init_parser_data 

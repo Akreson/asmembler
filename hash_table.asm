@@ -1,5 +1,14 @@
+HT_MAIN_BLOCK_SIZE equ 17
 FNV_PRIME equ 16777619
 FNV_OFFSET equ 2166136261
+
+;0 ptr to buff, +8 count, +12 capacity, +16 is realloc allowed (20b) 
+macro hash_table_data_m name, is_allow_realloc
+{
+    name dq 0
+    dd 0, 0
+    db is_allow_realloc
+}
 
 segment readable executable
 ; hash table main block: ptr, count, capacity
@@ -76,7 +85,7 @@ _exit_ht_find_entry:
     pop rbp
     ret
 
-;rdi - ptr to hash table main block, rsi - ptr to ht entry, rdx - ptr to sym table entry,
+;rdi - ptr to hash table main block, rsi - ptr to ht entry, rdx - ptr to sym entry,
 hash_table_add_entry:
     push rbp
     mov rbp, rsp
@@ -109,6 +118,9 @@ hash_table_add_entry:
     add eax, r8d
     cmp ebx, eax
     jb _success_exit_ht_add_entry 
+    mov bl, [rdi+16]
+    test bl, bl
+    jz _err_realloc_forbid_ht
     mov edi, ecx
     shl edi, 4; 3 + 1
     call mmap_def
@@ -160,6 +172,9 @@ _next_realloc_loop_ht:
     test rax, rax
     jz _success_exit_ht_add_entry
     exit_m -10
+_err_realloc_forbid_ht:
+    xor rax, rax
+    jmp _exit_ht_add_entry
 _success_exit_ht_add_entry:
     mov rax, 1
 _exit_ht_add_entry:
@@ -167,7 +182,8 @@ _exit_ht_add_entry:
     pop rbp
     ret
 
-; rdi - ptr to hash table main block, esi - capacity
+; rdi - ptr to hash table main block, esi - capacity,
+; rdx - mem for entries (0 if must be allocated)
 hash_table_init:
     push rbp
     mov rbp, rsp
@@ -179,8 +195,11 @@ hash_table_init:
     and ecx, esi
     test ecx, ecx
     jnz _false_ht_init
-    mov [rbp-8], rdi
+    mov [rdi], rdx
     mov [rbp-12], esi
+    test rdx, rdx
+    jnz _ht_init_skip_alloc
+    mov [rbp-8], rdi
     mov rdi, rsi
     shl rdi, 3
     call mmap_def
@@ -188,11 +207,12 @@ hash_table_init:
     sub rdx, 1
     cmp rax, rdx
     je _false_ht_init
-    mov rdx, [rbp-8]
-    mov [rdx], rax
-    mov dword [rdx+8], 0
+    mov rdi, [rbp-8]
+    mov [rdi], rax
+_ht_init_skip_alloc:
+    mov dword [rdi+8], 0
     mov ecx, [rbp-12]
-    mov [rdx+12], ecx
+    mov [rdi+12], ecx
     mov rax, 1
     jmp _exit_ht_init
 _false_ht_init:

@@ -340,10 +340,10 @@ STR_AND   db "and"
 STR_OR    db "or"
 STR_XOR   db "xor"
 STR_ADD   db "add"
-STR_SHL   db "shl" ; / same opcode
-STR_SAL   db "sal" ; \
-STR_SHR   db "shr" ; / not the same
-STR_SAR   db "sar" ; \
+STR_SHL   db "shl"
+STR_SAL   db "sal"
+STR_SHR   db "shr"
+STR_SAR   db "sar"
 STR_SUB   db "sub"
 STR_DIV   db "div"
 STR_IDIV  db "idiv"
