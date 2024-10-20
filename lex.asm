@@ -194,7 +194,6 @@ _end_valid_sym_char:
     pop rbp
     ret
 
-; TODO: add line info
 ; rdi - file entry ptr, rsi - ptr to space for symbol entry
 ; -8 passed rdi, -16 passed rsi, -24 ptr to buff, -32 size of buff
 ; -40 curr read offset, -48 cached last read char, -56 ptr to aux token

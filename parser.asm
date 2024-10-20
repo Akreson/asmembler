@@ -45,8 +45,7 @@ entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 ;(TOKEN_NAME_DATA)
 ; +32 segment offset, +36 offest to entry header in seg token buf
 ;(TOKEN_NAME_MACR)
-; copy entires ((1) type, [MACRO_COPY_ENTRY_TEXT - 4 offset from, 4 len |
-;   MACRO_COPY_ENtRY_ARG - 1 arg num])
+; copy entires (4 offset, 4 len, 1 arg num)
 NAME_CONST_ENTRY_SIZE    equ 46
 NAME_DATA_ENTRY_SIZE     equ 40
 NAME_SYM_REF_HEADER_SIZE equ 32
@@ -1446,6 +1445,7 @@ __kw_macr:
     mov rdx, r8
     mov esi, 32; must be 1 byte size max
     call hash_table_init
+    mov dword [rbp-68], 0
 __kw_macro_arg_loop:
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -1491,11 +1491,63 @@ __kw_macro_arg_loop:
     cmp ecx, AUX_COMMA
     je __kw_macro_arg_loop
     cmp ecx, AUX_NEW_LINE
-    je __kw_macro_exect_lbrace
+    je __kw_macro_expect_lbrace
     cmp ecx, AUX_LBRACE
     je __kw_macro_set_entries
-__kw_macro_exect_lbrace:
+__kw_macro_expect_lbrace:
+    lea rsi, [rbp-32]
+    mov rdi, [rbp-40]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
+    mov ecx, [rbp-24]
+    cmp ecx, AUX_LBRACE
+    jne _err_invalid_expr
 __kw_macro_set_entries:
+    lea rsi, [rbp-16]
+    mov rdi, [rbp-40]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, dword [rbp-4]
+    mov ecx, [rbp-8]
+    cmp eax, TOKEN_TYPE_AUX 
+    jne ___kw_macro_entr_check_n
+    cmp ecx, AUX_RBRACE
+    je __kw_macro_end
+    jmp __kw_macro_set_entries
+___kw_macro_entr_check_n:
+    cmp eax, TOKEN_TYPE_NAME
+    jne __kw_macro_set_entries 
+    mov rdi, [rbp-92]
+    mov rsi, [rbp-16]
+    movzx edx, byte [rbp-3]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jz __kw_macro_set_entries
+    mov [rbp-108], rbx
+    mov edi, 10
+    call get_mem_def_name_buf
+    mov r8d, [rbp-68]
+    mov r9d, r8d
+    mov rdi, [rbp-40]
+    mov rbx, [rdi+16]
+    mov r10, rbx
+    movzx edx, dword [rbp-3]
+    sub ebx, edx ; TODO: will file really be more then 4GiB?
+    sub r9d, ebx
+    mov [rax], r8d
+    mov [rax+4], r9d
+    mov [rbp-68], r10d
+    mov rsi, [rbp-108]
+    mov cl, [rsi+14]
+    mov [rax+8], cl
+    jmp __kw_macro_set_entries
+__kw_macro_end:
 _err_macro_arg_rep:
 _err_macro_to_many_arg:
 _err_segment_not_set:
