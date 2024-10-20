@@ -135,9 +135,11 @@ entry_array_check_get:
     mul ebx
     mov rcx, [rdi]
     lea r8, [rcx+rax]
+    mov r9d, eax
     mov rax, r8
     add ebx, esi
     mov [rdi+8], ebx
+    mov ebx, r9d
     jmp _end_entry_array_check_get
 _check_fail_eacg:
     xor rax, rax
