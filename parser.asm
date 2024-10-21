@@ -1405,7 +1405,7 @@ __kw_macr:
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-4]
-    cmp eax, TOKEN_TYPE_AUX
+    cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
     mov rdi, NAME_SYM_HASH_TABLE
     mov rsi, [rbp-16]
@@ -1426,7 +1426,7 @@ __kw_macr:
     mov rdi, r8
     mov ecx, HT_MAIN_BLOCK_SIZE
     xor eax, eax
-    stosb
+    rep stosb
     mov byte [r8+17], 1
     mov [rbp-92], r8
     lea rdi, [r8+HT_MAIN_BLOCK_SIZE]
@@ -1435,9 +1435,9 @@ __kw_macr:
     mov [rbp-100], rax
     mov r8, rax
     mov rdi, rax
-    mov esi, 256; 32<<3
+    mov ecx, 256; 32<<3
     xor rax, rax
-    stosb
+    rep stosb
     mov rbx, rdi
     mov rdi, [rbp-92]
     sub rbx, rdi
@@ -1512,7 +1512,7 @@ __kw_macro_set_entries:
     call next_token
     test rax, rax
     jz _end_start_parser
-    movzx eax, dword [rbp-4]
+    movzx eax, byte [rbp-4]
     mov ecx, [rbp-8]
     cmp eax, TOKEN_TYPE_AUX 
     jne ___kw_macro_entr_check_n
@@ -1537,7 +1537,7 @@ ___kw_macro_entr_check_n:
     mov rdi, [rbp-40]
     mov rbx, [rdi+16]
     mov r10, rbx
-    movzx edx, dword [rbp-3]
+    movzx edx, byte [rbp-3]
     sub ebx, edx ; TODO: will file really be more then 4GiB?
     sub r9d, ebx
     mov [rax], r8d
@@ -1548,6 +1548,12 @@ ___kw_macro_entr_check_n:
     mov [rax+8], cl
     jmp __kw_macro_set_entries
 __kw_macro_end:
+    mov rdx, [rbp-84]
+    mov ebx, [rbp-72] 
+    mov eax, dword [NAME_SYM_REF_ARRAY+8]
+    sub ebx, eax
+    mov [rdx], ebx
+    jmp _new_entry_start_ps
 _err_macro_arg_rep:
 _err_macro_to_many_arg:
 _err_segment_not_set:
