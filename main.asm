@@ -1,27 +1,27 @@
 format ELF64 executable
 
-include 'err_msg.asm'
-
 segment readable writeable
 
 CURR_FILE_ENTRY_OFFSET dd 0
 
-TEST_STR db "./out.bin", 0
-TEST_STR2 db "./ins.bin", 0
-
+include 'err_msg.asm'
 include 'sys_call.asm'
-include 'helper.asm'
-include 'hash_table.asm'
-
-hash_table_data_m DEF_SYM_HASH_TABLE, 1
-
 include 'entry_array.asm'
+include 'hash_table.asm'
 include 'list.asm'
+include 'helper.asm'
 include 'files.asm'
 include 'symbols.asm'
 include 'lex.asm'
 include 'parser.asm'
 include 'render.asm'
+
+segment readable writeable
+
+TEST_STR db "./out.bin", 0
+TEST_STR2 db "./ins.bin", 0
+
+hash_table_data_m DEF_SYM_HASH_TABLE, 1
 
 segment readable executable
 entry _start
@@ -34,7 +34,7 @@ init_def_sym_table:
     mov rdi, DEF_SYM_HASH_TABLE
     mov [rbp-16], rdi
     mov rsi, SIZE_HASH_DEF_SYM_TABLE
-    mov rdx, rdx
+    xor rdx, rdx
     call hash_table_init
     test rax, rax
     jnz _start_loop_init_def_sym
