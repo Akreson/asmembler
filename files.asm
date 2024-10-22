@@ -5,7 +5,7 @@ segment readable writeable
 ;file array
 ;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
 ;+32 inode, +40 name len, +44 curr line num, +48 offset to parent entry,
-;+52 offset in parent buff, +56 line in parent buff (16 bytes reserved) 
+;+52 offset in parent buff, +56 line in parent buff (4 bytes reserved) 
 FILE_ARRAY_ENTRY_SIZE equ 64
 ;array - 0 ptr to buf, +8 count, +12 capacity
 FILES_ARRAY dq 0

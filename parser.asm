@@ -3,13 +3,6 @@ TOKEN_BUF_PTR_OFFSET equ 1
 TOKEN_BUF_DIRECT     equ 2
 TOKEN_BUF_ADDR       equ 3
 
-TOKEN_NAME_NONE      equ 0
-TOKEN_NAME_CONST     equ 1
-TOKEN_NAME_CONST_MUT equ 2
-TOKEN_NAME_JMP       equ 3
-TOKEN_NAME_DATA      equ 4
-TOKEN_NAME_MACR      equ 5
-
 PARSER_ADDR_FLAG_BITS      equ 4
 PARSER_ADDR_FLAG_MASK      equ 0xF
 PARSER_ADDR_FLAG_REG       equ 0x1
@@ -18,8 +11,7 @@ PARSER_ADDR_FLAG_REG_SCALE equ 0x3
 PARSER_ADDR_FLAG_NAME      equ 0x4
 PARSER_ADDR_FLAG_DIGIT     equ 0x8
 
-MACRO_COPY_ENTRY_TEXT equ 1
-MACRO_COPY_ENtRY_ARG  equ 2
+MACRO_EMPTY_ARG_FLAG equ 0xFF
 
 segment readable writeable
 
@@ -659,6 +651,45 @@ _end_convert_digit_to_neg:
     pop rbp
     ret
 
+; NOTE: hash table main block gonna start from offset 0
+; edi - count of entries; must be 1 byte size max
+; return rax - ptr to ht main block, rbx - start
+init_hash_table_in_temp_p_arr:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 20
+    mov [rbp-20], edi
+    mov r8, [TEMP_PARSER_ARR]
+    mov rdi, r8
+    mov ecx, HT_MAIN_BLOCK_SIZE
+    xor eax, eax
+    rep stosb
+    mov byte [r8+17], 1
+    mov [rbp-8], r8
+    lea rdi, [r8+HT_MAIN_BLOCK_SIZE]
+    mov esi, 8
+    call align_to_pow2
+    mov [rbp-16], rax
+    mov r8, rax
+    mov rdi, rax
+    mov ecx, [rbp-20]
+    shl ecx, 3
+    xor rax, rax
+    rep stosb
+    mov rbx, rdi
+    mov rdi, [rbp-8]
+    sub rbx, rdi
+    mov dword [TEMP_PARSER_ARR+8], ebx
+    mov rdx, r8
+    mov esi, [rbp-20]; must be 1 byte size max
+    call hash_table_init
+    mov rax, [rbp-8]
+    mov rbx, [rbp-16]
+_end_init_hash_table_in_temp_p_arr:
+    add rsp, 20
+    pop rbp
+    ret
+
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
@@ -1087,18 +1118,6 @@ ___ins_next_arg_eof:
     jmp _end_start_parser
 
 _begin_name_sp:
-    mov rdi, [rbp-40]
-    lea rsi, [rbp-32]
-    call next_token
-    test rax, rax
-    jz _end_start_parser
-    movzx eax, byte [rbp-20]
-    cmp eax, TOKEN_TYPE_KEYWORD
-    je __name_sp_check_name
-    cmp eax, TOKEN_TYPE_AUX
-    je __name_sp_check_name
-    jmp _err_invalid_expr
-__name_sp_check_name:
     mov rdi, NAME_SYM_HASH_TABLE
     mov rsi, [rbp-16]
     movzx edx, byte [rbp-3]
@@ -1106,10 +1125,26 @@ __name_sp_check_name:
     call hash_table_find_entry
     mov rbx, [rax]
     test rbx, rbx
-    jz __name_sp_set_def
+    jz __name_sp_check_next
     movzx ecx, byte [rbx+14]
     test ecx, ecx
-    jnz _err_defined_symbol 
+    jz __name_sp_check_next 
+    cmp ecx, TOKEN_NAME_MACRO
+    jne _err_defined_symbol
+    mov [rbp-92], rbx
+    jmp __name_sp_macro
+__name_sp_check_next:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_KEYWORD
+    je __name_sp_set_def
+    cmp eax, TOKEN_TYPE_AUX
+    je __name_sp_set_def
+    jmp _err_invalid_expr
 __name_sp_set_def:
     mov rdi, rax
     lea rsi, [rbp-16]
@@ -1342,6 +1377,65 @@ __name_sp_aux:
     mov [r8], r9d
     mov [r8+4], ebx 
     jmp _new_entry_start_ps
+__name_sp_macro:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    mov ecx, [rbp-8]
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_AUX
+    jne ___name_sp_macro_skip_comma
+    cmp ecx, AUX_COMMA
+    je _err_invalid_expr
+___name_sp_macro_skip_comma: 
+    mov rdi, TEMP_PARSER_ARR
+    mov esi, 14
+    call entry_array_reserve_size
+    mov rdx, rax
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov ecx, 14 
+    rep movsb
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_AUX
+    jne ___ins_next_arg_eof
+    mov ecx, [rbp-24]
+    cmp ecx, AUX_COMMA
+    je __name_sp_macro
+    cmp ecx, AUX_NEW_LINE
+    jne _err_invalid_expr
+___name_sp_macro_arg_end:
+    mov ebx, [TOKEN_PARSER_ARR+8]
+    mov [rbp-68], ebx
+    mov rdx, [FILES_ARRAY]
+    mov r8, [rbp-92]
+    lea r9, [r8+NAME_SYM_REF_HEADER_SIZE]
+    mov ecx, [r8+4]
+    mov eax, [r8]
+    lea r10, [r8+rax]
+    mov r11, [rdx+rcx]
+    mov [rbp-100], r11
+___name_sp_macro_set_buf:
+    cmp r9, r10
+    jae ___name_sp_macro_end
+    mov rdi, TEMP_PARSER_ARR
+    mov esi, [r9+4]
+    mov ebx, esi
+    add ebx, TOKEN_KIND_SIZE
+    movzx eax, byte [r9+8]
+    cmp eax, MACRO_EMPTY_ARG_FLAG
+    cmove esi, ebx
+    call entry_array_reserve_size
+    ;TODO: copy
+___name_sp_macro_end:
+
 
 _begin_kw_sp:
     ;TODO: add more
@@ -1422,29 +1516,10 @@ __kw_macr:
     mov [rbp-84], rax
     mov [rbp-72], ebx
     mov byte [rax+30], TOKEN_NAME_MACRO
-    mov r8, [TEMP_PARSER_ARR]
-    mov rdi, r8
-    mov ecx, HT_MAIN_BLOCK_SIZE
-    xor eax, eax
-    rep stosb
-    mov byte [r8+17], 1
-    mov [rbp-92], r8
-    lea rdi, [r8+HT_MAIN_BLOCK_SIZE]
-    mov esi, 8
-    call align_to_pow2
-    mov [rbp-100], rax
-    mov r8, rax
-    mov rdi, rax
-    mov ecx, 256; 32<<3
-    xor rax, rax
-    rep stosb
-    mov rbx, rdi
-    mov rdi, [rbp-92]
-    sub rbx, rdi
-    mov dword [TEMP_PARSER_ARR+8], ebx
-    mov rdx, r8
-    mov esi, 32; must be 1 byte size max
-    call hash_table_init
+    mov edi, 32
+    call init_hash_table_in_temp_p_arr
+    mov [rbp-92], rax
+    mov [rbp-100], rbx
     mov dword [rbp-68], 0
 __kw_macro_arg_loop:
     mov rdi, [rbp-40]
@@ -1548,12 +1623,15 @@ ___kw_macro_entr_check_n:
     mov [rax+8], cl
     jmp __kw_macro_set_entries
 __kw_macro_end:
+;TODO: add last copy entry
     mov rdx, [rbp-84]
     mov ebx, [rbp-72] 
     mov eax, dword [NAME_SYM_REF_ARRAY+8]
     sub ebx, eax
     mov [rdx], ebx
+    mov dword [TOKEN_TYPE_NAME+8], 0
     jmp _new_entry_start_ps
+
 _err_macro_arg_rep:
 _err_macro_to_many_arg:
 _err_segment_not_set:
