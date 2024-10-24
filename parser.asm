@@ -12,9 +12,10 @@ PARSER_ADDR_FLAG_NAME      equ 0x4
 PARSER_ADDR_FLAG_DIGIT     equ 0x8
 
 MACRO_EMPTY_ARG_FLAG equ 0xFF
+MACRO_COPY_ENTRY_SIZE equ 10
 
 segment readable writeable
-
+TEST_MACRO_FILE db "./macro_test.asm", 0
 LAST_LINE_NUM dd 0
 CURR_SEG_OFFSET dd 0
 
@@ -41,6 +42,7 @@ entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 NAME_CONST_ENTRY_SIZE    equ 46
 NAME_DATA_ENTRY_SIZE     equ 40
 NAME_SYM_REF_HEADER_SIZE equ 32
+NAME_SYM_REF_SERV_HS     equ 16
 entry_array_data_m NAME_SYM_REF_ARRAY, 1
 
 ; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
@@ -651,6 +653,28 @@ _end_convert_digit_to_neg:
     pop rbp
     ret
 
+; rdi - ptr to file entry, rsi - ptr to space for token
+get_next_token_skip_new_line:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+_loop_gntsnl:
+    call next_token
+    mov rsi, [rbp-16]
+    mov rdi, [rbp-8]
+    mov al, [rsi+12]
+    cmp al, TOKEN_TYPE_AUX
+    jne _end_get_next_token_skip_new_line
+    mov ecx, [rsi+8] 
+    cmp ecx, AUX_NEW_LINE 
+    je _loop_gntsnl
+_end_get_next_token_skip_new_line:
+    add rsp, 16
+    pop rbp
+    ret
+
 ; NOTE: hash table main block gonna start from offset 0
 ; edi - count of entries; must be 1 byte size max
 ; return rax - ptr to ht main block, rbx - start
@@ -693,7 +717,8 @@ _end_init_hash_table_in_temp_p_arr:
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
-;-84 temp token buf ptr / temp token buf offset, -92 temp var, -100 temp var 
+;-84 temp token buf ptr / temp token buf offset, -92 - 108 temp var,
+;-112 
 ; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
@@ -718,7 +743,7 @@ __new_entry_start_read_ps:
     je _begin_kw_sp 
     cmp eax, TOKEN_TYPE_EOF
     jz _end_start_parser
-    jmp _new_entry_start_ps;TODO: remove
+    jmp _new_entry_start_ps;TODO: remove?
 
 _begin_ins_sp:
     call curr_seg_ptr
@@ -1131,6 +1156,7 @@ _begin_name_sp:
     jz __name_sp_check_next 
     cmp ecx, TOKEN_NAME_MACRO
     jne _err_defined_symbol
+    sub rbx, NAME_SYM_REF_SERV_HS
     mov [rbp-92], rbx
     jmp __name_sp_macro
 __name_sp_check_next:
@@ -1412,30 +1438,82 @@ ___name_sp_macro_skip_comma:
     cmp ecx, AUX_NEW_LINE
     jne _err_invalid_expr
 ___name_sp_macro_arg_end:
-    mov ebx, [TOKEN_PARSER_ARR+8]
+    mov ebx, dword [TEMP_PARSER_ARR+8]
     mov [rbp-68], ebx
     mov rdx, [FILES_ARRAY]
     mov r8, [rbp-92]
     lea r9, [r8+NAME_SYM_REF_HEADER_SIZE]
-    mov ecx, [r8+4]
+    mov [rbp-84], r9
     mov eax, [r8]
+    mov ecx, [r8+4]
     lea r10, [r8+rax]
     mov r11, [rdx+rcx]
-    mov [rbp-100], r11
+    mov [rbp-100], r10
+    mov [rbp-108], r11
 ___name_sp_macro_set_buf:
     cmp r9, r10
     jae ___name_sp_macro_end
     mov rdi, TEMP_PARSER_ARR
     mov esi, [r9+4]
     mov ebx, esi
-    add ebx, TOKEN_KIND_SIZE
+    add esi, TOKEN_KIND_SIZE
     movzx eax, byte [r9+8]
     cmp eax, MACRO_EMPTY_ARG_FLAG
     cmove esi, ebx
     call entry_array_reserve_size
-    ;TODO: copy
+    mov rdi, rax
+    mov r9, [rbp-84]
+    mov ebx, [r9]
+    mov ecx, [r9+4]
+    mov r11, [rbp-108]
+    mov rsi, [r11]
+    add rsi, rbx
+    rep movsb 
+    movzx eax, byte [r9+8]
+    cmp eax, MACRO_EMPTY_ARG_FLAG
+    je ___name_sp_macro_end
+    mov ecx, TOKEN_KIND_SIZE
+    mul ecx
+    mov rsi, [TEMP_PARSER_ARR]
+    add rsi, rax
+    rep movsb
+    add r9, MACRO_COPY_ENTRY_SIZE 
+    mov r10, [rbp-100]
+    jmp ___name_sp_macro_set_buf
 ___name_sp_macro_end:
+    mov rdi, [rbp-40]
+    call get_file_entry_offset_by_ptr
+    mov [rbp-112], eax
+    mov rbx, qword [TEMP_PARSER_ARR]
+    mov edi, dword [TEMP_PARSER_ARR+8]
+    mov byte [rbx+rdi], 0
+    inc edi
+    mov dword [TEMP_PARSER_ARR+8], edi
+    mov edx, [rbp-68]
+    sub edi, edx
+    call alloc_virt_file
+    mov [rbp-84], rax
+    mov [rbp-72], ebx
+    mov edi, [rbp-112]
+    call get_file_entry_ptr_from_offset
+    mov [rbp-40], rax
+    mov rbx, qword [TEMP_PARSER_ARR]
+    mov edx, [rbp-68]
+    lea rsi, [rbx+rdx]
+    mov rax, [rbp-84]
+    mov rsi, [rax]
+    mov rcx, [rax+8]
+    rep movsb
 
+    mov r8, rax
+    mov rdi, TEST_STR
+    call open_file_w_trunc
+    mov rdi, rax
+    mov rsi, [r8]
+    mov rdx, [r8+8]
+    call write
+
+    jmp _new_entry_start_ps
 
 _begin_kw_sp:
     ;TODO: add more
@@ -1511,7 +1589,7 @@ __kw_macr:
     jnz _err_defined_symbol
     mov rdi, rax
     lea rsi, [rbp-16]
-    mov edx, [rbp-52]
+    mov ecx, [rbp-52]
     call push_name_to_defined
     mov [rbp-84], rax
     mov [rbp-72], ebx
@@ -1572,9 +1650,7 @@ __kw_macro_arg_loop:
 __kw_macro_expect_lbrace:
     lea rsi, [rbp-32]
     mov rdi, [rbp-40]
-    call next_token
-    test rax, rax
-    jz _end_start_parser
+    call get_next_token_skip_new_line
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_AUX
     jne _err_invalid_expr
@@ -1614,22 +1690,45 @@ ___kw_macro_entr_check_n:
     mov r10, rbx
     movzx edx, byte [rbp-3]
     sub ebx, edx ; TODO: will file really be more then 4GiB?
-    sub r9d, ebx
+    sub ebx, r9d
     mov [rax], r8d
-    mov [rax+4], r9d
+    mov [rax+4], ebx
     mov [rbp-68], r10d
     mov rsi, [rbp-108]
     mov cl, [rsi+14]
     mov [rax+8], cl
     jmp __kw_macro_set_entries
 __kw_macro_end:
-;TODO: add last copy entry
+    mov rdi, [rbp-40]
+    mov rbx, [rdi]
+    mov r9, [rdi+16]
+    dec r9
+    mov rcx, rbx
+    mov r8d, [rbp-68]
+    add rbx, r8
+    add rcx, r9
+    cmp rbx, rcx
+    je __kw_macro_set_entry_size
+    mov edi, 10
+    call get_mem_def_name_buf
+    mov r8d, [rbp-68]
+    mov r9d, r8d
+    mov rdi, [rbp-40]
+    mov rbx, [rdi+16]
+    mov r10, rbx
+    dec rbx
+    sub ebx, r9d
+    mov [rax], r8d
+    mov [rax+4], ebx
+    mov [rbp-68], r10d
+    mov byte [rax+8], MACRO_EMPTY_ARG_FLAG
+__kw_macro_set_entry_size:
     mov rdx, [rbp-84]
     mov ebx, [rbp-72] 
     mov eax, dword [NAME_SYM_REF_ARRAY+8]
-    sub ebx, eax
-    mov [rdx], ebx
-    mov dword [TOKEN_TYPE_NAME+8], 0
+    sub eax, ebx
+    mov [rdx], eax
+    mov dword [TEMP_PARSER_ARR+8], 0
     jmp _new_entry_start_ps
 
 _err_macro_arg_rep:

@@ -5,8 +5,8 @@ macro MACRO1 val0, val1, val3
     shl eax, val3
 }
 
-CONST0 equ 1
-
-segment readable writeable
-    mov ecx, ebx
+segment readable executable
     MACRO1 ecx, edx, CONST0
+    mov ecx, ebx
+
+CONST0 equ 1

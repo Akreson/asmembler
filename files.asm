@@ -2,19 +2,19 @@ FILE_ENTRY_SIZE equ 64
 
 segment readable writeable
 
+;NOTE: entry on offset 0 is reserved
 ;file array
 ;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
 ;+32 inode, +40 name len, +44 curr line num, +48 offset to parent entry,
 ;+52 offset in parent buff, +56 line in parent buff (4 bytes reserved) 
 FILE_ARRAY_ENTRY_SIZE equ 64
-;array - 0 ptr to buf, +8 count, +12 capacity
-FILES_ARRAY dq 0
-dd 0, 0, 64
+entry_array_data_m FILES_ARRAY, FILE_ARRAY_ENTRY_SIZE
 
 segment readable executable
 
 ;rdi - ptr to entry
-get_file_offset_by_ptr:
+;return eax - offset
+get_file_entry_offset_by_ptr:
     push rbp
     mov rbp, rsp
     test rdi, rdi
@@ -25,18 +25,72 @@ get_file_offset_by_ptr:
     mov r9, r8
     mov r10d, dword [FILES_ARRAY+8]
     shl r10d, 6
-    sub eax, FILE_ARRAY_ENTRY_SIZE
-    add r9, rax
+    add r9, r10
     cmp rdi, r9
     ja _fail_get_fobp
     sub rdi, r8
     shr rdi, 6
     mov eax, edi
-    jmp _end_get_file_offset_by_ptr
+    jmp _end_file_entry_offset_by_ptr
 _fail_get_fobp:
     xor eax, eax
     dec eax
-_end_get_file_offset_by_ptr:
+_end_file_entry_offset_by_ptr:
+    pop rbp
+    ret
+
+;edi - offset
+;return rax - ptr
+get_file_entry_ptr_from_offset:
+    push rbp
+    mov rbp, rsp
+    test edi, edi
+    jz _fail_get_fpbo
+    mov r10d, dword [FILES_ARRAY+8]
+    shl r10d, 6
+    cmp edi, r10d
+    ja _fail_get_fpbo
+    mov rax, qword [FILES_ARRAY]
+    add rax, rdi
+    jmp _end_get_file_entry_ptr_from_offset
+_fail_get_fpbo:
+    xor rax, rax
+_end_get_file_entry_ptr_from_offset:
+    pop rbp
+    ret
+
+; rdi - file size
+; return rax - ptr to file entry, ebx - offset to file entry
+alloc_virt_file:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 20
+    mov [rbp-8], rdi
+    mov rdi, FILES_ARRAY
+    mov esi, 1
+    call entry_array_reserve_size
+    mov [rbp-16], rax
+    mov [rbp-20], ebx
+    mov rdi, [rbp-8]
+    call mmap_def
+    xor rsi, rsi
+    cmp rax, rsi
+    jl _error_exit_avf
+    mov ecx, FILE_ARRAY_ENTRY_SIZE 
+    mov rdi, [rbp-16]
+    mov r8, rdi
+    rep stosb
+    mov rdi, r8
+    mov rdx, [rbp-8]
+    mov [rdi], rax
+    mov [rdi+8], rdx
+    mov rax, rdi
+    mov ebx, [rbp-20]
+    jmp _end_alloc_virt_file
+_error_exit_avf:
+    xor rax, rax
+_end_alloc_virt_file:
+    add rsp, 20
     pop rbp
     ret
 
@@ -139,12 +193,12 @@ _alloc_file_mem_lfbp:
     mov [rbp-176], rax;fd
     mov rdi, [rbp-96] ;size
     call mmap_def
-    mov rdi, [rbp-176]
     mov rsi, rax
     xor rax, rax
     cmp rsi, rax
     jl _error_exit_lfbp
 _read_up_file_lfbp:
+    mov rdi, [rbp-176]
     mov [rbp-184], rsi; mem
     mov rdx, [rbp-96]
     call read
