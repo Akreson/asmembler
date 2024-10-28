@@ -717,8 +717,7 @@ _end_init_hash_table_in_temp_p_arr:
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
-;-84 temp token buf ptr / temp token buf offset, -92 - 108 temp var,
-;-112 
+;-84 temp token buf ptr / temp token buf offset, -92 - -116 temp var,
 ; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
@@ -1459,11 +1458,17 @@ ___name_sp_macro_set_buf:
     jae ___name_sp_macro_end
     mov rdi, TEMP_PARSER_ARR
     mov esi, [r9+4]
-    mov ebx, esi
-    add esi, TOKEN_KIND_SIZE
     movzx eax, byte [r9+8]
     cmp eax, MACRO_EMPTY_ARG_FLAG
-    cmove esi, ebx
+    je ___name_sp_macro_skip_arg_size
+    mov ecx, TOKEN_KIND_SIZE
+    mul ecx
+    mov rbx, [TEMP_PARSER_ARR]
+    add rbx, rax
+    mov [rbp-116], rbx
+    movzx ecx, byte [rbx+13]
+    add esi, ecx
+___name_sp_macro_skip_arg_size:
     call entry_array_reserve_size
     mov rdi, rax
     mov r9, [rbp-84]
@@ -1476,10 +1481,7 @@ ___name_sp_macro_set_buf:
     movzx eax, byte [r9+8]
     cmp eax, MACRO_EMPTY_ARG_FLAG
     je ___name_sp_macro_end
-    mov ecx, TOKEN_KIND_SIZE
-    mul ecx
-    mov rbx, [TEMP_PARSER_ARR]
-    add rbx, rax
+    mov rbx, [rbp-116]
     mov rsi, [rbx]
     movzx ecx, byte [rbx+13]
     rep movsb
