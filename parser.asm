@@ -1160,13 +1160,15 @@ _begin_name_sp:
     mov [rbp-92], rbx
     jmp __name_sp_macro
 __name_sp_check_next:
+    mov [rbp-92], rax
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
     call next_token
     test rax, rax
     jz _end_start_parser
-    movzx eax, byte [rbp-20]
-    cmp eax, TOKEN_TYPE_KEYWORD
+    mov rax, [rbp-92]
+    movzx ebx, byte [rbp-20]
+    cmp ebx, TOKEN_TYPE_KEYWORD
     je __name_sp_set_def
     cmp eax, TOKEN_TYPE_AUX
     je __name_sp_set_def
@@ -1360,6 +1362,8 @@ ___name_const_set_token:
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_EOF
+    je _end_start_parser
     cmp eax, TOKEN_TYPE_AUX
     jne _err_invalid_const_value
     mov ebx, [rbp-8]
@@ -1417,12 +1421,12 @@ __name_sp_macro:
     je _err_invalid_expr
 ___name_sp_macro_skip_comma: 
     mov rdi, TEMP_PARSER_ARR
-    mov esi, 14
+    mov esi, TOKEN_KIND_SIZE
     call entry_array_reserve_size
     mov rdx, rax
     mov rdi, rax
     lea rsi, [rbp-16]
-    mov ecx, 14 
+    mov ecx, TOKEN_KIND_SIZE
     rep movsb
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
@@ -1447,7 +1451,7 @@ ___name_sp_macro_arg_end:
     mov eax, [r8]
     mov ecx, [r8+4]
     lea r10, [r8+rax]
-    mov r11, [rdx+rcx]
+    lea r11, [rdx+rcx]
     mov [rbp-100], r10
     mov [rbp-108], r11
 ___name_sp_macro_set_buf:
@@ -1474,15 +1478,19 @@ ___name_sp_macro_set_buf:
     je ___name_sp_macro_end
     mov ecx, TOKEN_KIND_SIZE
     mul ecx
-    mov rsi, [TEMP_PARSER_ARR]
-    add rsi, rax
+    mov rbx, [TEMP_PARSER_ARR]
+    add rbx, rax
+    mov rsi, [rbx]
+    movzx ecx, byte [rbx+13]
     rep movsb
     add r9, MACRO_COPY_ENTRY_SIZE 
+    mov [rbp-84], r9
     mov r10, [rbp-100]
     jmp ___name_sp_macro_set_buf
 ___name_sp_macro_end:
     mov rdi, [rbp-40]
     call get_file_entry_offset_by_ptr
+    mov ecx, [rbp-52]
     mov [rbp-112], eax
     mov rbx, qword [TEMP_PARSER_ARR]
     mov edi, dword [TEMP_PARSER_ARR+8]
@@ -1501,12 +1509,12 @@ ___name_sp_macro_end:
     mov edx, [rbp-68]
     lea rsi, [rbx+rdx]
     mov rax, [rbp-84]
-    mov rsi, [rax]
+    mov rdi, [rax]
     mov rcx, [rax+8]
     rep movsb
 
     mov r8, rax
-    mov rdi, TEST_STR
+    mov rdi, TEST_MACRO_FILE
     call open_file_w_trunc
     mov rdi, rax
     mov rsi, [r8]
@@ -1598,7 +1606,6 @@ __kw_macr:
     call init_hash_table_in_temp_p_arr
     mov [rbp-92], rax
     mov [rbp-100], rbx
-    mov dword [rbp-68], 0
 __kw_macro_arg_loop:
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
@@ -1657,6 +1664,9 @@ __kw_macro_expect_lbrace:
     mov ecx, [rbp-24]
     cmp ecx, AUX_LBRACE
     jne _err_invalid_expr
+    mov rdi, [rbp-40]
+    mov rsi, [rdi+16]
+    mov dword [rbp-68], esi
 __kw_macro_set_entries:
     lea rsi, [rbp-16]
     mov rdi, [rbp-40]

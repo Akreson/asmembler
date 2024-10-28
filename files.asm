@@ -29,7 +29,6 @@ get_file_entry_offset_by_ptr:
     cmp rdi, r9
     ja _fail_get_fobp
     sub rdi, r8
-    shr rdi, 6
     mov eax, edi
     jmp _end_file_entry_offset_by_ptr
 _fail_get_fobp:
@@ -59,6 +58,7 @@ _end_get_file_entry_ptr_from_offset:
     pop rbp
     ret
 
+; TODO: check max allowed file_array size
 ; rdi - file size
 ; return rax - ptr to file entry, ebx - offset to file entry
 alloc_virt_file:
