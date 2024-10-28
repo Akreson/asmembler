@@ -38,7 +38,8 @@ entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 ;(TOKEN_NAME_DATA)
 ; +32 segment offset, +36 offest to entry header in seg token buf
 ;(TOKEN_NAME_MACR)
-; copy entires (4 offset, 4 len, 1 arg num)
+; +32 start offset of body in file buff, +36 start line of body in file,
+; +40 copy entires (4 offset, 4 len, 1 arg num) _n_ times
 NAME_CONST_ENTRY_SIZE    equ 46
 NAME_DATA_ENTRY_SIZE     equ 40
 NAME_SYM_REF_HEADER_SIZE equ 32
@@ -1445,7 +1446,7 @@ ___name_sp_macro_arg_end:
     mov [rbp-68], ebx
     mov rdx, [FILES_ARRAY]
     mov r8, [rbp-92]
-    lea r9, [r8+NAME_SYM_REF_HEADER_SIZE]
+    lea r9, [r8+NAME_SYM_REF_HEADER_SIZE+8]
     mov [rbp-84], r9
     mov eax, [r8]
     mov ecx, [r8+4]
@@ -1490,10 +1491,6 @@ ___name_sp_macro_skip_arg_size:
     mov r10, [rbp-100]
     jmp ___name_sp_macro_set_buf
 ___name_sp_macro_end:
-    mov rdi, [rbp-40]
-    call get_file_entry_offset_by_ptr
-    mov ecx, [rbp-52]
-    mov [rbp-112], eax
     mov rbx, qword [TEMP_PARSER_ARR]
     mov edi, dword [TEMP_PARSER_ARR+8]
     mov byte [rbx+rdi], 0
@@ -1504,9 +1501,13 @@ ___name_sp_macro_end:
     call alloc_virt_file
     mov [rbp-84], rax
     mov [rbp-72], ebx
-    mov edi, [rbp-112]
-    call get_file_entry_ptr_from_offset
-    mov [rbp-40], rax
+    mov r8, [rbp-92]
+    mov r9d, [rbp-52]
+    mov r10d, [r8+32]
+    mov r11d, [r8+36]
+    mov [rax+48], r9d
+    mov [rax+52], r10d
+    mov [rax+56], r11d
     mov rbx, qword [TEMP_PARSER_ARR]
     mov edx, [rbp-68]
     lea rsi, [rbx+rdx]
@@ -1514,6 +1515,8 @@ ___name_sp_macro_end:
     mov rdi, [rax]
     mov rcx, [rax+8]
     rep movsb
+    ;mov edi, [rbp-52]
+    ;call get_file_entry_ptr_from_offset
 
     mov r8, rax
     mov rdi, TEST_MACRO_FILE
@@ -1604,6 +1607,8 @@ __kw_macr:
     mov [rbp-84], rax
     mov [rbp-72], ebx
     mov byte [rax+30], TOKEN_NAME_MACRO
+    mov edi, 8
+    call get_mem_def_name_buf
     mov edi, 32
     call init_hash_table_in_temp_p_arr
     mov [rbp-92], rax
@@ -1655,7 +1660,7 @@ __kw_macro_arg_loop:
     cmp ecx, AUX_NEW_LINE
     je __kw_macro_expect_lbrace
     cmp ecx, AUX_LBRACE
-    je __kw_macro_set_entries
+    je __kw_macro_save_start_body
 __kw_macro_expect_lbrace:
     lea rsi, [rbp-32]
     mov rdi, [rbp-40]
@@ -1669,9 +1674,16 @@ __kw_macro_expect_lbrace:
     mov rdi, [rbp-40]
     mov rsi, [rdi+16]
     mov dword [rbp-68], esi
-__kw_macro_set_entries:
-    lea rsi, [rbp-16]
+__kw_macro_save_start_body:
+    mov rax, [rbp-84]
     mov rdi, [rbp-40]
+    mov ebx, [rdi+44]
+    mov rcx, [rdi+16]
+    mov [rax+32], ecx
+    mov [rax+36], ebx
+__kw_macro_set_entries:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
     call next_token
     test rax, rax
     jz _end_start_parser
