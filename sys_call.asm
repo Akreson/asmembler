@@ -18,6 +18,9 @@ O_CREAT equ 0x40
 O_TRUNC equ 0x200
 O_APPEND equ 0x400
 
+S_IRWXU equ 0x1C0
+S_IRWU equ 0x180
+
 PROT_READ equ 1
 PROT_WRITE equ 2
 PROT_EXEC equ 4
@@ -89,7 +92,7 @@ open_file_w_trunc:
     push rbp
     mov rax, SYS_OPEN
     mov rsi, 0x242
-    mov rdx, rdx
+    mov rdx, S_IRWU
     syscall
     pop rbp
     ret
