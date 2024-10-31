@@ -122,7 +122,37 @@ _end_is_aux_sym:
     pop rbp
     ret
 
-;TODO: debug
+; rdi - ptr to file entry, esi - line skip to
+; return rax - ptr, rbx - offset
+skip_buf_to_line:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rdi
+    mov [rbp-12], esi
+    mov rax, [rdi]
+    mov rdx, [rdi+8]
+    add rdx, rax
+_skip_bf_nl_loop:
+    cmp rax, rdx
+    jae _end_skip_buf_to_line
+    mov cl, [rax]
+    cmp cl, _CONST_NEW_LINE
+    jne _skip_nl_loop_check
+    dec esi
+    test esi, esi
+    jz _end_skip_buf_to_line
+_skip_nl_loop_check:
+    inc rax
+    jmp _skip_bf_nl_loop
+_end_skip_buf_to_line:
+    mov rdx, [rdi]
+    mov rbx, rax
+    sub rbx, rdx
+    add rsp, 16
+    pop rbp
+    ret
+
 ;rdi - ptr to file entry, rsi - offset to start with
 ;return rax - offset to line, rbx - line len
 get_curr_line_start_end:
