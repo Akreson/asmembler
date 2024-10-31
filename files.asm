@@ -4,9 +4,10 @@ segment readable writeable
 
 ;NOTE: entry on offset 0 is reserved
 ;file array
-;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos, +24 ptr to str name,
-;+32 inode, +40 name len, +44 curr line num, +48 offset to parent entry,
-;+52 offset in parent buff, +56 line in parent buff (4 bytes reserved) 
+;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos,
+;+24 ptr to str name/(+24 offset to prev entry, +28 offset in parent buff),
+;+32 inode/line in parent buff, +40 name len, +44 curr line num, +48 offset to def macr entry,
+;+52 offset in macr buff, +56 line in macr buff (4 bytes reserved) 
 FILE_ARRAY_ENTRY_SIZE equ 64
 entry_array_data_m FILES_ARRAY, FILE_ARRAY_ENTRY_SIZE
 
