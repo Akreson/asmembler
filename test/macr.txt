@@ -9,4 +9,4 @@ segment readable executable
     MACRO1 ecx, edx, CONST0
     mov ecx, ebx
 
-CONST0 equ 1
+CONST0 equ 2

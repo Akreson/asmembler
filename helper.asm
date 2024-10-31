@@ -178,18 +178,131 @@ _end_print_ht_sym_str:
     pop rbp
     ret
 
-;rdi - curr file entry ptr
-;esi - line num to print (0 if curr), rdx - offset in file (if ecx 0 then it do not counts),
+_print_end_num_line:
+    mov rdi, STR_RBRACKET
+    mov esi, 1
+    call print_len_str
+    mov rdi, STR_COLON
+    mov esi, 1
+    call print_len_str
+    call print_new_line
+    mov rdi, _STR_TAB
+    mov esi, 1
+    call print_len_str
+    ret
+
+; rdi, rsi, rdx
+_print_file_line_by_ptr_len:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov [rbp-8], rdx
+    call get_curr_line_start_end
+    mov r8, [rbp-8]
+    mov rdi, [r8]
+    add rdi, rax
+    mov rsi, rbx
+    call print_len_str
+    call print_new_line
+    add rsp, 8
+    pop rbp
+    ret
+
+;rdi - curr file entry ptr, esi - line num to print (0 if curr),
+;rdx - offset in file (if ecx 0 then it do not counts),
 print_file_line:
     push rbp
     mov rbp, rsp
-    sub rsp, 20
+    sub rsp, 40
     mov [rbp-8], rdi
     mov [rbp-16], rdx
     mov [rbp-20], esi
-    mov rbx, rdi
-    mov rdi, [rbx+24]
-    mov esi, [rbx+40]
+    mov rdx, rdi
+    mov eax, [rdx+48]
+    test eax, eax
+    jz _def_path_print_file_line
+    mov r10, [FILES_ARRAY]
+    mov r11, r10
+    mov r8d, [rdx+48]
+    mov r9d, [rdx+24]
+    add r10, r8
+    add r11, r9
+    mov [rbp-32], r10
+    mov [rbp-40], r11
+    mov rdi, ERR_PROCESSED_STR
+    call print_zero_str
+    mov rdi, STR_LBRACKET
+    mov esi, 1
+    call print_len_str
+    mov rax, [rbp-8]
+    mov edi, [rbp-20]
+    mov ebx, [rax+44]
+    cmp edi, 0
+    cmove edi, ebx
+    mov esi, 10
+    call print_u_digit
+    call _print_end_num_line
+    mov rdi, [rbp-8]
+    mov rsi, [rbp-16]
+    mov rbx, [rdi+16]
+    mov eax, [rbp-20]
+    cmp eax, 0
+    cmove rsi, rbx
+    mov rdx, [rbp-8]
+    call _print_file_line_by_ptr_len
+
+    mov rdi, ERR_PROCESSED_FROM_STR
+    call print_zero_str
+    mov rdx, [rbp-32]
+    mov rdi, [rdx+24]
+    mov esi, [rdx+40]
+    call print_len_str
+    mov rdi, STR_LBRACKET
+    mov esi, 1
+    call print_len_str
+    mov rdx, [rbp-8]
+    mov edi, [rdx+56]
+    add edi, [rdx+44]
+    dec edi
+    mov esi, 10
+    call print_u_digit
+    call _print_end_num_line
+    mov rdi, [rbp-32]
+    mov rdx, [rbp-8]
+    mov esi, [rdx+56]
+    add esi, [rdx+44]
+    dec esi
+    call skip_buf_to_line
+    mov rdi, [rbp-32]
+    mov rsi, rbx
+    mov rdx, [rbp-32]
+    call _print_file_line_by_ptr_len
+
+    ;TODO: do file print recursivly?
+    mov rdi, ERR_CALLED_FROM_STR
+    call print_zero_str
+    mov rdx, [rbp-40]
+    mov rdi, [rdx+24]
+    mov esi, [rdx+40]
+    call print_len_str
+    mov rdi, STR_LBRACKET
+    mov esi, 1
+    call print_len_str
+    mov rdx, [rbp-8]
+    mov edi, [rdx+32]
+    mov esi, 10
+    call print_u_digit
+    call _print_end_num_line
+    mov rcx, [rbp-8]
+    mov rdi, [rbp-40]
+    mov esi, [rcx+28]
+    mov rdx, [rbp-40]
+    call _print_file_line_by_ptr_len
+
+    jmp _end_print_file_line
+_def_path_print_file_line:
+    mov rdi, [rdx+24]
+    mov esi, [rdx+40]
     call print_len_str
     mov rdi, _STR_SPACE
     mov esi, 1
@@ -204,31 +317,17 @@ print_file_line:
     cmove edi, ebx
     mov esi, 10
     call print_u_digit
-    mov rdi, STR_RBRACKET
-    mov esi, 1
-    call print_len_str
-    mov rdi, STR_COLON
-    mov esi, 1
-    call print_len_str
-    call print_new_line
-    mov rdi, _STR_TAB
-    mov esi, 1
-    call print_len_str
+    call _print_end_num_line
     mov rdi, [rbp-8]
     mov rsi, [rbp-16]
     mov rbx, [rdi+16]
     mov eax, [rbp-20]
     cmp eax, 0
     cmove rsi, rbx
-    call get_curr_line_start_end
-    mov r8, [rbp-8]
-    mov rdi, [r8]
-    add rdi, rax
-    mov rsi, rbx
-    call print_len_str
-    call print_new_line
-_ent_print_file_line:
-    add rsp, 20
+    mov rdx, [rbp-8]
+    call _print_file_line_by_ptr_len
+_end_print_file_line:
+    add rsp, 40
     pop rbp
     ret
 
@@ -265,3 +364,4 @@ _err_print_skip_pre_err:
     pop rbp
     mov rcx, [rbp-32]
     exit_m rcx
+

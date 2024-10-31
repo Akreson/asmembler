@@ -36,7 +36,7 @@ entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
-; +32 segment offset, +36 offest to entry header in seg token buf
+; +32 segment offset, +36 offset to entry header in seg token buf
 ;(TOKEN_NAME_MACR)
 ; +32 start offset of body in file buff, +36 start line of body in file,
 ; +40 copy entires (4 offset, 4 len, 1 arg num) _n_ times
@@ -718,7 +718,7 @@ _end_init_hash_table_in_temp_p_arr:
 ;-16 token 0, -32 token 1, -40 passed rdi, -48 ptr to token in entry_array,
 ;-52 passed esi, -56(4) seg mask val /, -64 start offset of curr render entry,
 ;-68 temp var, -72 temp var, -76 offset to start of token buf entry header,
-;-84 temp token buf ptr / temp token buf offset, -92 - -116 temp var,
+;-84 temp token buf ptr / temp token buf offset, -92 - -124 temp var,
 ; rdi - ptr to file entry, esi - offset of curr file entry
 start_parser:
     push rbp
@@ -1409,6 +1409,10 @@ __name_sp_aux:
     jmp _new_entry_start_ps
 __name_sp_macro:
     mov rdi, [rbp-40]
+    mov rax, [rdi+16]
+    mov ecx, [rdi+44]
+    mov [rbp-120], eax
+    mov [rbp-124], ecx
     lea rsi, [rbp-16]
     call next_token
     test rax, rax
@@ -1499,33 +1503,32 @@ ___name_sp_macro_end:
     mov edx, [rbp-68]
     sub edi, edx
     call alloc_virt_file
-    mov [rbp-84], rax
     mov [rbp-72], ebx
     mov r8, [rbp-92]
     mov r9d, [rbp-52]
     mov r10d, [r8+32]
     mov r11d, [r8+36]
-    mov [rax+48], r9d
+    mov r12d, [rbp-120]
+    mov r13d, [rbp-124]
+    mov r14d, [r8+4]
+    mov [rax+24], r9d
+    mov [rax+28], r12d
+    mov [rax+32], r13d
+    mov [rax+48], r14d
     mov [rax+52], r10d
     mov [rax+56], r11d
     mov rbx, qword [TEMP_PARSER_ARR]
     mov edx, [rbp-68]
     lea rsi, [rbx+rdx]
-    mov rax, [rbp-84]
     mov rdi, [rax]
     mov rcx, [rax+8]
     rep movsb
-    ;mov edi, [rbp-52]
-    ;call get_file_entry_ptr_from_offset
-
-    mov r8, rax
-    mov rdi, TEST_MACRO_FILE
-    call open_file_w_trunc
     mov rdi, rax
-    mov rsi, [r8]
-    mov rdx, [r8+8]
-    call write
-
+    mov rsi, [rbp-72]
+    call start_parser
+    mov edi, [rbp-52]
+    call get_file_entry_ptr_from_offset
+    mov [rbp-40], rax
     jmp _new_entry_start_ps
 
 _begin_kw_sp:
@@ -1695,6 +1698,7 @@ __kw_macro_set_entries:
     je __kw_macro_end
     jmp __kw_macro_set_entries
 ___kw_macro_entr_check_n:
+    ; TODO: forbid macro def in macro body
     cmp eax, TOKEN_TYPE_NAME
     jne __kw_macro_set_entries 
     mov rdi, [rbp-92]

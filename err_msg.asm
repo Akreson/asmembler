@@ -11,6 +11,10 @@ ERR_ADD_HT db "Error on adding entry to hash table", 0
 ERR_PRINT_BASE db "Unsupported base for print_digit", 0
 ERR_DBL_DEF_SYM db "Doubled default symbol: ", 0
 
+ERR_PROCESSED_STR db "Processed line ", 0
+ERR_PROCESSED_FROM_STR db "Processed from - ", 0
+ERR_CALLED_FROM_STR db "Called from - ", 0
+
 ; FILE
 ERR_NOT_A_FILE db ": is not a regular file", 0
 ERR_FILE_MISS db ": unable to get info about file", 0
