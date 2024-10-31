@@ -162,13 +162,6 @@ _end_get_curr_line_start_end:
     pop rbp
     ret
 
-next_char:
-    push rbp
-    mov rbp, rsp
-_end_next_char:
-    pop rbp
-    ret
-
 ;does not modifies rbx, rcx, rdx, rdi reg
 ;rdi - char to check
 is_valid_sym_char:
@@ -214,6 +207,8 @@ next_token:
     mov dword [rbp-84], 0
 _loop_skip_wt_nt:
     movzx edi, byte [rbx+rcx]
+    cmp edi, 0
+    je _eof_nt
     cmp edi, _CONST_SEMICOLON
     jne __loop_skip_check_space 
 __comment_skip_loop:
