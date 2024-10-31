@@ -3184,6 +3184,7 @@ _end_process_stos:
     pop rbp
     ret
 
+; TODO: allow use def const and check it
 ; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
 ; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
 process_ins_template4:
