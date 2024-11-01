@@ -1538,6 +1538,8 @@ _begin_kw_sp:
     je __kw_segm_sp
     cmp eax, KW_MACR
     je __kw_macr
+    cmp eax, KW_INCL
+    je __kw_include
     jmp _err_invalid_expr
 __kw_segm_sp:
     ;TODO: catch wrong combination?
@@ -1585,6 +1587,26 @@ __assign_segment_collate:
     mov rdx, qword [SEG_ENTRY_ARRAY]
     add rdx, rax
     mov [rdx+48], ebx
+    jmp _new_entry_start_ps
+__kw_include:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    test rax, rax
+    jz _end_start_parser
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_STR
+    jne _err_invalid_expr
+    mov rdi, [rbp-16]
+    mov esi, [rbp-8]
+    mov edx, [rbp-52]
+    call load_file_by_path
+    mov rdi, rax
+    mov rsi, rbx
+    call start_parser
+    mov edi, [rbp-52]
+    call get_file_entry_ptr_from_offset
+    mov [rbp-40], rax
     jmp _new_entry_start_ps
 __kw_macr:
     mov rdi, [rbp-40]
@@ -1698,7 +1720,7 @@ __kw_macro_set_entries:
     je __kw_macro_end
     jmp __kw_macro_set_entries
 ___kw_macro_entr_check_n:
-    ; TODO: forbid macro def in macro body
+    ; TODO: forbid macro def and include der. in macro body
     cmp eax, TOKEN_TYPE_NAME
     jne __kw_macro_set_entries 
     mov rdi, [rbp-92]

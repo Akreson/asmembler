@@ -9,9 +9,9 @@ include 'sys_call.asm'
 include 'entry_array.asm'
 include 'hash_table.asm'
 include 'list.asm'
+include 'symbols.asm'
 include 'helper.asm'
 include 'files.asm'
-include 'symbols.asm'
 include 'lex.asm'
 include 'parser.asm'
 include 'render.asm'
@@ -126,6 +126,7 @@ _start:
     mov rsi, rax
     mov [rbp-24], rdi
     mov [rbp-16], rsi
+    xor rdx, rdx
     call load_file_by_path
     test rax, rax
     jz _end_start

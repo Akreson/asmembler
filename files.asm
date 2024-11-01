@@ -7,9 +7,10 @@ segment readable writeable
 ;entry format - 0 ptr to file data, +8 alloc data size, +16 read pos,
 ;+24 ptr to str name/(+24 offset to prev entry, +28 offset in parent buff),
 ;+32 inode/line in parent buff, +40 name len, +44 curr line num, +48 offset to def macr entry,
-;+52 offset in macr buff, +56 line in macr buff (4 bytes reserved) 
+;+52 offset in macr buff, +56 line in macr buff, +60 added from entry offset
 FILE_ARRAY_ENTRY_SIZE equ 64
 entry_array_data_m FILES_ARRAY, FILE_ARRAY_ENTRY_SIZE
+entry_array_data_m FILES_PATH_BUF, 1
 
 segment readable executable
 
@@ -120,13 +121,14 @@ _exit_check_if_inode_exist:
     pop rbp
     ret
 
-;rdi - ptr to path str, esi - str len
+;rdi - ptr to path str, esi - str len, edx - added from entry (if eq. 0 - ignored)
 ;-144 stat struct, -152 (4) (4 padding) str len, -160(8) str ptr, -168(8) file entry ptr,
-;-176(8) temp fd, -184(8) temp mem, -188(4) offset of file entry, 4KiB temp path
+;-176(8) temp fd, -184(8) temp mem, -188(4) offset of file entry,
+;-192(4) offset of added from entry, 4KiB temp path
 load_file_by_path:
     push rbp
     mov rbp, rsp
-    sub rsp, 4288
+    sub rsp, 4308
     mov eax, 4096
     cmp esi, eax
     jng _len_pach_check_lfbp 
@@ -137,6 +139,61 @@ _len_pach_check_lfbp:
     mov [rbp-176], rbx
     mov [rbp-152], esi
     mov [rbp-160], rdi
+    test edx, edx
+    jz _copy_passed_path_lfbp
+    mov [rbp-192], edx
+    mov rbx, FILES_PATH_BUF
+    mov dword [rbx+8], 0
+    mov al, [rdi]
+    cmp al, _CONST_SLASH
+    je _copy_passed_path_lfbp
+    mov ecx, esi
+    mov rsi, rdi
+    mov rbx, FILES_PATH_BUF
+    mov edi, [rbx+12]
+    mov [rbx+8], ecx
+    add rdi, [rbx]
+    sub rdi, rcx
+    mov [rbp-208], rdi
+    rep movsb
+_start_loop_b_p_lfbp:
+    mov r8, [FILES_ARRAY]
+    add r8, rdx
+    mov [rbp-200], r8
+    mov ecx, [r8+40]
+    mov r10, [r8+24]
+    add rcx, r10
+    dec rcx
+_loop_b_p_lfbp:
+    cmp rcx, r10
+    je _loop_next_prev_file
+    mov al, [rcx]
+    cmp al, _CONST_SLASH
+    je _loop_b_p_copy_lfbp
+    dec rcx
+    jmp _loop_b_p_lfbp
+_loop_b_p_copy_lfbp:
+    mov rsi, [r8+24]
+    sub rcx, rsi
+    mov rbx, FILES_PATH_BUF
+    mov edx, [rbx+8]
+    mov edi, [rbx+12]
+    add rdi, [rbx]
+    add edx, ecx
+    inc edx
+    mov [rbx+8], edx
+    sub rdi, rdx
+    mov [rbp-208], rdi
+    rep movsb
+    mov byte [rdi], _CONST_SLASH
+_loop_next_prev_file:
+    mov r8, [rbp-200]
+    mov edx, [r8+60]
+    test edx, edx
+    jnz _start_loop_b_p_lfbp
+    mov rdi, [rbp-208] 
+    mov esi, [rbx+8]
+_copy_passed_path_lfbp:
     mov ecx, esi
     mov rsi, rdi
     mov rdi, rsp
@@ -239,7 +296,7 @@ _exit_load_file_by_path:
     jz _end_lfbp
     mov rax, [rbp-168]
 _end_lfbp:
-    add rsp, 4288
+    add rsp, 4308
     pop rbp
     ret
 
@@ -253,6 +310,9 @@ init_file_array:
     jz _exit_init_file_array
     mov rdi, FILES_ARRAY
     mov dword [rdi+8], 1
+    mov rdi, FILES_PATH_BUF
+    mov esi, 4096
+    call init_entry_array
 _exit_init_file_array:
     pop rbp
     ret

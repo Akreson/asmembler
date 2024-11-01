@@ -1,9 +1,4 @@
-macro MACRO1 val0, val1, val3
-{
-    mov eax, val0
-    mov val1, ebx
-    shl eax, val3
-}
+include "inc.asm"
 
 segment readable executable
     MACRO1 ecx, edx, CONST0
