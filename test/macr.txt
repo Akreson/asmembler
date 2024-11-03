@@ -1,4 +1,4 @@
-include "inc.asm"
+include "tf/inc.asm"
 
 segment readable executable
     MACRO1 ecx, edx, CONST0

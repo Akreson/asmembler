@@ -217,14 +217,14 @@ print_file_line:
     mov [rbp-8], rdi
     mov [rbp-16], rdx
     mov [rbp-20], esi
-    mov rdx, rdi
-    mov eax, [rdx+48]
+    mov rbx, rdi
+    mov eax, [rbx+48]
     test eax, eax
     jz _def_path_print_file_line
     mov r10, [FILES_ARRAY]
     mov r11, r10
-    mov r8d, [rdx+48]
-    mov r9d, [rdx+24]
+    mov r8d, [rbx+48]
+    mov r9d, [rbx+24]
     add r10, r8
     add r11, r9
     mov [rbp-32], r10
@@ -253,9 +253,11 @@ print_file_line:
 
     mov rdi, ERR_PROCESSED_FROM_STR
     call print_zero_str
-    mov rdx, [rbp-32]
-    mov rdi, [rdx+24]
-    mov esi, [rdx+40]
+    mov rbx, [rbp-32]
+    mov rdi, [rbx+24]
+    mov esi, [rbx+40]
+    mov edx, [rbx+60]
+    call get_file_full_rel_path
     call print_len_str
     mov rdi, STR_LBRACKET
     mov esi, 1
@@ -301,8 +303,10 @@ print_file_line:
 
     jmp _end_print_file_line
 _def_path_print_file_line:
-    mov rdi, [rdx+24]
-    mov esi, [rdx+40]
+    mov rdi, [rbx+24]
+    mov esi, [rbx+40]
+    mov edx, [rbx+60]
+    call get_file_full_rel_path
     call print_len_str
     mov rdi, _STR_SPACE
     mov esi, 1

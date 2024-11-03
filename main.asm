@@ -6,10 +6,10 @@ CURR_FILE_ENTRY_OFFSET dd 0
 
 include 'err_msg.asm'
 include 'sys_call.asm'
+include 'symbols.asm'
 include 'entry_array.asm'
 include 'hash_table.asm'
 include 'list.asm'
-include 'symbols.asm'
 include 'helper.asm'
 include 'files.asm'
 include 'lex.asm'
