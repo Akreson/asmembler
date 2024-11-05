@@ -3961,7 +3961,7 @@ _end_process_int1:
 process_data_define:
     push rbp
     mov rbp, rsp
-    sub rsp, 64
+    sub rsp, 72
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     add rdi, ENTRY_ARRAY_DATA_SIZE
@@ -3993,11 +3993,27 @@ _loop_process_data_define:
     cmp rsi, rdx
     jae _end_process_data_define
     movzx ecx, byte [rsi]
-    cmp ecx, TOKEN_BUF_DIRECT
-    jne _err_process_data_define
+    mov r8, rsi
+    add r8, 15
     inc rsi
-    mov [rbp-40], rsi
-    ;TOKEN_BUF_PTR_OFFSET
+    mov [rbp-40], r8
+    mov [rbp-72], rsi
+    cmp ecx, TOKEN_BUF_DIRECT
+    je _process_data_check_direct
+    cmp ecx, TOKEN_BUF_PTR_OFFSET 
+    jne _err_process_data_define
+    xor eax, eax
+    mov al, 2
+    sub [rbp-40], rax
+    mov rdi, rsi
+    call get_name_ref_type
+    mov rsi, rax
+    mov [rbp-72], rax
+    cmp ebx, TOKEN_NAME_CONST
+    je _process_data_check_direct
+    cmp ebx, TOKEN_NAME_CONST_MUT
+    jne _err_process_data_define
+_process_data_check_direct:
     movzx edx, byte [rsi+12]
     cmp edx, TOKEN_TYPE_DIGIT
     je _process_data_define_digit
@@ -4010,13 +4026,11 @@ _process_data_define_digit:
     mov rdi, [rbp-24]
     mov esi, 8
     call entry_array_ensure_free_space
-    mov rsi, [rbp-40]
+    mov rsi, [rbp-72]
     mov rdx, [rsi]
     mov [rax], rdx
     movzx ebx, byte [rbp-41]
     add rax, rbx
-    add rsi, 14
-    mov [rbp-40], rsi
     mov rdi, [rbp-24]
     mov rsi, rax
     call entry_array_commit_size
@@ -4025,22 +4039,22 @@ _process_data_define_str:
     mov rdi, [rbp-24]
     mov esi, [rsi+8]
     call entry_array_ensure_free_space
-    mov r8, [rbp-40]
+    mov r8, [rbp-72]
     mov rsi, [r8]
     mov ecx, [r8+8]
     mov rdi, rax
     rep movsb
-    add r8, 14
-    mov [rbp-40], r8
     mov rsi, rdi
     mov rdi, [rbp-24]
     call entry_array_commit_size
     jmp _loop_process_data_define
 _err_process_data_define:
-    mov rax, 0
-    mov qword [rax], 1
+    mov rsi, ERR_DATA_SYM_REF
+    mov rdi, [rbp-16]
+    call set_reg_for_err_print
+    call err_print
 _end_process_data_define:
-    add rsp, 64
+    add rsp, 72
     pop rbp
     ret
 

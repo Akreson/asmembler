@@ -1,5 +1,6 @@
 segment readable writeable
-NAME_D db "sdffs", 0xff
+CONST0 equ 1
+NAME_D db "sdffs", CONST0
 dq 0xff, 0x1212121212121212, 0xdeadbeef
 dd 0x99999999, 0x44
 NAME_A dq 0x0101010101010101

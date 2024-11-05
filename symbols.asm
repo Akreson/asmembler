@@ -318,7 +318,6 @@ STR_R13 db "r13"
 STR_R14 db "r14"
 STR_R15 db "r15"
 
-
 STR_MOV   db "mov"
 STR_MOVSB db "movsb"
 STR_MOVSW db "movsw"

@@ -1272,7 +1272,18 @@ ___name_data_read_digit_sub_check:
     jmp ___name_data_read_digit_overflow_check 
 ___name_data_read_digit_check:
     cmp eax, TOKEN_TYPE_DIGIT
+    je ___name_data_read_digit_overflow_check
+    cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
+    call push_name_ptr_offset
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    jmp ___name_data_check_next_sym
 ___name_data_read_digit_overflow_check:
     movzx ebx, byte [rbp-68]
     shl ebx, 3
@@ -1286,6 +1297,7 @@ ___name_data_read_next:
     lea rdx, [rbp-16]
     mov rcx, rdx
     call push_direct_and_read_next
+___name_data_check_next_sym:
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_EOF
     je ___name_data_read_finish 
