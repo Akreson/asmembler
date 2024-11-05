@@ -1720,7 +1720,11 @@ __kw_macro_set_entries:
     je __kw_macro_end
     jmp __kw_macro_set_entries
 ___kw_macro_entr_check_n:
-    ; TODO: forbid macro def and include der. in macro body
+    cmp eax, TOKEN_TYPE_KEYWORD
+    cmp ecx, KW_INCL
+    je _err_invalid_command_in_macr_def
+    cmp ecx, KW_MACR
+    je _err_invalid_command_in_macr_def
     cmp eax, TOKEN_TYPE_NAME
     jne __kw_macro_set_entries 
     mov rdi, [rbp-92]
@@ -1782,7 +1786,14 @@ __kw_macro_set_entry_size:
     jmp _new_entry_start_ps
 
 _err_macro_arg_rep:
+    mov rsi, ERR_MACRO_ARG_REP
+    jmp _err_start_parser
 _err_macro_to_many_arg:
+    mov rsi, ERR_MACRO_TM_ARG
+    jmp _err_start_parser
+_err_invalid_command_in_macr_def:
+    mov rsi, ERR_MACRO_FORBID_CMD
+    jmp _err_start_parser
 _err_segment_not_set:
     mov rsi, ERR_SEGMENT_NOT_SET
     jmp _err_start_parser

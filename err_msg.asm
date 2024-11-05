@@ -39,6 +39,9 @@ ERR_STATIC_DIGIT_OVERFLOW db "Digit overlfow on data definition", 0
 ERR_INV_CONST_DEF db "Invalid constant definition", 0
 ERR_DEF_SYM db "Symbol already have been defined", 0
 ERR_INV_ADDR db "Invalid address expresion", 0
+ERR_MACRO_ARG_REP db "Double declaration of a macro arg", 0
+ERR_MACRO_TM_ARG db "To many arg for macro", 0
+ERR_MACRO_FORBID_CMD db "Forbided command in macro body", 0
 
 ; RENDER
 ERR_INS_UNSUPPORT db "Instruction is unsupported"
