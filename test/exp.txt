@@ -1,6 +1,6 @@
 segment readable executable
-    jmp jump_to2
     jg jump_to3
+    jmp jump_to2
     mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
 jump_to1:
@@ -14,16 +14,21 @@ jump_to4:
     mov byte [rax+rdx+2], 3
     mov dword [r8+r10*8], 1
 jump_to2:
+    jmp jump_to6
     mov dword [rax+rcx*2+14], 0xffff 
     mov qword [rax+rdx*4-NAME_C], 0xff
     mov qword [rbx+rdi], 11111111 
+jump_to5:
     mov dword [rbp+rax*NAME_C], 0x12345623 
     mov word [rsp+rbp], 0xaaaa 
     mov byte [rdx+rcx*2], 0x2 
+    je jump_to6
     mov dword [NAME_D+22], 0x12 
+    jl jump_to5
     mov byte [NAME_D-0xffffff], 0xc
     mov dword [rsp+NAME_C], 0xffffffff 
     mov byte [rcx+12], 111 
+jump_to6:
     mov byte [rcx-1], 1
     mov byte [rbp+8], 1 
     mov byte [rbp-8], 1 
