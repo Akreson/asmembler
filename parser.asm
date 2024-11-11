@@ -1170,9 +1170,8 @@ __name_sp_check_next:
     movzx ebx, byte [rbp-20]
     cmp ebx, TOKEN_TYPE_KEYWORD
     je __name_sp_set_def
-    cmp eax, TOKEN_TYPE_AUX
-    je __name_sp_set_def
-    jmp _err_invalid_expr
+    cmp ebx, TOKEN_TYPE_AUX
+    jne _err_invalid_expr
 __name_sp_set_def:
     mov rdi, rax
     lea rsi, [rbp-16]
