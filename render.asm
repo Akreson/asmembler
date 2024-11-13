@@ -663,7 +663,7 @@ render_patch_local_rel:
     mov rbx, [rax]
     mov ecx, [rax+8]
     shl ecx, 3
-    mov rdx, rax
+    mov rdx, rbx
     add rdx, rcx
     mov [rbp-72], rbx
     mov [rbp-80], rdx
@@ -694,7 +694,17 @@ _loop_patch_rplr:
     sub r10d, eax 
     lea rsi, [r13+r9]
     movzx ebx, byte [rcx+5]
-    add [rsi+rbx], r10d
+    movzx eax, byte [rcx+2];
+    mov r14d, [rsi+rbx]
+    cmp r10d, 0
+    jl __loop_neg_of_patch_rplr
+    add r10d, r14d
+    jmp __loop_check_th
+__loop_neg_of_patch_rplr:
+    sub r10d, r14d
+    add r10d, eax
+__loop_check_th:
+    mov [rsi+rbx], r10d
     mov r11b, MAX_INT8
     mov r12b, MIN_INT8
     movsx r11d, r11b
@@ -704,7 +714,6 @@ _loop_patch_rplr:
     cmp r10d, r12d
     jl __loop_patch_next
 __start_patch_before_rplr:
-    movzx eax, byte [rcx+2]
     mov [rbp-84], eax
     mov r14, rcx
     mov rcx, [rbp-56]
@@ -730,41 +739,42 @@ __start_patch_after_rplr:
     mov r14, [rbp-80]
 __loop_patch_after_rplr:
     cmp r12, r14
-    jae __end_loop_patch_after
+    je __end_loop_patch_after
     mov rcx, [r12]
     mov rdx, [rcx+8]
     mov ebx, [rdx+36]
     mov eax, [r15+rbx]; check sym ref offset
     cmp eax, r9d
-    jae __end_loop_patch_after
+    ja __end_loop_patch_after
     mov r10, [rcx+16]
     mov r11d, [r10]
     cmp r11d, r9d
     jbe __loop_patch_after_next_rplr
     movzx ebx, byte [rcx+5]
     add r11d, ebx
-    mov r12d, [rbp-84]
-    sub [r13+r11], r12d
+    mov r10d, [rbp-84]
+    sub [r13+r11], r10d
 __loop_patch_after_next_rplr:
-    add rcx, 8
+    add r12, 8
     jmp __loop_patch_after_rplr
 __end_loop_patch_after:
     mov rcx, [rbp-40]
+    mov r8, [rbp-64]
 __loop_patch_next:
     add rcx, SEGMENT_PATCH_ENTRY_SIZE
     jmp _loop_patch_rplr
 _patch_ins_rplr:
     mov r15, [rbp-56]
-    mov rdx, [rbp-64]
-    sub rdx, SEGMENT_PATCH_ENTRY_SIZE
+    mov rax, [rbp-64]
+    sub rax, SEGMENT_PATCH_ENTRY_SIZE
 _patch_loop_start_rplr:
-    cmp rdx, r15
+    cmp rax, r15
     jb _end_render_patch_local_rel 
     mov rdi, [rbp-32]
-    mov rax, [rdx+16]
-    mov r9d, [rax]; curr sym offset
+    mov rdx, [rax+16]
+    mov r9d, [rdx]; curr sym offset
     lea rsi, [rdi+r9]
-    movzx ebx, byte [rdx+5]
+    movzx ebx, byte [rax+5]
     mov ecx, [rsi+rbx]
     mov r11b, MAX_INT8
     mov r12b, MIN_INT8
@@ -774,30 +784,29 @@ _patch_loop_start_rplr:
     jg _patch_loop_next_rplr
     cmp ecx, r12d
     jl _patch_loop_next_rplr
-    movzx r8d, byte [rdx+4]
+    movzx r8d, byte [rax+4]
     cmp r8d, ADDR_PATCH_TYPE_JCC_RIP
     jne _check_jmp_patch_rplr
     mov bl, [rsi+1] ; from 2 byte jcc opcode to 1 byte
     sub bl, 0x10
     mov [rsi], bl
     mov [rsi+1], cl
-    mov byte [rax+7], 2
-    movzx ecx, byte [rdx+2]
+    mov byte [rdx+7], 2
+    movzx ecx, byte [rax+2]
     jmp _reduce_buffers_rplr
 _check_jmp_patch_rplr:
     or byte [rsi], 0x2
-    mov byte [rax+7], 2
-    movzx ecx, byte [rdx+2]
+    mov byte [rdx+7], 2
+    movzx ecx, byte [rax+2]
 _reduce_buffers_rplr:
-    mov [rbp-80], rdx 
+    mov [rbp-80], rax
     mov rdi, [rbp-8]
     mov rsi, [rbp-16]
-    mov rdx, rax
     call reduce_ins_offset
     mov r15, [rbp-56]
-    mov rdx, [rbp-80]    
+    mov rax, [rbp-80]    
 _patch_loop_next_rplr:
-    sub rdx, SEGMENT_PATCH_ENTRY_SIZE
+    sub rax, SEGMENT_PATCH_ENTRY_SIZE
     jmp _patch_loop_start_rplr
 _end_render_patch_local_rel:
     add rsp, 128
