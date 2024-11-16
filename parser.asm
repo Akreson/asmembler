@@ -22,7 +22,7 @@ CURR_SEG_OFFSET dd 0
 entry_array_data_m TEMP_PARSER_ARR, 1
 
 ; entry
-; 0 (4b) linked list entry offset to a chain of patch location, 
+; 0 (4b) linked list entry offset to a chain of patch location, +4 is external sym, 5:16 reserved 
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
 entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
@@ -52,11 +52,12 @@ SEG_ENTRY_SIZE equ 52
 entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
 hash_table_data_m NAME_SYM_HASH_TABLE, 1
 
-; linked list entry body - +4 offset in file array, +8 **ptr of buf to offset from, +16 offset in buff,
-; +20 second indirectional offset (must be 0 if not set)
-;entry array (for ease mem mang.) + 
+; linked list entry body - +4 offset in file array, +8 **ptr of buf to offset from,
+; +16 offset in buff, +20 second indirectional offset (must be 0 if not set),
+; +24 line num, +28 in file offset
+PATCH_LIST_ENTRY_SIZE equ 32
 PATCH_LIST dq 0
-dd 0, 0, 0
+dd 0, 0, PATCH_LIST_ENTRY_SIZE
 dd 0, 0
 
 TOKEN_OFFSET_TO_INS_ARGC    equ 35
@@ -127,17 +128,18 @@ _end_push_render_entry_header:
 
 ;rdi - ptr to ht entry, rsi - ptr to temp token block storage,
 ;rdx - **ptr to buff, ecx - offset in buff, r8d - offset in file array,
-;r9d - indirectional offset in buffer
+;r9d - indirectional offset in buffer, r10 - cur file entry
 push_name_to_unk:
     push rbp
     mov rbp, rsp
-    sub rsp, 88
+    sub rsp, 96
     mov [rbp-32], rdi
     mov [rbp-40], rsi
     mov [rbp-72], ecx
     mov [rbp-80], rdx
     mov [rbp-84], r8d
     mov [rbp-88], r9d
+    mov [rbp-96], r10
     mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
     mov esi, 1
     call entry_array_check_get
@@ -208,7 +210,6 @@ _add_entry_pnt_unk:
     mov rdx, rax
     call hash_table_add_entry
     test rax, rax
-    ;TODO: add check
     mov rdi, PATCH_LIST
     call list_check_get_free
     test eax, eax
@@ -233,29 +234,35 @@ _node_fetch_succ_pnt_unk:
     mov r9d, [rbp-84]
     mov r8, [rbp-80]
     mov edx, [rbp-72]
+    mov rdi, [rbp-96]
+    mov ebx, [rdi+44]
+    mov esi, [rdi+16]
     mov [rax+4], r9d
     mov [rax+8], r8
     mov [rax+16], edx
     mov [rax+20], r10d
+    mov [rax+24], ebx
+    mov [rax+28], esi
     mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
     mov ebx, ecx
 _end_push_name_to_unk:
-    add rsp, 88
+    add rsp, 96
     pop rbp
     ret
 
 ;rdi - ptr to symbol entry, rsi - **ptr to buff, edx - offset in buff
-;ecx - offset in file array, r8d - indirectional offset
+;ecx - offset in file array, r8d - indirectional offset, r9 - cur file entry
 push_link_to_unk:
     push rbp
     mov rbp, rsp
-    sub rsp, 28
+    sub rsp, 36
     sub rdi, 16
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-20], edx
     mov [rbp-24], ecx
     mov [rbp-28], r8d
+    mov [rbp-36], r9
     mov rdi, PATCH_LIST
     call list_get_free
     test eax, eax
@@ -267,10 +274,15 @@ _add_link_to_chain_unk:
     mov ecx, [rbp-24]
     mov eax, [rbp-20]
     mov r8, [rbp-16]
+    mov rdx, [rbp-36]
+    mov edi, [rdx+44]
+    mov r10d, [rdx+16]
     mov [rbx+4], ecx
     mov [rbx+8], r8
     mov [rbx+16], eax
     mov [rbx+20], r9d
+    mov [rbx+24], edi
+    mov [rbx+28], r10d
     mov rax, [rbp-8]
     mov edx, [rax]
     mov rdi, PATCH_LIST
@@ -282,23 +294,25 @@ _finish_add_link_unk:
     mov rbx, [rbp-8]
     mov [rbx], eax
 _end_push_link_to_unk:
-    add rsp, 28
+    add rsp, 36
     pop rbp
     ret
 
-;TODO: free node 
 ;rdi - ptr to unk symbol, rsi - new buf to offset from, edx - new offset
 patch_unk_ref:
     push rbp
     mov rbp, rsp
-    sub rsp, 20
+    sub rsp, 24
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-20], edx
     mov rbx, rdi
     sub rbx, 16
     mov esi, [rbx]
+    mov [rbp-24], esi
 _loop_patch_ur:
+    test esi, esi
+    jz _end_patch_unk_ref
     mov rdi, PATCH_LIST
     call list_get_node_ptr
     test rax, rax
@@ -320,11 +334,18 @@ _no_indrct_patch_ur:
     mov edx, [rbp-20]
     mov [r8], r10
     mov [r8+8], edx
-    mov esi, [rax]
-    test esi, esi
+    mov esi, [rbp-24]
+    mov ecx, [rax]
+    mov [rbp-24], ecx
+    mov rdi, PATCH_LIST
+    call list_free_node
+    mov esi, [rbp-24]
     jnz _loop_patch_ur
 _end_patch_unk_ref:
-    add rsp, 20
+    mov rdi, [rbp-8]
+    xor eax, eax
+    mov [rdi], eax
+    add rsp, 24
     pop rbp
     ret
 
@@ -453,12 +474,15 @@ _end_push_name_to_defined:
 get_name_sym_ref_data:
     push rbp
     mov rbp, rsp
-    sub rsp, 36
+    sub rsp, 44
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-20], edx
     mov [rbp-24], ecx
     mov [rbp-36], r8d
+    call get_cur_file_entry_ptr
+    mov [rbp-44], rax
+    mov rdi, [rbp-8]
     mov rsi, [rdi]
     movzx edx, byte [rdi+13]
     mov ecx, [rdi+8]
@@ -473,6 +497,7 @@ get_name_sym_ref_data:
     mov ecx, [rbp-20]
     mov r8d, [rbp-24]
     mov r9d, [rbp-36]
+    mov r10, [rbp-44]
     call push_name_to_unk
     jmp _end_get_name_sym_ref_data
 _check_exist_gnsrd:
@@ -485,6 +510,7 @@ _check_exist_gnsrd:
     mov edx, [rbp-20]
     mov ecx, [rbp-24]
     mov r8d, [rbp-36]
+    mov r9, [rbp-44]
     call push_link_to_unk
     mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
     mov rbx, [rbp-32]
@@ -496,7 +522,7 @@ _def_sym_gnsrd:
     mov rcx, [rax]
     sub rbx, rcx
 _end_get_name_sym_ref_data:
-    add rsp, 36
+    add rsp, 44
     pop rbp
     ret
 
@@ -1836,6 +1862,55 @@ _end_start_parser:
     pop rbp
     ret
 
+parser_check_print_unk_name:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
+    mov ecx, [rdi+8]
+    mov eax, PATCH_LIST_ENTRY_SIZE
+    mul ecx
+    mov rdx, [rdi]
+    add rax, rdx
+    mov r8, rax
+    mov [rbp-8], rdx
+    mov [rbp-16], rax
+_loop_cpun:
+    cmp rdx, r8
+    je _end_loop_cpun
+    mov esi, [rdx]
+    test esi, esi
+    jz _next_loop_cpun
+    mov al, [rdx+4]
+    test al, al
+    jnz _next_loop_cpun
+    mov [rbp-8], rdx
+__start_inner_loop_cpun:
+    mov rdi, PATCH_LIST
+    call list_get_node_ptr
+    mov ebx, [rax]
+    mov [rbp-28], ebx
+    mov edi, [rax+4]
+    mov rsi, ERR_UNDEF_SYM
+    mov ecx, [rax+24]
+    mov r8d, [rax+28]
+    xor r9, r9
+    call err_print
+    call print_new_line
+    mov esi, [rbp-28]
+    test esi, esi
+    jnz __start_inner_loop_cpun
+__end_inner_loop_cpun:
+    mov r8, [rbp-16]
+    mov rdx, [rbp-8] 
+_next_loop_cpun:
+    add rdx, PATCH_LIST_ENTRY_SIZE
+    jmp _loop_cpun
+_end_loop_cpun:
+    add rsp, 64
+    pop rbp
+    ret
+
 ; rdi - ptr to segment entry
 segment_entry_init:
     push rbp
@@ -1898,7 +1973,6 @@ _init_seg_loop:
     jmp _init_seg_loop
 _end_seg_loop:
     mov rdi, PATCH_LIST
-    mov dword [rdi+16], 24
     mov esi, 256
     call init_list
     test rax, rax

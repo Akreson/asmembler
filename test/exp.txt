@@ -1,6 +1,7 @@
 segment readable executable
     jg jump_to3
     jmp jump_to2
+    jmp jump_to1
     mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
 jump_to1:

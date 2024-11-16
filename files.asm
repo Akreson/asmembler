@@ -14,6 +14,15 @@ entry_array_data_m FILES_PATH_BUF, 1
 
 segment readable executable
 
+get_cur_file_entry_ptr:
+    push rbp
+    mov rbp, rsp
+    mov rax, [FILES_ARRAY]
+    mov ebx, [CURR_FILE_ENTRY_OFFSET]
+    add rax, rbx
+    pop rbp
+    ret
+
 ;rdi - ptr to entry
 ;return eax - offset
 get_file_entry_offset_by_ptr:

@@ -135,7 +135,7 @@ _start:
     mov rdi, rax
     mov esi, ebx
     call start_parser
-    ; TODO: check for unresolved names
+    call parser_check_print_unk_name
     mov rdi, TEST_STR
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]

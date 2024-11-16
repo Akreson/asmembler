@@ -43,6 +43,7 @@ ERR_MACRO_ARG_REP db "Double declaration of a macro arg", 0
 ERR_MACRO_TM_ARG db "To many arg for macro", 0
 ERR_MACRO_FORBID_CMD db "Forbided command in macro body", 0
 ERR_DATA_SYM_REF db "Unsupported sym type in data def", 0
+ERR_UNDEF_SYM db "Undefined symbol", 0
 
 ; RENDER
 ERR_INS_UNSUPPORT db "Instruction is unsupported"

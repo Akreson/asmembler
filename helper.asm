@@ -364,8 +364,12 @@ _err_print_skip_pre_err:
     mov rdi, [rbp-16]
     call print_zero_str
     call print_new_line
+    mov rcx, [rbp-32]
+    test rcx, rcx
+    jz _end_err_print
+    exit_m rcx
+_end_err_print:
     add rsp, 32
     pop rbp
-    mov rcx, [rbp-32]
-    exit_m rcx
+    ret
 
