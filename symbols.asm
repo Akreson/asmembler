@@ -15,6 +15,10 @@ TOKEN_NAME_JMP       equ 0x03
 TOKEN_NAME_DATA      equ 0x04
 TOKEN_NAME_MACRO     equ 0x05
 
+SYM_REF_MOD_NONE   equ 0
+SYM_REF_MOD_EXTRN  equ 1
+SYM_REF_MOD_PUBLIC equ 2
+
 REG_REX_TH       equ 0x08
 REG_REX_MASK     equ 0x80
 REG_MASK_REG_VAL equ 0x0F
@@ -222,23 +226,25 @@ SEC_SEG_VAL_MOD_MASK equ 0xFF
 ADDR_QUL_TYPE_MASK equ 0x34000000
 DATA_QUL_TYPE_MASK equ 0x32000000
 
-KW_DB    equ 0x32000000
-KW_DW    equ 0x32000007
-KW_DD    equ 0x32000008
-KW_DQ    equ 0x32000003
-KW_EQU   equ 0x30000009
-KW_SEGMT equ 0x30000005
-KW_SECT  equ 0x30000006
-KW_RDBL  equ 0x38000004
-KW_WRTB  equ 0x38000002
-KW_EXTB  equ 0x38000001
-KW_INCL  equ 0x3000000A
-KW_MACR  equ 0x3000000B
-KW_ENTRY equ 0x3000000C
-KW_BYTE  equ 0x3400000D
-KW_WORD  equ 0x3400000E
-KW_DWORD equ 0x3400000F
-KW_QWORD equ 0x34000010
+KW_DB     equ 0x32000000
+KW_DW     equ 0x32000007
+KW_DD     equ 0x32000008
+KW_DQ     equ 0x32000003
+KW_EQU    equ 0x30000009
+KW_SEGMT  equ 0x30000005
+KW_SECT   equ 0x30000006
+KW_RDBL   equ 0x38000004
+KW_WRTB   equ 0x38000002
+KW_EXTB   equ 0x38000001
+KW_INCL   equ 0x3000000A
+KW_MACR   equ 0x3000000B
+KW_ENTRY  equ 0x3000000C
+KW_BYTE   equ 0x3400000D
+KW_WORD   equ 0x3400000E
+KW_DWORD  equ 0x3400000F
+KW_QWORD  equ 0x34000010
+KW_EXTRN  equ 0x30000011
+KW_PUBLIC equ 0x30000012
 
 TOKEN_KIND_SIZE equ 14
 SIZE_HASH_DEF_SYM_TABLE equ 2048
@@ -451,6 +457,8 @@ STR_KW_BYTE db "byte"
 STR_KW_WORD db "word"
 STR_KW_DWORD db "dword"
 STR_KW_QWORD db "qword"
+STR_KW_EXTRN db "extrn"
+STR_KW_PUBLIC db "public"
 
 _STR_SPACE db 0x20
 _STR_TAB db 0x09
@@ -487,12 +495,14 @@ SYM_NAME_MAX_LEN equ 255
 ; reserve for token_type_name field _type_ as _size_?
 macro def_symbol_m value, type, str_ptr, str_len
 {   
-    ; 0, +8, +12, +13, (+14)
+    ; 0, +8, +12, +13, (+14, +15)
     dq str_ptr; / general prt to struct / digit container
     dd value ; len for TOKEN_TYPE_STR
     db type
     db str_len
+    ; (only for _name_ type token in memory)
     ;db name type (only for _name_ type token in memory)
+    ;db name mod
 }
 
 DEF_SYM_TABLE dq 0
@@ -706,6 +716,8 @@ def_symbol_m KW_BYTE, TOKEN_TYPE_KEYWORD, STR_KW_BYTE, 4
 def_symbol_m KW_WORD, TOKEN_TYPE_KEYWORD, STR_KW_WORD, 4
 def_symbol_m KW_DWORD, TOKEN_TYPE_KEYWORD, STR_KW_DWORD, 5
 def_symbol_m KW_QWORD, TOKEN_TYPE_KEYWORD, STR_KW_QWORD, 5
+def_symbol_m KW_EXTRN, TOKEN_TYPE_KEYWORD, STR_KW_EXTRN, 5
+def_symbol_m KW_PUBLIC, TOKEN_TYPE_KEYWORD, STR_KW_PUBLIC, 6
 
 DUMMY_NODE_AUX dq 0
 dd 0

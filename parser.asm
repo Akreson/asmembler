@@ -22,7 +22,11 @@ CURR_SEG_OFFSET dd 0
 entry_array_data_m TEMP_PARSER_ARR, 1
 
 ; entry
-; 0 (4b) linked list entry offset to a chain of patch location, +4 is external sym, 5:16 reserved 
+; 0 (4b) linked list entry offset to a chain of patch location,
+;4:16 if token is _extrn_ or was defined as _global_ before def 
+; +4 offset in file array, +8 offset of definition in file data,
+; +12 line num in file
+;4:16 else empty
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
 entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
@@ -30,7 +34,7 @@ entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 ; entry
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
 ; +12 line num in file
-; +16 name symbol token (+30 type, ), (header size 32b)
+; +16 name symbol token (+30 type, +31 mod), (header size 32b)
 ; (+32 start of data)
 ;(TOKEN_NAME_CONST || TOKEN_NAME_CONST_MUT)
 ; +32 sym token
@@ -1575,6 +1579,10 @@ _begin_kw_sp:
     je __kw_macr
     cmp eax, KW_INCL
     je __kw_include
+    cmp eax, KW_EXTRN
+    je __kw_extrn
+    cmp eax, KW_PUBLIC
+    je __kw_public
     jmp _err_invalid_expr
 __kw_segm_sp:
     ;TODO: catch wrong combination?
@@ -1819,6 +1827,77 @@ __kw_macro_set_entry_size:
     mov [rdx], eax
     mov dword [TEMP_PARSER_ARR+8], 0
     jmp _new_entry_start_ps
+__kw_extrn:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_NAME
+    jne _err_invalid_expr
+    mov rdi, NAME_SYM_HASH_TABLE
+    mov rsi, [rbp-16]
+    movzx edx, byte [rbp-3]
+    mov ecx, [rbp-8]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jnz ___kw_extrn_check_name
+    mov [rbp-72], rax
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    xor rdx, rdx
+    call push_name_to_unk
+    mov rax, [rbp-72]
+    mov rbx, [rax]
+    mov byte [rbx+31], SYM_REF_MOD_EXTRN 
+    jmp _new_entry_start_ps
+___kw_extrn_check_name:
+    mov cl, [rbx+30]
+    test cl, cl
+    jz ___kw_extrn_check_is_def
+    mov rax, _err_def_ext
+    mov [rbp-72], rax
+    jmp __kw_name_mod_err 
+___kw_extrn_check_is_def:
+    mov dl, [rbx+31]
+    test dl, dl
+    jz ___kw_extrn_set
+    mov rax, _err_def_ext_def
+    mov [rbp-72], rax
+    jmp __kw_name_mod_err 
+___kw_extrn_set:
+    mov byte [rbx+31], SYM_REF_MOD_EXTRN
+    jmp __kw_name_mod_unk_set_data
+    mov rdi, [rbp-40]
+    mov esi, [rdi+16]
+    mov edx, [rbp-52]
+    mov ecx, dword [LAST_LINE_NUM]
+    mov [rbx+4], edx
+    mov [rbx+8], esi
+    mov [rbx+12], ecx
+    jmp _new_entry_start_ps
+__kw_public:
+__kw_name_mod_unk_set_data:
+    ;NOTE: rbx is ptr to unk. name entry
+    mov rdi, [rbp-40]
+    mov esi, [rdi+16]
+    mov edx, [rbp-52]
+    mov ecx, dword [LAST_LINE_NUM]
+    mov [rbx+4], edx
+    mov [rbx+8], esi
+    mov [rbx+12], ecx
+    jmp _new_entry_start_ps
+__kw_name_mod_err:
+    ;NOTE: rbx is ptr to name entry (both def. or unk.)
+    mov edi, [rbx+4]
+    mov ecx, [rbx+8]
+    mov r8d, [rbx+12]
+    xor r9, r9
+    xor rdx, rdx
+    xor rsi, rsi
+    call err_print
+    mov rax, [rbp-72]
+    jmp rax
 
 _err_macro_arg_rep:
     mov rsi, ERR_MACRO_ARG_REP
@@ -1846,6 +1925,12 @@ _err_invalid_addr_expr:
     jmp _err_start_parser
 _err_invalid_expr:
     mov rsi, ERR_INV_EXP
+    jmp _err_start_parser
+_err_def_ext:
+    mov rsi, ERR_SYM_EXT_ALR_DEF
+    jmp _err_start_parser
+_err_def_ext_def:
+    mov rsi, ERR_SYM_HAS_MOD
     jmp _err_start_parser
 _err_seg_inv_def:
     mov rsi, ERR_SEG_INV_DEF
@@ -1880,7 +1965,7 @@ _loop_cpun:
     mov esi, [rdx]
     test esi, esi
     jz _next_loop_cpun
-    mov al, [rdx+4]
+    mov al, [rdx+31]
     test al, al
     jnz _next_loop_cpun
     mov [rbp-8], rdx

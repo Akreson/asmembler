@@ -335,7 +335,7 @@ _end_print_file_line:
     pop rbp
     ret
 
-; edi - offset to file entry, rsi - ptr to zero end str of err,
+; edi - offset to file entry, rsi - ptr to zero end str of err (if 0 then be skiped),
 ; rdx - ptr to pre err zero end str, ecx - line num to print (0 if curr)
 ; r8 - offset in file (if ecx 0 then it do not counts), r9 - exit val
 err_print:
@@ -362,8 +362,11 @@ _err_print_skip_file_name:
     call print_zero_str
 _err_print_skip_pre_err:
     mov rdi, [rbp-16]
+    test rdi, rdi
+    jz _err_print_skip_err
     call print_zero_str
     call print_new_line
+_err_print_skip_err:
     mov rcx, [rbp-32]
     test rcx, rcx
     jz _end_err_print
