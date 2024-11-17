@@ -209,17 +209,11 @@ _add_entry_pnt_unk:
     mov rsi, [rbp-32]
     mov rdx, rax
     call hash_table_add_entry
+    mov rax, [rbp-80]
     test rax, rax
+    jz _end_push_name_to_unk
     mov rdi, PATCH_LIST
-    call list_check_get_free
-    test eax, eax
-    jnz _node_fetch_succ_pnt_unk
-    mov rdi, PATCH_LIST
-    mov esi, [rdi+12]
-    shl esi, 1
-    call list_realloc
-    mov rdi, PATCH_LIST
-    call list_check_get_free
+    call list_get_free
 _node_fetch_succ_pnt_unk:
     mov edx, eax
     mov rbx, [UNKNOWN_NAME_SYM_REF_ARRAY]
@@ -285,11 +279,15 @@ _add_link_to_chain_unk:
     mov [rbx+28], r10d
     mov rax, [rbp-8]
     mov edx, [rax]
+    test edx, edx
+    jz _insert_first_link_unk
     mov rdi, PATCH_LIST
     call list_insert_node
     test eax, eax
     jnz _finish_add_link_unk
     exit_m -7
+_insert_first_link_unk:
+    mov eax, esi
 _finish_add_link_unk:
     mov rbx, [rbp-8]
     mov [rbx], eax
