@@ -1875,6 +1875,7 @@ parser_check_print_unk_name:
     mov r8, rax
     mov [rbp-8], rdx
     mov [rbp-16], rax
+    mov byte [rbp-29], 0
 _loop_cpun:
     cmp rdx, r8
     je _end_loop_cpun
@@ -1897,6 +1898,7 @@ __start_inner_loop_cpun:
     xor r9, r9
     call err_print
     call print_new_line
+    mov byte [rbp-29], 1
     mov esi, [rbp-28]
     test esi, esi
     jnz __start_inner_loop_cpun
@@ -1907,6 +1909,11 @@ _next_loop_cpun:
     add rdx, PATCH_LIST_ENTRY_SIZE
     jmp _loop_cpun
 _end_loop_cpun:
+    mov al, [rbp-29]
+    test al, al
+    jz _return_cpun
+    exit_m -1
+_return_cpun:
     add rsp, 64
     pop rbp
     ret
