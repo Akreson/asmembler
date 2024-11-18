@@ -354,11 +354,16 @@ err_print:
     mov rdx, r8
     call print_file_line
 _err_print_skip_file_name:
+    mov rdi, [rbp-16]
+    test rdi, rdi
+    jz _err_print_skip_header_err
     mov rdi, ERR_HEADER_STR
     call print_zero_str
-    mov rdi, [rbp-24]
-    test rdi, rdi
+_err_print_skip_header_err:
+    mov rax, [rbp-24]
+    test rax, rax
     jz _err_print_skip_pre_err
+    mov rdi, [rbp-24]
     call print_zero_str
 _err_print_skip_pre_err:
     mov rdi, [rbp-16]
