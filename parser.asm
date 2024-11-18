@@ -423,7 +423,7 @@ _end_get_mem_def_name_buf:
     ret
 
 ;TODO: add offset to definition
-;rdi - ht entry ptr, rsi - ptr to sym temp mem, ecx - file entry offset
+;rdi - ht entry ptr, rsi - ptr to sym temp mem, edx - file entry offset
 ;return rax - addr to start of allco mem, ebx - offset from start of buff 
 push_name_to_defined:
     push rbp
@@ -431,7 +431,7 @@ push_name_to_defined:
     sub rsp, 64
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov [rbp-24], ecx
+    mov [rbp-24], edx
     mov edi, NAME_SYM_REF_HEADER_SIZE
     call get_mem_def_name_buf
     mov [rbp-32], rax
@@ -458,6 +458,12 @@ _add_entry_pnt_def:
     mov ecx, dword [LAST_LINE_NUM]
     mov [rax+4], edi
     mov [rax+12], ecx
+    call get_file_entry_ptr_from_offset
+    mov rbx, rax
+    mov rax, [rbp-32]
+    mov ecx, [rbx+16]
+    mov ecx, 20
+    mov [rax+8], ecx
     mov rdi, NAME_SYM_HASH_TABLE
     mov rsi, [rbp-8]
     add rax, 16
