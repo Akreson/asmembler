@@ -45,6 +45,7 @@ ERR_MACRO_FORBID_CMD db "Forbided command in macro body", 0
 ERR_DATA_SYM_REF db "Unsupported sym type in data def", 0
 ERR_UNDEF_SYM db "Undefined symbol", 0
 ERR_SYM_HAS_MOD db "Symbol already has ref. mod. type", 0
+ERR_SYM_EXT_DEF db "Symbol already has benn defined as external", 0
 ERR_SYM_EXT_ALR_DEF db "Symbol already has been defined and can't be external", 0
 ERR_SYM_PUB_TYPE db "Symbol can't be referenced as global in executable", 0
 

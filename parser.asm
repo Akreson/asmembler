@@ -1200,6 +1200,9 @@ _begin_name_sp:
     mov rbx, [rax]
     test rbx, rbx
     jz __name_sp_check_next
+    mov dl, byte [rbx+15]
+    cmp dl, SYM_REF_MOD_EXTRN
+    je _err_def_ext_before
     movzx ecx, byte [rbx+14]
     test ecx, ecx
     jz __name_sp_check_next 
@@ -1981,6 +1984,9 @@ _err_def_pub:
     jmp _err_start_parser
 _err_def_mod_def:
     mov rsi, ERR_SYM_HAS_MOD
+    jmp _err_start_parser
+_err_def_ext_before:
+    mov rsi, ERR_SYM_EXT_DEF
     jmp _err_start_parser
 _err_seg_inv_def:
     mov rsi, ERR_SEG_INV_DEF
