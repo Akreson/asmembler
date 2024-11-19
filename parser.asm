@@ -15,7 +15,6 @@ MACRO_EMPTY_ARG_FLAG equ 0xFF
 MACRO_COPY_ENTRY_SIZE equ 10
 
 segment readable writeable
-TEST_MACRO_FILE db "./macro_test.asm", 0
 LAST_LINE_NUM dd 0
 CURR_SEG_OFFSET dd 0
 
@@ -309,7 +308,7 @@ patch_unk_ref:
     mov [rbp-16], rsi
     mov [rbp-20], edx
     mov rbx, rdi
-    sub rbx, 16
+    sub rbx, NAME_SYM_REF_SERV_HS 
     mov esi, [rbx]
     mov [rbp-24], esi
 _loop_patch_ur:
@@ -346,7 +345,7 @@ _no_indrct_patch_ur:
 _end_patch_unk_ref:
     mov rdi, [rbp-8]
     xor eax, eax
-    mov [rdi], eax
+    mov [rdi-NAME_SYM_REF_SERV_HS], eax
     add rsp, 24
     pop rbp
     ret
