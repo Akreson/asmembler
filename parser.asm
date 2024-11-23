@@ -50,8 +50,9 @@ NAME_SYM_REF_SERV_HS     equ 16
 entry_array_data_m NAME_SYM_REF_ARRAY, 1
 
 ; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
-; +40 file array id start, +44 file array id end, +48 mod (4b) (52b total)
-SEG_ENTRY_SIZE equ 52
+; +40 file array id start, +44 file array id end, +48 mod (4b), +52 offset from base
+; +56 aligned to 2^12 rendered size
+SEG_ENTRY_SIZE equ 64
 entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
 hash_table_data_m NAME_SYM_HASH_TABLE, 1
 
@@ -2129,3 +2130,4 @@ _fail_exit_init_parser_data:
 _end_init_parser_data:
     pop rbp
     ret
+
