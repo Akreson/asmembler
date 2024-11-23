@@ -177,95 +177,12 @@ push_to_addr_patch:
     call push_to_segment_patch
     jmp _end_push_to_addr_patch
 _delayed_push_tap:
+    mov r9d, r11d 
     call push_to_delayed_patch
 _end_push_to_addr_patch:
     pop rbp
     ret
 
-; -8 passed rdi, -12 pased esi, -16 offset to the next name sym entry
-; -24 ptr to curr name sym, -32 ptr to end of name sym buff
-; rdi - ptr to temp arr, esi - segment offset
-collect_segment_rip_sym:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 64
-    mov [rbp-8], rdi
-    mov [rbp-12], esi
-    mov r8, NAME_SYM_REF_ARRAY
-    mov rdx, [r8]
-    mov eax, [r8+8]
-    lea r10, [rdx+rax]
-    mov [rbp-24], rdx
-    mov [rbp-32], r10
-    mov esi, 1
-    call entry_array_reserve_size
-    xor rbx, rbx
-    mov [rax], rbx
-    xor ecx, ecx
-    mov [rbp-16], ecx
-    mov rdx, [rbp-24]
-    mov r10, [rbp-32]
-    mov esi, [rbp-12]
-_start_loop_csrs:
-    add rdx, rcx
-    cmp rdx, r10
-    jge _end_collect_segment_rip_sym
-    mov ebx, [rdx+32]
-    cmp ebx, esi
-    jne _start_loop_csrs
-    movzx eax, byte [rdx+30]
-    cmp eax, TOKEN_NAME_JMP
-    je _check_seg_offset_csrs
-    cmp eax, TOKEN_NAME_DATA
-    jne _start_loop_csrs
-_check_seg_offset_csrs:
-    mov ecx, [rdx]
-    mov [rbp-24], rdx
-    mov [rbp-16], ecx
-    mov rdi, [rbp-8]
-    mov esi, 1
-    call entry_array_reserve_size
-    mov rdx, [rbp-24]
-    mov [rax], rdx
-    mov esi, [rbp-12]
-    mov ecx, [rbp-16]
-    mov r10, [rbp-32]
-    jmp _start_loop_csrs
-_end_collect_segment_rip_sym:
-    add rsp, 64
-    pop rbp
-    ret
-
-; rdi - ptr to temp arr
-ensure_segment_sym_order:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 16
-    mov rdx, [rdi]
-    mov eax, [rdi+8]
-    shl eax, 3
-    mov rsi, rdx
-    add rsi, rax
-    add rdx, 8
-    xor ecx, ecx
-    xor eax, eax
-_start_loop_esso:
-    cmp rdx, rsi
-    jge _end_ensure_segment_sym_order
-    mov ecx, eax
-    mov rbx, [rdx]
-    add rdx, 8
-    mov eax, [rbx+36]
-    cmp eax, ecx
-    jg _start_loop_esso
-_sort_sym_esso:
-    exit_m -6
-_end_ensure_segment_sym_order:
-    add rsp, 16
-    pop rbp
-    ret
-
-; TODO: check if ecx neg (for make room for encode long offset back)
 ; rdi - ptr to token buff entry_array, rsi - ptr to render entry_array
 ; rdx - ptr to header start from, ecx - amount of bytes to shift
 reduce_ins_offset:
@@ -290,7 +207,7 @@ reduce_ins_offset:
     mov r9d, [rdi+8]
     add r8, r9
     mov ecx, [rbp-20]
-    neg ecx ; TODO: revisit
+    neg ecx ; TODO: revisit, (delete?)
     mov eax, [rdx+12]
     add rdx, rax
 _start_loop_reduce_io:
@@ -302,7 +219,7 @@ _start_loop_reduce_io:
     add rdx, rax
     test bl, bl
     jnz _start_loop_reduce_io
-    add [rsi], ecx
+    add [rsi], ecx ;(sub?)
     jmp _start_loop_reduce_io 
 _end_reduce_ins_offset:
     mov eax, [rbp-20]
@@ -340,12 +257,6 @@ _copy_ptr_loop_slriro:
     cmp rcx, rax
     je _sort_by_sym_ref_slriro
     mov [rsi], rcx
-    ; TODO: delete test lines
-    mov r9, [rcx+16]
-    mov r11, [rcx+8]
-    mov r12d, [r11+36]
-    mov r13d, [rdi+r12]
-    mov r10d, [r9]
     add rcx, SEGMENT_PATCH_ENTRY_SIZE
     add rsi, 8
     jmp _copy_ptr_loop_slriro
