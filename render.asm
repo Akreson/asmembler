@@ -4289,30 +4289,32 @@ start_render:
     mov rdi, TEMP_SYM_PTR_ARR
     mov esi, 256
     call init_entry_array
-    ;TODO: check if collate mode is enabled    
+    ;TODO: check if it exec, obj or bin mod
     mov rdi, rsp
     call set_collate_seg_ptr
     mov [rbp-8], eax
+    shl eax, 3
+    mov [rbp-8], rsp
+    mov rbx, rsp
+    add rbx, rax
+    mov [rbp-16], rbx
 _render_seg_grab_loop:
     call clear_patch_state
-    mov ebx, [rbp-4]
-    mov eax, [rbp-8]
-    cmp ebx, eax
-    jae _end_start_render
-    mov ecx, ebx
-    inc ecx
-    mov [rbp-4], ecx
-    shl ebx, 3
-    mov rdx, rsp
-    add rdx, rbx
+    mov rdx, [rbp-8]
+    mov rcx, [rbp-16]
+    cmp rdx, rcx
+    je _set_seg_addr_start_render
     mov rdi, [rdx]
     call render_process_segment
     mov eax, dword [LOCAL_PATCH_ARR+8]
     test eax, eax
-    jz _render_seg_grab_loop
+    jz __next_render_grap_entry
     mov edi, dword [CURR_SECTION_OFFSET]
     call render_patch_local_rel
-    jmp _render_seg_grab_loop    
+__next_render_grap_entry:
+    add dword [rbp-8], 8
+    jmp _render_seg_grab_loop
+_set_seg_addr_start_render:
 _end_start_render:
     add rsp, 2304
     pop rbp
