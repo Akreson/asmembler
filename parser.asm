@@ -1247,7 +1247,7 @@ __name_sp_kw:
     jmp _err_invalid_expr
 ___name_data_def:
     mov r9d, dword [CURR_SEG_OFFSET]
-    test r9b, r9b
+    test r9d, r9d
     jz _err_segment_not_set
     mov [rbp-92], r8d
     mov r8, [rbp-84]
