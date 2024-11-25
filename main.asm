@@ -2,6 +2,7 @@ format ELF64 executable
 
 segment readable writeable
 
+DEF_BASE_ADDR dd 0x400000
 CURR_FILE_ENTRY_OFFSET dd 0
 
 include 'err_msg.asm'

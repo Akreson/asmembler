@@ -60,8 +60,6 @@ PREFIX_TYPE_REP  equ 0x01
 PREFIX_TYPE_REPN equ 0x02
 PREFIX_TYPE_LOCK equ 0x04
 
-DEF_BASE_ADDR equ 0x400000
-
 segment readable writeable
 
 CURR_SECTION_OFFSET dd 0
@@ -219,6 +217,81 @@ _end_push_to_addr_patch:
     pop rbp
     ret
 
+render_patch_delayed_ref:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    lea rsi, [DELAYED_PATCH_ARR]
+    mov ecx, [rsi+8]
+    mov eax, ADDR_ARR_PATCH_ENTRY_SIZE
+    mul ecx
+    mov rdx, [rsi]
+    mov rdi, rdx
+    add rdi, rax
+    mov [rbp-8], rdx
+    mov [rbp-16], rdi
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    mov [rbp-24], rbx
+_loop_patch_rpdr:
+    cmp rdx, rdi
+    je _end_render_patch_delayed_ref
+    mov rsi, [rdx]
+    mov eax, [rsi+16]; sym seg offset
+    lea rcx, [rbx+rax]
+    mov r8d, [rcx+52]
+    mov [rbp-28], r8d
+    mov eax, [rsi+20]; sym rend buff offset
+    mov rdi, [rcx]
+    lea r8, [rdi+rax]
+    mov eax, [r8]
+    add [rbp-28], eax
+    mov rsi, [rdx+8]
+    mov eax, [rdx+20]
+    lea rcx, [rbx+rax]
+    mov rdi, [rcx+20]
+    xor r8, r8
+    mov r8b, [rdx+17]
+    mov r9d, [rsi]
+    ;TODO: check if it exec, obj or bin mod
+    mov al, [rdx+16]
+    cmp al, ADDR_PATCH_TYPE_DEF_RIP
+    je _rip_patch_rpdr
+    cmp al, ADDR_PATCH_TYPE_ABS
+    je _abs_patch_rpdr 
+    jmp _err_invalid_type_rpdr
+_abs_patch_rpdr:
+    add r9d, r8d
+    mov eax, [DEF_BASE_ADDR]
+    mov ecx, [rbp-28]
+    add rax, rcx
+    mov r10b, [rdx+18] 
+    cmp r10b, 4
+    jne _abs8_patch_rpdr
+    mov [rdi+r9], eax
+    jmp _next_patch_rpdr
+_abs8_patch_rpdr:
+    mov r10, r9 
+    mov [r8], rax
+    jmp _next_patch_rpdr
+_rip_patch_rpdr:
+    xor eax, eax
+    mov al, [rsi+7]
+    add eax, r9d
+    add eax, [rcx+52]
+    mov ecx, [rbp-28]
+    sub ecx, eax
+    add r9d, r8d
+    add [rdi+r9], ecx
+_next_patch_rpdr:
+    add rdx, ADDR_ARR_PATCH_ENTRY_SIZE
+    mov rdi, [rbp-16]
+    jmp _loop_patch_rpdr
+_err_invalid_type_rpdr:
+_end_render_patch_delayed_ref:
+    add rsp, 64
+    pop rbp
+    ret
+
 ; rdi - ptr to token buff entry_array, rsi - ptr to render entry_array
 ; rdx - ptr to header start from, ecx - amount of bytes to shift
 reduce_ins_offset:
@@ -254,7 +327,7 @@ _start_loop_reduce_io:
     mov bl, [rdx+7]
     add rdx, rax
     test bl, bl
-    jnz _start_loop_reduce_io
+    jz _start_loop_reduce_io
     add [rsi], ecx ;(sub?)
     jmp _start_loop_reduce_io 
 _end_reduce_ins_offset:
@@ -649,10 +722,11 @@ remove_modrm_byte:
 default_ins_assemble:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
+    sub rsp, 20
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     call entry_array_curr_ptr
+    mov r10, rax
     mov rdi, rax
     mov r8, [rbp-16]
     lea rsi, [r8+22]
@@ -682,10 +756,13 @@ default_ins_assemble:
     movzx ecx, byte [r8+24]
     add rax, rcx
     rep movsb
+    sub rdi, r10
+    mov [rbp-20], edi
     mov rdi, [rbp-8]
     mov rsi, rax
     call entry_array_commit_size
-    add rsp, 16
+    mov eax, [rbp-20]
+    add rsp, 20
     pop rbp
     ret
 
@@ -1803,7 +1880,7 @@ _check_ref_gen_a_i:
     mov r8b, 4
     mov ecx, ADDR_PATCH_TYPE_DEF_RIP
     mov rdx, [rbp-16]
-    mov rsi, [rbp-24]
+    mov rsi, [rbp-32]
     mov rdi, [rdi+64]
     call push_to_delayed_patch
 __check_ref_sec_gen_a_i:
@@ -1818,7 +1895,7 @@ __check_ref_sec_gen_a_i:
     mov r8b, 4
     mov ecx, ADDR_PATCH_TYPE_ABS
     mov rdx, [rbp-16]
-    mov rsi, [rbp-24]
+    mov rsi, [rbp-32]
     mov rdi, [rdi+72]
     call push_to_delayed_patch
 _success_gen_a_i:
@@ -2028,6 +2105,8 @@ _mov_assemble:
     mov rdi, [rbp-24]
     lea rsi, [rbp-192]
     call default_ins_assemble
+    mov rsi, [rbp-16]
+    mov [rsi+7], al
     jmp _end_process_mov
 _err_arg_size_mov:
     mov rsi, ERR_INS_INV_ARGS_SIZE
@@ -2454,6 +2533,8 @@ _instemp0_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
 _success_process_instemp0:
     xor eax, eax
 _end_process_instemp0:
@@ -2668,6 +2749,8 @@ _instemp1_assemble:
     mov [rsi], cl
     mov rdi, [rbp-32]
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
     jmp _end_instemp1_process
 _err_instemp1_invalid_argc:
     mov rsi, ERR_INS_INV_ARGC 
@@ -2975,6 +3058,8 @@ _imul_assemble:
     mov rdi, [rbp-32]
     lea rsi, [rbp-192]
     call default_ins_assemble
+    mov rsi, [rbp-16]
+    mov [rsi+7], al
 _success_process_imul:
     xor eax, eax
 _end_process_imul:
@@ -3086,6 +3171,8 @@ _instemp2_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
 _success_process_instemp2:
     xor eax, eax
 _end_process_instemp2:
@@ -3256,6 +3343,8 @@ _instemp3_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
 _success_instemp3:
     xor eax, eax
 _end_process_instemp3:
@@ -3479,6 +3568,8 @@ _instemp4_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
 _success_instemp4:
     xor rax, rax
 _end_process_ins_template4:
@@ -3657,6 +3748,8 @@ _instemp5_assemble:
     mov rdi, [rbp-32]
     mov rsi, [rbp-16]
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
 _success_process_instemp5:
     xor eax, eax
 _end_process_instemp5:
@@ -3833,6 +3926,8 @@ _instemp6_assemble:
 _instemp6_assemble_end:
     mov rdi, [rbp-32] 
     call default_ins_assemble
+    mov rsi, [rbp-8]
+    mov [rsi+7], al
     jmp _end_instemp6_process
 _err_instemp6_invalid_argc:
     mov rsi, ERR_INS_INV_ARGC
@@ -4514,6 +4609,7 @@ __next_loop_set_asr:
     jmp _loop_set_asr
 _do_patchs_start_render:
     ;TODO: check if it exec, obj or bin mod
+    call render_patch_delayed_ref
 _end_start_render:
     add rsp, 2304
     pop rbp

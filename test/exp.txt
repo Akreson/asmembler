@@ -1,7 +1,14 @@
+segment readable
+CONST_NEG equ -1
+NAME_C equ 0x4
+NAME_C2 equ 1
+NAME_D db 0
+
 segment readable executable
     jg jump_to3
     jmp jump_to2
     jmp jump_to1
+    mov dword [NAME_D], 0xffffff 
     mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
 jump_to1:
@@ -130,8 +137,3 @@ jump_to3:
     mov [r8], eax 
     mov [r9], r8
 
-segment readable
-CONST_NEG equ -1
-NAME_C equ 0x4
-NAME_C2 equ 1
-NAME_D db 0
