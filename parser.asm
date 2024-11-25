@@ -1250,7 +1250,7 @@ ___name_data_def:
     mov r9d, dword [CURR_SEG_OFFSET]
     test r9d, r9d
     jz _err_segment_not_set
-    mov [rbp-92], r8d
+    mov [rbp-92], r9d
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_DATA
