@@ -131,7 +131,7 @@ _end_push_render_entry_header:
     ret
 
 ;rdi - ptr to ht entry, rsi - ptr to temp token block storage,
-;rdx - **ptr to buff, ecx - offset in buff, r8d - offset in file array,
+;rdx - **ptr to buff (if 0 rest are ignored), ecx - offset in buff, r8d - offset in file array,
 ;r9d - indirectional offset in buffer, r10 - cur file entry
 push_name_to_unk:
     push rbp
@@ -445,6 +445,8 @@ push_name_to_defined:
     mov rdi, [rbx]
     test rdi, rdi
     jz _add_entry_pnt_def
+    mov cl, [rdi+16]
+    mov [rax+16], cl
     mov rsi, NAME_SYM_REF_ARRAY
     mov rcx, [rsi]
     mov rdx, rax
@@ -1200,7 +1202,8 @@ _begin_name_sp:
     mov rbx, [rax]
     test rbx, rbx
     jz __name_sp_check_next
-    mov dl, byte [rbx+15]
+    mov dl, SYM_REF_MASK_REF
+    and dl, [rbx+15]
     cmp dl, SYM_REF_MOD_EXTRN
     je _err_def_ext_before
     movzx ecx, byte [rbx+14]
@@ -1607,6 +1610,8 @@ _begin_kw_sp:
     je __kw_name_mod
     cmp eax, KW_PUBLIC
     je __kw_name_mod
+    cmp eax, KW_ENTRY
+    je __kw_entry
     jmp _err_invalid_expr
 __kw_segm_sp:
     ;TODO: catch wrong combination?
@@ -1888,13 +1893,14 @@ ___kw_extrn_check_name:
     call name_entry_print_info
     jmp _err_def_ext
 ___kw_extrn_check_is_def:
-    mov dl, [rbx+31]
+    mov dl, SYM_REF_MASK_REF
+    and dl, [rbx+31]
     test dl, dl
     jz ___kw_extrn_set
     call name_entry_print_info
     jmp _err_def_mod_def
 ___kw_extrn_set:
-    mov byte [rbx+31], SYM_REF_MOD_EXTRN
+    or byte [rbx+31], SYM_REF_MOD_EXTRN
     jmp __kw_name_mod_unk_set_data
 __kw_public:
     test rbx, rbx
@@ -1911,13 +1917,14 @@ __kw_public:
     jmp __kw_name_mod_unk_set_data
 ___kw_public_check_is_def:
     sub rbx, NAME_SYM_REF_SERV_HS
-    mov dl, [rbx+31]
+    mov dl, SYM_REF_MASK_REF
+    or dl, [rbx+31]
     test dl, dl
     jz ___kw_public_check_name
     call name_entry_print_info
     jmp _err_def_mod_def
 ___kw_public_check_name:
-    mov byte [rbx+31], SYM_REF_MOD_PUBLIC
+    or byte [rbx+31], SYM_REF_MOD_PUBLIC
     mov cl, [rbx+30]
     test cl, cl
     jz __kw_name_mod_unk_set_data
@@ -1948,6 +1955,53 @@ __kw_mod_check_last_char:
     cmp ebx, AUX_NEW_LINE
     jne _err_invalid_expr
     jmp _new_entry_start_ps
+__kw_entry:
+    ; TODO: check if file type obj file
+    mov dl, [IS_ENTRY_DEFINED]
+    test dl, dl
+    jnz __kw_entry_err
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_NAME
+    jne _err_invalid_expr
+    mov rdi, NAME_SYM_HASH_TABLE
+    mov rsi, [rbp-32]
+    movzx edx, byte [rbp-19]
+    mov ecx, [rbp-24]
+    call hash_table_find_entry
+    mov rbx, [rax]
+    test rbx, rbx
+    jnz ___kw_entry_define_sym
+    mov [rbp-72], rax
+    mov rdi, rax
+    lea rsi, [rbp-32]
+    xor rdx, rdx
+    call push_name_to_unk
+    mov rax, [rbp-72]
+    mov rbx, [rax]
+___kw_entry_define_sym:
+    mov byte [IS_ENTRY_DEFINED], 1
+    or byte [rbx+16], SYM_REF_EXT_ENTRY
+    mov rax, qword [NAME_SYM_REF_ARRAY]
+    mov rdx, qword [UNKNOWN_NAME_SYM_REF_ARRAY]
+    mov cl, [rbx+15]
+    cmp cl, 0
+    cmovz rax, rdx
+    sub rbx, NAME_SYM_REF_SERV_HS 
+    mov rsi, rbx
+    sub rsi, rax
+    mov [ENTRY_SYM_OFFSET], esi
+    mov [ENTRY_SYM_ARR_PTR], rax
+    test cl, cl
+    jz __kw_name_mod_unk_set_data
+    jmp _new_entry_start_ps 
+__kw_entry_err:
+    mov ebx, [ENTRY_SYM_OFFSET]
+    add rbx, [ENTRY_SYM_ARR_PTR]
+    call name_entry_print_info
+    jmp _err_dubl_entry
 
 _err_macro_arg_rep:
     mov rsi, ERR_MACRO_ARG_REP
@@ -1987,6 +2041,9 @@ _err_def_mod_def:
     jmp _err_start_parser
 _err_def_ext_before:
     mov rsi, ERR_SYM_EXT_DEF
+    jmp _err_start_parser
+_err_dubl_entry:
+    mov rsi, ERR_DUBL_ENTRY
     jmp _err_start_parser
 _err_seg_inv_def:
     mov rsi, ERR_SEG_INV_DEF

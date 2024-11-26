@@ -2,8 +2,11 @@ format ELF64 executable
 
 segment readable writeable
 
+ENTRY_SYM_ARR_PTR dq 0
+ENTRY_SYM_OFFSET dd 0
 DEF_BASE_ADDR dd 0x400000
 CURR_FILE_ENTRY_OFFSET dd 0
+IS_ENTRY_DEFINED db 0
 
 include 'err_msg.asm'
 include 'sys_call.asm'

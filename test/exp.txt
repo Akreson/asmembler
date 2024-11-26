@@ -1,3 +1,5 @@
+entry jump_to1
+
 segment readable
 CONST_NEG equ -1
 NAME_C equ 0x4

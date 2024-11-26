@@ -335,6 +335,7 @@ _end_print_file_line:
     pop rbp
     ret
 
+;TODO: fix line printing, not always print full line
 ; edi - offset to file entry, rsi - ptr to zero end str of err (if 0 then be skiped),
 ; rdx - ptr to pre err zero end str, ecx - line num to print (0 if curr)
 ; r8 - offset in file (if ecx 0 then it do not counts), r9 - exit val
