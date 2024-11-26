@@ -10,7 +10,6 @@
 ; +64 ptr to sym1, +72 ptr to sym2
 
 ; TODO: add lock prefix
-; TODO: addr ref [r8-15]
 
 INS_CODE_STRUCT_SIZE equ 80
 
@@ -1230,20 +1229,23 @@ _rproc_addr_1p:
     mov eax, [r8+9]
     mov ecx, eax
     mov edx, eax
-    and ecx, REG_MASK_REG_VAL
+    mov r15d, eax
+    and r15d, REG_MASK_REG_VAL
+    and ecx, REG_MASK_REG_IDX
     and edx, REG_MASK_BITS
     cmp edx, REG_MASK_VAL_64B
     jne _err_rproc_addr_invalid_reg_size
+    and eax, REG_MASK_DEF_NORM
+    cmp r15d, REG_REX_TH
+    jb __rproc_addr_1p_check_r
+    mov r11b, REX_B
+    or r11b, REX
+    or [rbp-20], r11b
+__rproc_addr_1p_check_r:
     cmp eax, REG_RBP
     je _rproc_addr_1p_rbp
     cmp eax, REG_RSP
     je _rproc_addr_1p_rsp
-    cmp ecx, REG_REX_TH
-    jb __rproc_addr_1p_reg
-    mov r11b, REX_B
-    or r11b, REX
-    or [rbp-20], r11b
-    and ecx, REG_MASK_REG_IDX
  __rproc_addr_1p_reg:
     or r9b, MOD_ADDR_REG
     or r9b, cl
@@ -1293,16 +1295,17 @@ _rproc_addr_2p:
     mov eax, [r8+9]
     mov ecx, eax
     mov edx, eax
-    and ecx, REG_MASK_REG_VAL
+    mov r15d, eax
+    and r15d, REG_MASK_REG_VAL
+    and ecx, REG_MASK_REG_IDX
     and edx, REG_MASK_BITS
     cmp edx, REG_MASK_VAL_64B
     jne _err_rproc_addr_invalid_reg_size
-    cmp ecx, REG_REX_TH
+    cmp r15d, REG_REX_TH
     jb __rproc_addr_2p_check_arith1
     mov r11b, REX_B
     or r11b, REX
     or [rbp-20], r11b
-    and ecx, REG_MASK_REG_IDX
 __rproc_addr_2p_check_arith1:
     mov [rbp-24], eax
     mov [rbp-28], ecx
@@ -1352,6 +1355,7 @@ __rproc_addr_2p_r_d:
     or r9b, cl
     mov [rsi], r9b
     mov eax, [rbp-24]
+    and eax, REG_MASK_DEF_NORM
     cmp eax, REG_RSP
     jne __rproc_addr_2p_r_d_set_disp
 _rproc_addr_2p_r_d_rsp:
@@ -1382,25 +1386,26 @@ __rproc_addr_2p_2nd_reg:
     mov [rbp-32], eax
     cmp eax, REG_RSP
     je _err_rproc_addr_invalid_2nd
-    xor r15, r15
+    xor r14, r14
     mov ecx, eax
     mov edx, eax
-    and ecx, REG_MASK_REG_VAL
+    mov r15d, eax
+    and r15d, REG_MASK_REG_VAL
+    and ecx, REG_MASK_REG_IDX
     and edx, REG_MASK_BITS
     cmp edx, REG_MASK_VAL_64B
     jne _err_rproc_addr_invalid_reg_size
-    cmp ecx, REG_REX_TH
+    cmp r15d, REG_REX_TH
     jb __rproc_addr_2p_sib_init
     mov r11b, REX_X
     or r11b, REX
     or [rbp-20], r11b
-    and ecx, REG_MASK_REG_IDX
 __rproc_addr_2p_sib_init:
     shl ecx, 3
     mov ebx, [rbp-28]
-    or r15b, bl
-    or r15b, cl
-    mov [rbp-60], r15b
+    or r14b, bl
+    or r14b, cl
+    mov [rbp-60], r14b
     lea r8, [r9+15]
     mov rcx, [rbp-56]
     cmp r8, rcx
@@ -1465,6 +1470,7 @@ __rproc_addr_2p_r_r_set:
     mov [rsi+1], cl
     inc byte [rsi+24]
     mov al, MOD_ADDR_REG
+    and edx, REG_MASK_DEF_NORM
     cmp edx, REG_RBP
     jne ___rproc_addr_2p_r_r_skip_rbp
     mov al, MOD_ADDR_REG_DISP8

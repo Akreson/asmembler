@@ -10,6 +10,16 @@ segment readable executable
     jg jump_to3
     jmp jump_to2
     jmp jump_to1
+    mov [r12], rax
+    mov [r13], rax
+    mov [r12+rax], rax
+    mov [r13+rax], rax
+    mov [rax+r12], rax
+    mov [rax+r13], rax
+    mov [r12+16], rax
+    mov [r13+16], rax
+    mov [r13+r12], rax
+    mov [r12+r13], rax
     mov dword [NAME_D], 0xffffff 
     mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
