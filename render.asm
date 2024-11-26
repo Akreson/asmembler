@@ -1972,7 +1972,7 @@ __mov_r_r:
     lea rsi, [rbp-192]
     call process_gen_r_r
     test rax, rax
-    jnz _err_exit_mov
+    jnz _err_gen_mov
     lea r8, [rbp-192]
     movzx ebx, byte [r8+26]
     movzx eax, byte [r8+27]
@@ -1991,7 +1991,7 @@ __mov_r_a:
     mov rdx, [rbp-16]
     call process_gen_r_a
     test rax, rax
-    jnz _err_exit_mov
+    jnz _err_gen_mov
     lea r8, [rbp-192]
     movzx eax, byte [r8+26]
     movzx ebx, byte [r8+27]
@@ -2010,7 +2010,7 @@ __mov_r_i:
     mov rdx, [rbp-16]
     call process_gen_rm_i
     test rax, rax
-    jnz _err_exit_mov
+    jnz _err_gen_mov
     lea r8, [rbp-192]
     movzx ebx, byte [r8+26]
     cmp ebx, REG_MASK_VAL_8B
@@ -2066,7 +2066,7 @@ __mov_a_r:
     mov rdx, [rbp-16]
     call process_gen_a_r
     test rax, rax
-    jnz _err_exit_mov
+    jnz _err_gen_mov
     lea r8, [rbp-192]
     movzx eax, byte [r8+26]
     movzx ebx, byte [r8+27]
@@ -2085,7 +2085,7 @@ __mov_a_i:
     mov rdx, [rbp-16]
     call process_gen_a_i
     test rax, rax
-    jnz _err_exit_mov
+    jnz _err_gen_mov
     lea r8, [rbp-192]
     movzx ebx, byte [r8+26]
     movzx eax, byte [r8+27]
@@ -2114,6 +2114,9 @@ _mov_assemble:
     mov rsi, [rbp-16]
     mov [rsi+7], al
     jmp _end_process_mov
+_err_gen_mov:
+    mov rsi, rax
+    jmp _err_exit_mov
 _err_arg_size_mov:
     mov rsi, ERR_INS_INV_ARGS_SIZE
     jmp _err_exit_mov
@@ -2172,7 +2175,7 @@ _jumps_check_type:
     je _jumps_direct
 __jumps_check_type_ptr_offset:
     cmp ebx, TOKEN_BUF_PTR_OFFSET
-    jne _err_parse_jumps
+    jne _err_gen_jumps
     lea rdi, [r9+1]
     call is_name_rip_ref
     test rax, rax
@@ -2224,7 +2227,7 @@ _jumps_name:
     jmp __jumps_name_push_set_disp
 __jumps_name_jmp:
     cmp eax, INS_JMP
-    jne _err_parse_jumps
+    jne _err_gen_jumps
     mov byte [r15+29], 0xE9 
     mov byte [r15+33], 1
     mov ecx, ADDR_PATCH_TYPE_JMP_RIP
@@ -2248,7 +2251,7 @@ _jumps_addr:
     mov byte [rsi+26], REG_MASK_VAL_32B; hack for not setting REX_W and still pass size check
     call process_gen_a
     test rax, rax
-    jnz _err_parse_jumps
+    jnz _err_gen_jumps
     jmp _jump_set_jmp_call
 _jumps_direct:
     movzx ebx, byte [r9+13]
@@ -2258,8 +2261,8 @@ __jumps_direct_r:
     mov rdi, r9
     lea rsi, [rbp-192]
     call process_gen_r
-    test eax, eax
-    jnz _err_parse_jumps
+    test rax, rax
+    jnz _err_gen_jumps
     lea rsi, [rbp-192]
     mov bl, [rsi+26]
     cmp bl, REG_MASK_VAL_64B 
@@ -2294,6 +2297,9 @@ _jumps_assemble:
     mov rdi, [rbp-24]
     call default_ins_assemble
     jmp _end_process_jumps
+_err_gen_jumps:
+    mov rsi, rax
+    jmp _err_parse_jumps
 _err_parse_invalid_reg_size_jumps:
     mov rsi, ERR_INS_INV_REG_SIZE
     jmp _err_parse_jumps
@@ -2368,8 +2374,8 @@ __instemp0_r_r:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_r_r
-    test eax, eax
-    jnz _err_parse_instemp0
+    test rax, rax
+    jnz _err_gen_instemp0
     mov r8, [rbp-16]
     movzx ebx, byte [r8+26]
     movzx eax, byte [r8+27]
@@ -2382,8 +2388,8 @@ __instemp0_r_a:
     mov rsi, [rbp-16]
     mov rdx, [rbp-8]
     call process_gen_r_a
-    test eax, eax
-    jnz _err_parse_instemp0
+    test rax, rax
+    jnz _err_gen_instemp0
     mov r8, [rbp-16]
     movzx eax, byte [r8+26]
     movzx ebx, byte [r8+27]
@@ -2399,8 +2405,8 @@ __instemp0_r_i:
     mov rsi, [rbp-16]
     mov rdx, [rbp-8]
     call process_gen_rm_i
-    test eax, eax
-    jnz _err_parse_instemp0
+    test rax, rax
+    jnz _err_gen_instemp0
     mov r8, [rbp-16]
     mov byte [r8+34], OP12_TYPE_R_I
     jmp _instemp0_rm_i
@@ -2423,8 +2429,8 @@ __instemp0_a_r:
     mov rsi, [rbp-16]
     mov rdx, [rbp-8]
     call process_gen_a_r
-    test eax, eax
-    jnz _err_parse_instemp0
+    test rax, rax
+    jnz _err_gen_instemp0
     mov r8, [rbp-16]
     movzx eax, byte [r8+26]
     movzx ebx, byte [r8+27]
@@ -2441,8 +2447,8 @@ __instemp0_a_i:
     mov rsi, [rbp-16]
     mov rdx, [rbp-8]
     call process_gen_a_i
-    test eax, eax
-    jnz _err_parse_instemp0
+    test rax, rax
+    jnz _err_gen_instemp0
     mov r8, [rbp-16]
     mov byte [r8+34], OP12_TYPE_A_I
     jmp _instemp0_rm_i
@@ -2517,6 +2523,9 @@ __instemp0_rm_i_ds_set:
     mov al, byte [r9+4]
     mov byte [r8+29], al    
     jmp _instemp0_assemble
+_err_gen_instemp0:
+    mov rsi, rax
+    jmp _err_parse_instemp0
 _err_arg_size_instemp0:
     mov rsi, ERR_INS_INV_ARGS_SIZE
     jmp _err_parse_instemp0
@@ -2729,8 +2738,8 @@ _instemp1_r:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_r
-    test eax, eax
-    jnz _err_instemp1_exit
+    test rax, rax
+    jnz _err_gen_instemp1
     jmp _instemp1_assemble
 _instemp1_a:
     mov rdi, rsi
@@ -2738,7 +2747,7 @@ _instemp1_a:
     mov rdx, [rbp-8]
     call process_gen_a
     test rax, rax
-    jnz _err_instemp1_exit
+    jnz _err_gen_instemp1
 _instemp1_assemble:
     mov r9, [rbp-24]
     mov rsi, [rbp-16]
@@ -2758,6 +2767,9 @@ _instemp1_assemble:
     mov rsi, [rbp-8]
     mov [rsi+7], al
     jmp _end_instemp1_process
+_err_gen_instemp1:
+    mov rsi, rax
+    jmp _err_instemp1_exit
 _err_instemp1_invalid_argc:
     mov rsi, ERR_INS_INV_ARGC 
     jmp _err_instemp1_exit
@@ -2931,8 +2943,8 @@ __imul_1op_r:
     mov rdi, rsi
     lea rsi, [rbp-192]
     call process_gen_r
-    test eax, eax
-    jnz _err_parse_imul
+    test rax, rax
+    jnz _err_gen_imul
     jmp _imul_set_1op
 __imul_1op_a:
     mov rdi, rsi
@@ -2940,7 +2952,7 @@ __imul_1op_a:
     mov rdx, [rbp-16]
     call process_gen_a
     test rax, rax
-    jnz _err_parse_imul
+    jnz _err_gen_imul
 _imul_set_1op:
     lea r8, [rbp-192]
     mov byte [r8+33], 1
@@ -2978,8 +2990,8 @@ __imul_2op_r_r:
     mov rdi, rsi
     mov rsi, r8
     call process_gen_r_r
-    test eax, eax
-    jnz _err_parse_imul
+    test rax, rax
+    jnz _err_gen_imul
     lea rdi, [rbp-192]
     call switch_reg_to_r_rm
     jmp __imul_2op_check_op_size
@@ -2989,8 +3001,8 @@ __imul_2op_r_a:
     mov rsi, r8
     mov rdx, [rbp-8]
     call process_gen_r_a
-    test eax, eax
-    jnz _err_parse_imul
+    test rax, rax
+    jnz _err_gen_imul
 __imul_2op_check_op_size:
     lea r8, [rbp-192]
     movzx ebx, byte [r8+26]
@@ -3023,7 +3035,7 @@ _imul_3op_parse_digit:
     mov r8, [rbp-16]
     call render_process_imm
     test rax, rax
-    jnz _err_parse_imul
+    jnz _err_gen_imul
     lea r8, [rbp-192]
     mov byte [r8+33], 1
     movzx esi, byte [r8+28]
@@ -3042,6 +3054,9 @@ _imul_3op_non_b:
     call line_up_d_s_size
     add [r8+24], al
     jmp _imul_assemble
+_err_gen_imul:
+    mov rsi, rax
+    jmp _err_parse_imul
 _err_invalid_first_param_imul:
     mov rsi, ERR_INS_INV_1ST_PARAM
     jmp _err_parse_imul
@@ -3056,8 +3071,8 @@ _err_imul_i_overflow:
     jmp _err_parse_imul
 _err_arg_size_imul:
     mov rsi, ERR_INS_INV_ARGS_SIZE
-    jmp _err_parse_imul
 _err_parse_imul:
+    ;TODO: add err
     mov eax, 1
     jmp _end_process_imul
 _imul_assemble:
@@ -3119,8 +3134,8 @@ __instemp2_r_r:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_r_r
-    test eax, eax
-    jnz _err_parse_instemp2
+    test rax, rax
+    jnz _err_gen_instemp2
     mov r8, [rbp-16]
     movzx ebx, byte [r8+26]
     movzx eax, byte [r8+27]
@@ -3136,8 +3151,8 @@ __instemp2_r_a:
     mov rsi, [rbp-16]
     mov rdx, [rbp-8]
     call process_gen_r_a
-    test eax, eax
-    jnz _err_parse_instemp2
+    test rax, rax
+    jnz _err_gen_instemp2
     mov r8, [rbp-16]
     movzx eax, byte [r8+26]
     movzx ebx, byte [r8+27]
@@ -3155,6 +3170,9 @@ _instemp2_load_opc:
     mov [r8+16], al
     mov byte [r8+25], 1
     jmp _instemp2_assemble
+_err_gen_instemp2:
+    mov rsi, rax
+    jmp _err_parse_instemp2
 _err_arg_size_instemp2:
     mov rsi, ERR_INS_INV_ARGS_SIZE
     jmp _err_parse_instemp2
@@ -3457,8 +3475,8 @@ __instemp4_r_r:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_r_r
-    test eax, eax
-    jnz _err_instemp4_parse
+    test rax, rax
+    jnz _err_gen_instemp4
     jmp _instemp4_set_rm_r
 __instemp4_r_i:
     mov rax, [r9+1]
@@ -3467,15 +3485,15 @@ __instemp4_r_i:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_rm_i
-    test eax, eax
-    jnz _err_instemp4_parse
+    test rax, rax
+    jnz _err_gen_instemp4
     jmp _instemp4_set_rm_i
 __instemp4_r_i_1:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_r
-    test eax, eax
-    jnz _err_instemp4_parse
+    test rax, rax
+    jnz _err_gen_instemp4
     jmp _instemp4_set_rm_i_1
 _instemp4_a:
     movzx eax, byte [rsi+2]
@@ -3496,8 +3514,8 @@ __instemp4_a_r:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_a_r
-    test eax, eax
-    jnz _err_instemp4_parse
+    test rax, rax
+    jnz _err_gen_instemp4
     jmp _instemp4_set_rm_r
 __instemp4_a_i:
     mov rax, [r9+1]
@@ -3506,15 +3524,15 @@ __instemp4_a_i:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_a_i
-    test eax, eax
-    jnz _err_instemp4_parse
+    test rax, rax
+    jnz _err_gen_instemp4
     jmp _instemp4_set_rm_i
 __instemp4_a_i_1:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_a
-    test eax, eax
-    jnz _err_instemp4_parse
+    test rax, rax
+    jnz _err_gen_instemp4
     jmp _instemp4_set_rm_i_1
 _instemp4_set_rm_r:
     mov r8, [rbp-16]
@@ -3549,6 +3567,9 @@ _instemp4_set_rm_i:
     cmovg ebx, ecx
     mov [r8+29], bl
     jmp _instemp4_assemble
+_err_gen_instemp4:
+    mov rsi, rax
+    jmp _err_instemp4_parse
 _err_imm_overflow_instemp4:
     mov rsi, ERR_INS_REG_IMM_OVERFLOW
     jmp _err_instemp4_parse
@@ -3684,8 +3705,8 @@ __instemp5_r_r:
     mov rdi, rsi
     mov rsi, [rbp-16]
     call process_gen_r_r
-    test eax, eax
-    jnz _err_parse_instemp5
+    test rax, rax
+    jnz _err_gen_instemp5
     mov rdi, [rbp-16]
     call switch_reg_to_r_rm
     jmp _instemp5_check_args_size
@@ -3694,8 +3715,8 @@ __instemp5_r_a:
     mov rsi, [rbp-16]
     mov rdx, [rbp-8]
     call process_gen_r_a
-    test eax, eax
-    jnz _err_parse_instemp5
+    test rax, rax
+    jnz _err_gen_instemp5
     jmp _instemp5_check_args_size
 _instemp5_check_args_size:
     mov r9, [rbp-24]
@@ -3732,6 +3753,9 @@ _instemp5_set_op:
     mov bl, [r9+10]
     mov byte [r8+33], bl
     jmp _instemp5_assemble
+_err_gen_instemp5:
+    mov rsi, rax
+    jmp _err_parse_instemp5
 _err_arg_size_instemp5:
     mov rsi, ERR_INS_INV_ARGS_SIZE
     jmp _err_parse_instemp5
@@ -3870,7 +3894,7 @@ _instemp6_i:
     mov r8, [rbp-8]
     call render_process_imm
     test rax, rax
-    jnz _err_instemp6_exit
+    jnz _err_gen_instemp6
     mov rsi, [rbp-16]
     mov r9, [rbp-24]
     mov al, [rsi+26]
@@ -3890,7 +3914,7 @@ _instemp6_r:
     mov rsi, [rbp-16]
     call process_gen_r
     test rax, rax
-    jnz _err_instemp6_exit
+    jnz _err_gen_instemp6
     mov rsi, [rbp-16]
     mov r9, [rbp-24]
     mov byte [rsi+24], 0
@@ -3906,7 +3930,7 @@ _instemp6_a:
     mov rdx, [rbp-8]
     call process_gen_a
     test rax, rax
-    jnz _err_instemp6_exit
+    jnz _err_gen_instemp6
     mov rsi, [rbp-16]
     mov r9, [rbp-24]
     mov dl, [r9+2]
@@ -3935,6 +3959,9 @@ _instemp6_assemble_end:
     mov rsi, [rbp-8]
     mov [rsi+7], al
     jmp _end_instemp6_process
+_err_gen_instemp6:
+    mov rsi, rax
+    jmp _err_instemp6_exit
 _err_instemp6_invalid_argc:
     mov rsi, ERR_INS_INV_ARGC
     jmp _err_instemp6_exit
@@ -4020,8 +4047,8 @@ process_lea:
     mov rsi, r8
     mov rdx, [rbp-8]
     call process_gen_r_a
-    test eax, eax
-    jnz _err_parse_lea
+    test rax, rax
+    jnz _err_gen_lea
     lea r8, [rbp-128]
     mov bl, [r8+26]
     cmp bl, REG_MASK_VAL_8B
@@ -4029,6 +4056,9 @@ process_lea:
     mov byte [r8+33], 1
     mov byte [r8+29], 0x8D
     jmp _lea_assemble
+_err_gen_lea:
+    mov rsi, rax
+    jmp _err_parse_lea
 _err_invalid_first_param_lea:
     mov rsi, ERR_INS_INV_1ST_PARAM
     jmp _err_parse_lea
@@ -4125,7 +4155,7 @@ process_int:
     mov r8, [rbp-16]
     call render_process_imm
     test rax, rax
-    jnz _err_parse_int
+    jnz _err_gen_int
     lea rsi, [rbp-128]
     mov al, [rsi+26]
     mov byte [rsi+29], 0xCD
@@ -4134,6 +4164,9 @@ process_int:
     call default_ins_assemble
     xor rax, rax
     jmp _end_process_int
+_err_gen_int:
+    mov rsi, rax
+    jmp _err_parse_int
 _err_invalid_argc_int:
     mov rsi, ERR_INS_INV_ARGC
     jmp _err_parse_int
@@ -4141,6 +4174,7 @@ _err_invalid_first_param_int:
     mov rsi, ERR_INS_INV_1ST_PARAM
 _err_parse_int:
     mov eax, 1
+    ;TODO: add err print
 _end_process_int:
     add rsp, 128
     pop rbp
