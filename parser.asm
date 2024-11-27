@@ -422,7 +422,6 @@ _end_get_mem_def_name_buf:
     pop rbp
     ret
 
-;TODO: add offset to definition
 ;rdi - ht entry ptr, rsi - ptr to sym temp mem, edx - file entry offset
 ;return rax - addr to start of allco mem, ebx - offset from start of buff 
 push_name_to_defined:
@@ -937,7 +936,6 @@ __ins_name_check_sp:
     call inc_ins_argc
     jmp __ins_next_arg_check
 __ins_digit_check_sp:
-    ;TODO: support neg digit
     cmp eax, TOKEN_TYPE_DIGIT
     jne _err_invalid_expr
 ___ins_digit_set_sp:

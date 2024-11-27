@@ -98,7 +98,7 @@ clear_patch_state:
 ; rdi - sym ptr, rsi - ptr to token entry header, rdx - ptr to ins code struct
 ; ecx - type, r8d - max disp size (in bytes), r9d - min disp size (can be set to 0 if max == min)
 ; r10d - sub to min ins len (opcode+disp), r11d - offset to disp from start of ins
-push_to_segment_patch:
+push_to_local_patch:
     push rbp
     mov rbp, rsp
     sub rsp, 64
@@ -165,7 +165,8 @@ push_to_delayed_patch:
     mov [rbp-28], ecx
     mov [rbp-32], r8d
     mov [rbp-36], r9d
-    mov al, [rdi+15]
+    mov al, SYM_REF_MASK_REF
+    and al, [rdi+15]
     cmp al, SYM_REF_MOD_EXTRN
     je _rel_entry_ptdp
     mov rdi, DELAYED_PATCH_ARR
@@ -202,12 +203,18 @@ _end_push_to_delayed_patch:
 push_to_addr_patch:
     push rbp
     mov rbp, rsp
-    ;TODO: fix it
+    mov al, [rdi+14]
+    test al, al
+    jz _delayed_push_tap
+    mov al, SYM_REF_MASK_REF
+    and al, [rdi+15]
+    cmp al, SYM_REF_MOD_EXTRN
+    je _delayed_push_tap
     mov eax, dword [CURR_SECTION_OFFSET]
     mov ebx, [rdi+16]
     cmp eax, ebx
     jne _delayed_push_tap
-    call push_to_segment_patch
+    call push_to_local_patch
     jmp _end_push_to_addr_patch
 _delayed_push_tap:
     mov r9d, r11d 
@@ -315,7 +322,6 @@ reduce_ins_offset:
     mov r9d, [rdi+8]
     add r8, r9
     mov ecx, [rbp-20]
-    neg ecx ; TODO: revisit, (delete?)
     mov eax, [rdx+12]
     add rdx, rax
 _start_loop_reduce_io:
@@ -327,7 +333,7 @@ _start_loop_reduce_io:
     add rdx, rax
     test bl, bl
     jz _start_loop_reduce_io
-    add [rsi], ecx ;(sub?)
+    sub [rsi], ecx
     jmp _start_loop_reduce_io 
 _end_reduce_ins_offset:
     mov eax, [rbp-20]
@@ -651,12 +657,13 @@ is_name_rip_ref:
     mov r9d, [rdi+8]
     mov r10, [r8]
     lea rax, [r10+r9]
-    movzx edi, byte [r10+r9+14]
+    movzx edi, byte [rax+14]
     cmp edi, TOKEN_NAME_DATA
     je _end_is_name_rip_ref
     cmp edi, TOKEN_NAME_JMP
     je _end_is_name_rip_ref
-    movzx edi, byte [r10+r9+15]
+    movzx edi, byte [rax+15]
+    and edi, SYM_REF_MASK_REF
     cmp edi, SYM_REF_MOD_EXTRN
     je _end_is_name_rip_ref
     xor rax, rax
@@ -669,7 +676,7 @@ is_name_const:
     mov r9d, [rdi+8]
     mov r10, [r8]
     lea rax, [r10+r9]
-    movzx edi, byte [r10+r9+14]
+    movzx edi, byte [rax+14]
     cmp edi, TOKEN_NAME_CONST
     je _end_is_name_const
     cmp edi, TOKEN_NAME_CONST_MUT
@@ -2198,8 +2205,11 @@ _jumps_jcc:
     xor r9, r9
     xor r10, r10
     mov r11d, r8d
-    ;TODO: max offset -127 - +128 bytes, set only for local_patch
-    jmp _jumps_name_push
+    mov rdi, [rbp-48]
+    mov rsi, [rbp-16]
+    lea rdx, [rbp-192]
+    call push_to_local_patch
+    jmp __jumps_name_push_set_disp
 __jumps_jcc_check:
     mov ecx, ADDR_PATCH_TYPE_JCC_RIP
     mov r8d, 4
