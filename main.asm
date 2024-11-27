@@ -1,5 +1,9 @@
 format ELF64 executable
 
+BUILD_TYPE_EXE equ 1
+BUILD_TYPE_OBJ equ 2
+BUILD_TYPE_BIN equ 3
+
 segment readable writeable
 
 ENTRY_SYM_ARR_PTR dq 0
@@ -7,6 +11,7 @@ ENTRY_SYM_OFFSET dd 0
 DEF_BASE_ADDR dd 0x400000
 CURR_FILE_ENTRY_OFFSET dd 0
 IS_ENTRY_DEFINED db 0
+BUILD_TYPE db 0
 
 include 'err_msg.asm'
 include 'sys_call.asm'
@@ -19,6 +24,7 @@ include 'files.asm'
 include 'lex.asm'
 include 'parser.asm'
 include 'render.asm'
+include 'build.asm'
 
 segment readable writeable
 
@@ -160,6 +166,12 @@ _start:
     mov rsi, [r8]
     mov edx, [r8+8]
     call write
+    mov rdi, BUILD_ARR
+    mov rsi, 65536
+    call init_entry_array
+    mov rdi, TEMP_BUILD_ARR
+    mov rsi, 2048
+    call init_entry_array
 _end_start:
     add rsp, 40
     exit_m 0
