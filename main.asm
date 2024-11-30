@@ -146,17 +146,17 @@ _start:
     mov esi, ebx
     call start_parser
     call parser_check_print_unk_name
+    call start_render
     mov rdi, TEST_STR
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]
     add r8, 384 
     mov rdi, rax
-    mov rsi, [r8]
-    mov edx, [r8+8]
+    mov rsi, [r8+20]
+    mov edx, [r8+28]
     call write
     add rax, rax; NOTE:just a mark for debug, delete later
     add rax, rax
-    call start_render
     mov rdi, TEST_STR2
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]

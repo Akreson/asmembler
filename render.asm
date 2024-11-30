@@ -4290,9 +4290,13 @@ _process_data_check_direct:
     cmp edx, TOKEN_TYPE_STR
     je _process_data_define_str
     cmp edx, TOKEN_TYPE_KEYWORD
-    je _start_loop_data_define_proc
-    jmp _err_process_data_define
+    jne _err_process_data_define
+    mov eax, [rsi+8]
+    cmp eax, KW_DUP
+    je _process_data_dub
+    jmp _start_loop_data_define_proc
 _process_data_define_digit:
+    mov [rbp-64], rsi
     mov rdi, [rbp-24]
     mov esi, 8
     call entry_array_ensure_free_space
@@ -4306,6 +4310,7 @@ _process_data_define_digit:
     call entry_array_commit_size
     jmp _loop_process_data_define
 _process_data_define_str:
+    mov [rbp-64], rsi
     mov rdi, [rbp-24]
     mov esi, [rsi+8]
     call entry_array_ensure_free_space
@@ -4314,6 +4319,65 @@ _process_data_define_str:
     mov ecx, [r8+8]
     mov rdi, rax
     rep movsb
+    mov rsi, rdi
+    mov rdi, [rbp-24]
+    call entry_array_commit_size
+    jmp _loop_process_data_define
+_process_data_dub:
+    mov rdx, [rbp-64]
+    add rsi, 15; token + type (direct digit); TODO: support const
+    mov ecx, [rsi]
+    mov [rbp-56], ecx
+    add rsi, 14
+    mov [rbp-40], rsi
+    movzx edi, byte [rdx+12]
+    cmp edi, TOKEN_TYPE_STR
+    je __process_data_dub_loop_start_string
+__process_data_dub_loop_start_digit:
+    movzx eax, byte [rbp-41]
+    mul ecx
+    mov edi, eax
+    mov esi, 8
+    call align_to_pow2
+    mov rdi, [rbp-24]
+    mov esi, eax
+    call entry_array_ensure_free_space
+    mov ecx, [rbp-56]
+    mov rsi, [rbp-64]
+    mov rdx, [rsi]
+    movzx ebx, byte [rbp-41]
+___process_data_dub_loop_digit:
+    test ecx, ecx
+    jz ___process_data_dub_end_loop_digit
+    mov [rax], rdx
+    add rax, rbx
+    dec ecx
+    jmp ___process_data_dub_loop_digit
+___process_data_dub_end_loop_digit:
+    mov rdi, [rbp-24]
+    mov rsi, rax
+    call entry_array_commit_size
+    jmp _loop_process_data_define
+__process_data_dub_loop_start_string:
+    mov eax, [rdx+8]
+    mul ecx  
+    mov esi, eax
+    mov rdi, [rbp-24]
+    call entry_array_ensure_free_space
+    mov rdi, rax
+    mov rdx, [rbp-64]
+    mov r9, [rdx]
+    mov r8d, [rbp-56]
+    mov ebx, ecx
+___process_data_dub_loop_string:
+    test ebx, ebx
+    jz ___process_data_dub_end_loop_strint
+    mov rsi, r9
+    mov ecx, r8d
+    rep movsb
+    dec ebx
+    jmp ___process_data_dub_loop_string
+___process_data_dub_end_loop_strint:
     mov rsi, rdi
     mov rdi, [rbp-24]
     call entry_array_commit_size
@@ -4659,7 +4723,7 @@ __next_loop_set_asr:
     jmp _loop_set_asr
 _do_patchs_start_render:
     ;TODO: check if it exec, obj or bin mod
-    call render_patch_delayed_ref
+;    call render_patch_delayed_ref
 _end_start_render:
     add rsp, 2304
     pop rbp

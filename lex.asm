@@ -322,7 +322,7 @@ _set_aux_token:
     mov r8, [rbp-80]
     sub rcx, r8
     mov [rbp-84], ecx
-    mov rcx, r9
+    mov rcx, r9; TODO: ?
     inc dword [rbp-40]
     mov ecx, TOKEN_KIND_SIZE
     mov rsi, [rbp-56]
@@ -386,6 +386,7 @@ __def_symbol_found_nt:
     mov rcx, TOKEN_KIND_SIZE
     rep movsb
     jmp _end_next_token
+
 _scan_digit_nt:
     xor rax, rax
     mov [rbp-72], rax
@@ -486,6 +487,9 @@ __finish_scan_digit_nt:
     mov [rdi], rax
     mov byte [rdi+12], TOKEN_TYPE_DIGIT
     mov [rdi+13], dl
+    mov rsi, [rbp-64]
+    sub rcx, rsi
+    mov [rdi+8], ecx
     mov rax, 1
     jmp _end_next_token
 

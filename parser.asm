@@ -76,7 +76,9 @@ TOKEN_HEADER_SIZE           equ 20
 ; token buf, +16 offset to line in file buff
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
-; token type, qul size keyword token,(1) size of unit in bytes, direct/str token ... [n times]
+; token type, qul size keyword token,(1) size of unit in bytes, 
+; [direct digit | str token | ptr offset | direct dub kw, direct digit ... [n times]
+;TODO: add buff off. and lin num for each new data line
 
 segment readable executable
 
@@ -1271,6 +1273,7 @@ ___name_data_def:
     ;mov [r8+8], ebx
     mov [rbp-76], ebx
 ___name_data_qul_read:
+    mov dword [rbp-96], 0
     call curr_seg_ptr
     mov rdi, rax
     mov esi, 16
@@ -1309,6 +1312,7 @@ ___name_data_read_val:
     movzx ebx, byte [rbp-68]
     cmp ebx, 1
     ja _err_out_of_range_value
+    inc dword [rbp-96]
     jmp ___name_data_read_next
 ___name_data_read_digit_sub_check:
     cmp eax, TOKEN_TYPE_AUX
@@ -1342,6 +1346,7 @@ ___name_data_read_digit_overflow_check:
     movzx esi, byte [rbp-3] 
     cmp esi, ebx
     ja _err_out_of_range_value
+    inc dword [rbp-96]
 ___name_data_read_next:
     call curr_seg_ptr
     mov rdi, rax
@@ -1353,6 +1358,26 @@ ___name_data_check_next_sym:
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_EOF
     je ___name_data_read_finish 
+    cmp eax, TOKEN_TYPE_KEYWORD
+    jne __name_data_check_next_sym_aux
+    mov ebx, [rbp-8]
+    cmp ebx, KW_DUP
+    jne _err_invalid_expr
+    mov ecx, [rbp-96]
+    test ecx, ecx
+    jz _err_invalid_expr
+    xor ecx, ecx
+    mov [rbp-96], ecx
+    call curr_seg_ptr
+    mov rdi, rax
+    mov rsi, [rbp-40]
+    lea rdx, [rbp-16]
+    mov rcx, rdx
+    call push_direct_and_read_next
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_DIGIT
+    je ___name_data_read_next
+__name_data_check_next_sym_aux:
     cmp eax, TOKEN_TYPE_AUX
     jne _err_invalid_expr
     mov ebx, [rbp-8]
@@ -1479,14 +1504,29 @@ __name_sp_macro:
     mov [rbp-124], ecx
     lea rsi, [rbp-16]
     call next_token
-    test rax, rax
-    jz _end_start_parser
     mov ecx, [rbp-8]
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_AUX
     jne ___name_sp_macro_skip_comma
     cmp ecx, AUX_COMMA
     je _err_invalid_expr
+    cmp ecx, AUX_SUB
+    jne _err_invalid_expr
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_DIGIT
+    jne _err_invalid_expr
+    mov rdi, [rbp-40]
+    mov rdx, [rdi]
+    mov ebx, [rdi+16]
+    mov ecx, [rbp-8]
+    inc ecx
+    mov byte [rbp-3], cl
+    sub ebx, ecx 
+    add rdx, rbx
+    mov [rbp-16], rdx
 ___name_sp_macro_skip_comma: 
     mov rdi, TEMP_PARSER_ARR
     mov esi, TOKEN_KIND_SIZE
@@ -2153,7 +2193,6 @@ init_parser_data:
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
-    ;TODO: do not init seg array if non collate mod is enabled
     mov rdi, SEG_ENTRY_ARRAY
     mov rsi, 8
     call init_entry_array
