@@ -116,6 +116,7 @@ push_token_entry_header:
     lea rax, [r8+rsi]
     mov r9, rax
     sub rax, r8
+    xor rdx, rdx
     mov rcx, FILE_ARRAY_ENTRY_SIZE
     div rcx
     mov [rbp-16], ax
@@ -1265,6 +1266,7 @@ ___name_data_def:
     mov r9d, [rbp-92]
     mov [r8], r9d
     mov [r8+4], ebx 
+___name_data_def_kw_new_rip:
     call curr_seg_ptr
     mov rdi, rax
     mov esi, [rbp-52]
@@ -1497,6 +1499,7 @@ __name_sp_aux:
     mov [r8+4], ebx 
     jmp _new_entry_start_ps
 __name_sp_macro:
+    mov dword [rbp-108], 0 
     mov rdi, [rbp-40]
     mov rax, [rdi+16]
     mov ecx, [rdi+44]
@@ -1506,23 +1509,27 @@ __name_sp_macro:
     call next_token
     mov ecx, [rbp-8]
     movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_DIGIT
+    je ___name_sp_macro_digit_convert
     cmp eax, TOKEN_TYPE_AUX
     jne ___name_sp_macro_skip_comma
     cmp ecx, AUX_COMMA
     je _err_invalid_expr
     cmp ecx, AUX_SUB
     jne _err_invalid_expr
+    mov dword [rbp-108], 1 
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_DIGIT
     jne _err_invalid_expr
+___name_sp_macro_digit_convert:
     mov rdi, [rbp-40]
     mov rdx, [rdi]
     mov ebx, [rdi+16]
     mov ecx, [rbp-8]
-    inc ecx
+    add ecx, [rbp-108]
     mov byte [rbp-3], cl
     sub ebx, ecx 
     add rdx, rbx
@@ -1627,6 +1634,7 @@ ___name_sp_macro_end:
     mov rdi, [rax]
     mov rcx, [rax+8]
     rep movsb
+    mov dword [TEMP_PARSER_ARR+8], 0
     mov rdi, rax
     mov rsi, [rbp-72]
     call start_parser
@@ -1650,7 +1658,16 @@ _begin_kw_sp:
     je __kw_name_mod
     cmp eax, KW_ENTRY
     je __kw_entry
-    jmp _err_invalid_expr
+    mov ebx, eax
+    mov edx, DATA_QUL_TYPE_MASK
+    and ebx, edx
+    cmp ebx, edx
+    jne _err_invalid_expr
+    lea rsi, [rbp-16]
+    lea rdi, [rbp-32]
+    mov ecx, TOKEN_KIND_SIZE
+    rep movsb
+    jmp ___name_data_def_kw_new_rip
 __kw_segm_sp:
     ;TODO: catch wrong combination?
     xor eax, eax
