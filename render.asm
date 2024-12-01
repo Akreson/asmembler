@@ -181,7 +181,7 @@ _set_prdp:
     mov [rbp-48], rax
     mov rdi, [rbp-8]
     mov rsi, [rbp-16]
-    mov rdx, [rbp-24]
+    mov rdx, [rbp-24]; unused now
     mov ecx, [rbp-28]
     mov r8d, [rbp-32]
     mov r9d, [rbp-36]
@@ -785,23 +785,6 @@ get_ins_pref_opc_size:
     shr ecx, 6
     add eax, ecx
     add al, byte [rdi+33]
-    ret
-
-; rdi - ptr to token group header, rsi - ptr to ins. code struct
-set_rendered_size:
-    xor ecx, ecx
-    movzx ecx, byte [rdi+22]
-    shr ecx, 6
-    movzx eax, byte [rdi+23]
-    shr eax, 6
-    add ecx, eax
-    add cl, byte [rdi+25]
-    movzx eax, byte [rdi+52]
-    shr eax, 6
-    add ecx, eax
-    add cl, byte [rdi+33]
-    add cl, byte [rdi+24]
-    mov [rdi+7], cl
     ret
 
 ; rdi - ptr to ins code struct, rsi - symbol of prefix
@@ -2163,8 +2146,7 @@ process_jumps:
     lea rdi, [rbp-192]
     mov r8, rdi
     rep stosb
-    mov al, 4
-    mov [r8+24], al
+    mov byte [r8+24], 4
     add rsi, TOKEN_HEADER_SIZE
     mov [rbp-32], rsi
     lea r9, [rsi+16] ; type, body, argc
@@ -2231,8 +2213,10 @@ _jumps_name:
     mov byte [r15+33], 1
     mov rdi, [rbp-48]
     mov rsi, [rbp-16]
-    lea rdx, [rbp-192]
+    mov rdx, r15
     mov ecx, ADDR_PATCH_TYPE_DEF_RIP
+    mov r8d, 4
+    mov r9d, 1
     call push_to_delayed_patch
     jmp __jumps_name_push_set_disp
 __jumps_name_jmp:
@@ -2248,7 +2232,7 @@ __jumps_name_jmp:
 _jumps_name_push:
     mov rdi, [rbp-48]
     mov rsi, [rbp-16]
-    lea rdx, [rbp-192]
+    mov rdx, r15
     call push_to_addr_patch
 __jumps_name_push_set_disp:
     lea rsi, [rbp-192]
@@ -2301,11 +2285,11 @@ _jump_set_jmp_call:
     or al, r9b
     mov [r8], al
 _jumps_assemble:
-    mov rdi, [rbp-16]
     lea rsi, [rbp-192]
-    call set_rendered_size
     mov rdi, [rbp-24]
     call default_ins_assemble
+    mov rsi, [rbp-16]
+    mov [rsi+7], al
     jmp _end_process_jumps
 _err_gen_jumps:
     mov rsi, rax
@@ -4723,7 +4707,7 @@ __next_loop_set_asr:
     jmp _loop_set_asr
 _do_patchs_start_render:
     ;TODO: check if it exec, obj or bin mod
-;    call render_patch_delayed_ref
+    call render_patch_delayed_ref
 _end_start_render:
     add rsp, 2304
     pop rbp
