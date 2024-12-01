@@ -393,13 +393,17 @@ _scan_digit_nt:
     mov rbx, [rbp-24]
     mov rcx, [rbp-40]
     mov [rbp-64], rcx
+    mov eax, 10
     cmp edi, '0'
     je __check_base16_start_nt
-    mov eax, 10
     jmp __start_loop_scan_digit_nt
 __check_base16_start_nt:
     inc rcx
     movzx edi, byte [rbx+rcx]
+    cmp edi, _CONST_SPACE
+    je __start_loop_scan_digit_nt
+    cmp edi, _CONST_TAB
+    je __start_loop_scan_digit_nt
     cmp edi, 'x'
     jne __check_base8_start_nt
     mov eax, 16
