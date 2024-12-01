@@ -28,8 +28,9 @@ include 'build.asm'
 
 segment readable writeable
 
-TEST_STR db "./out.bin", 0
-TEST_STR2 db "./ins.bin", 0
+TEST_R db "./r.bin", 0
+TEST_RW db "./rw.bin", 0
+TEST_RX db "./rx.bin", 0
 
 hash_table_data_m DEF_SYM_HASH_TABLE, 1
 
@@ -147,7 +148,8 @@ _start:
     call start_parser
     call parser_check_print_unk_name
     call start_render
-    mov rdi, TEST_STR
+
+    mov rdi, TEST_RW
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]
     add r8, 384 
@@ -155,16 +157,23 @@ _start:
     mov rsi, [r8+20]
     mov edx, [r8+28]
     call write
-    add rax, rax; NOTE:just a mark for debug, delete later
-    add rax, rax
-    mov rdi, TEST_STR2
+
+    mov rdi, TEST_R
     call open_file_w_trunc
     mov r8, [SEG_ENTRY_ARRAY]
-    add r8, 340
-;    add r8, 332
+    add r8, 256
     mov rdi, rax
-    mov rsi, [r8]
-    mov edx, [r8+8]
+    mov rsi, [r8+20]
+    mov edx, [r8+28]
+    call write
+
+    mov rdi, TEST_RX
+    call open_file_w_trunc
+    mov r8, [SEG_ENTRY_ARRAY]
+    add r8, 320
+    mov rdi, rax
+    mov rsi, [r8+20]
+    mov edx, [r8+28]
     call write
     mov rdi, BUILD_ARR
     mov rsi, 65536
