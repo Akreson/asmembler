@@ -56,7 +56,7 @@ ERR_EXP_UNSUPPORT db "Unsupported expression", 0
 ERR_INS_FORMAT db "Invalid instruction format", 0
 ERR_IMM_OVERFLOW db "imm value to big for selected dest", 0
 ERR_IMM_NAME_REF db "Unsupported name ref for imm value", 0
-
+ERR_DATA_NAME_REF db "Saving name ref. in data def. allowed only in 8 bytes chunk", 0
 ERR_INV_ADDR_SCALE db "Invalid scale index in address ref", 0
 ERR_INV_2ND_ADDR_PARAM db "Invalid 2nd parameter in address ref", 0
 ERR_INV_2ND_ADDR_SUB db "2nd address parameter can't be subtracted", 0

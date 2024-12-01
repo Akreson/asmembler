@@ -64,9 +64,10 @@ segment readable writeable
 CURR_SECTION_OFFSET dd 0
 
 ; entry body - 0 ptr to sym, +8 ptr to token entry header,
-; +16 type, +17 offset to disp from start of ins, +18 size of patch, (1b reserved)
-; +20 offset of section to patch in
-ADDR_ARR_PATCH_ENTRY_SIZE equ 24
+; +16 offset to disp from start of ins, +20 offset of section to patch in, 
+; +24 type, +25 size of patch, (2b reserved)
+ 
+ADDR_ARR_PATCH_ENTRY_SIZE equ 28
 entry_array_data_m RELOC_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 entry_array_data_m DELAYED_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 
@@ -152,7 +153,7 @@ _end_push_to_segment_patch:
     pop rbp
     ret
 
-;TODO: push all to reloc on obj file gen?
+; TODO: push all to reloc on obj file gen?
 ; rdi - sym ptr, rsi - ptr to token entry header, rdx - ptr to ins code struct
 ; ecx - type, r8d - disp size, r9d - offset to disp from start of ins
 push_to_delayed_patch:
@@ -188,10 +189,10 @@ _set_prdp:
     mov r10d, dword [CURR_SECTION_OFFSET]
     mov [rax], rdi
     mov [rax+8], rsi
-    mov [rax+16], cl
-    mov [rax+17], r9b
-    mov [rax+18], r8b
+    mov [rax+16], r9d
     mov [rax+20], r10d
+    mov [rax+24], cl
+    mov [rax+25], r8b
 _end_push_to_delayed_patch:
     add rsp, 64
     pop rbp
@@ -246,20 +247,19 @@ _loop_patch_rpdr:
     lea rcx, [rbx+rax]
     mov r8d, [rcx+52]
     mov [rbp-28], r8d
-    mov eax, [rsi+20]; sym rend buff offset
+    mov eax, [rsi+20]; sym token buff offset
     mov rdi, [rcx]
-    lea r8, [rdi+rax]
-    mov eax, [r8]
+    mov eax, [rdi+rax]
     add [rbp-28], eax
     mov rsi, [rdx+8]
     mov eax, [rdx+20]
     lea rcx, [rbx+rax]
     mov rdi, [rcx+20]
     xor r8, r8
-    mov r8b, [rdx+17]
+    mov r8d, [rdx+16]
     mov r9d, [rsi]
     ;TODO: check if it exec, obj or bin mod
-    mov al, [rdx+16]
+    mov al, [rdx+24]
     cmp al, ADDR_PATCH_TYPE_DEF_RIP
     je _rip_patch_rpdr
     cmp al, ADDR_PATCH_TYPE_ABS
@@ -270,16 +270,16 @@ _abs_patch_rpdr:
     mov eax, [DEF_BASE_ADDR]
     mov ecx, [rbp-28]
     add rax, rcx
-    mov r10b, [rdx+18] 
+    mov r10b, [rdx+25] 
     cmp r10b, 4
     jne _abs8_patch_rpdr
     mov [rdi+r9], eax
     jmp _next_patch_rpdr
 _abs8_patch_rpdr:
-    mov r10, r9 
-    mov [r8], rax
+    mov [rdi+r9], rax
     jmp _next_patch_rpdr
 _rip_patch_rpdr:
+    ;NOTE: rip ref is used only in instruction
     xor eax, eax
     mov al, [rsi+7]
     add eax, r9d
@@ -4210,7 +4210,6 @@ _end_process_int1:
     pop rbp
     ret
 
-; TODO: handle addr ref
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_data_define:
     push rbp
@@ -4266,7 +4265,28 @@ _loop_process_data_define:
     cmp ebx, TOKEN_NAME_CONST
     je _process_data_check_direct
     cmp ebx, TOKEN_NAME_CONST_MUT
+    je _process_data_check_direct
+    cmp ebx, TOKEN_NAME_DATA
+    je _process_data_name_ref
+    cmp ebx, TOKEN_NAME_JMP
     jne _err_process_data_define
+_process_data_name_ref:
+    mov cl, [rbp-41]
+    cmp cl, 8
+    jne _err_process_data_name_ref
+    mov rdi, [rbp-24]
+    mov esi, 8
+    call entry_array_reserve_size
+    xor r8, r8
+    mov r8b, [rbp-41]
+    mov rdi, [rbp-72]
+    sub rdi, NAME_SYM_REF_SERV_HS
+    mov rsi, [rbp-16]
+    xor rdx, rdx
+    mov ecx, ADDR_PATCH_TYPE_ABS 
+    mov r9d, ebx
+    call push_to_delayed_patch
+    jmp _loop_process_data_define
 _process_data_check_direct:
     movzx edx, byte [rsi+12]
     cmp edx, TOKEN_TYPE_DIGIT
@@ -4366,8 +4386,12 @@ ___process_data_dub_end_loop_strint:
     mov rdi, [rbp-24]
     call entry_array_commit_size
     jmp _loop_process_data_define
+_err_process_data_name_ref:
+    mov rsi, ERR_DATA_NAME_REF
+    jmp _err_process_data
 _err_process_data_define:
     mov rsi, ERR_DATA_SYM_REF
+_err_process_data:
     mov rdi, [rbp-16]
     call set_reg_for_err_print
     call err_print
@@ -4418,7 +4442,8 @@ _start_loop_process_segment:
     cmp eax, TOKEN_TYPE_INS
     je _check_ins_rps
     cmp eax, TOKEN_TYPE_KEYWORD
-    jmp _check_kw_rps
+    je _check_kw_rps
+    jmp _err_processing_start_token
 _check_ins_rps:
     cmp ebx, INS_MOV
     jne _check_ins_rps1
