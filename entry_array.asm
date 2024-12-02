@@ -19,7 +19,7 @@ entry_array_reserve_size:
     mov [rbp-32], esi
     call entry_array_check_get
     test rax, rax
-    jnz _finish_token_brs
+    jnz _end_token_buf_reserve_size
     mov rdi, [rbp-28]
     mov esi, [rdi+12]
     shl esi, 1
@@ -40,13 +40,8 @@ _success_realloc_token_brs:
     mov esi, [rbp-32]
     call entry_array_check_get
     test rax, rax
-    jnz _finish_token_brs
+    jnz _end_token_buf_reserve_size
     exit_m -9
-_finish_token_brs:
-    mov rbx, rax
-    mov rdi, [rbp-28]
-    mov r8, [rdi]
-    sub rbx, r8
 _end_token_buf_reserve_size:
     add rsp, 32
     pop rbp
@@ -123,6 +118,7 @@ entry_array_curr_ptr:
     ret
 
 ; rdi - ptr to entry array main block, esi - count of entry to check
+; return rax - ptr, ebx - offset
 entry_array_check_get:
     push rbp
     mov rbp, rsp
