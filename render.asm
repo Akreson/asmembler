@@ -4221,6 +4221,7 @@ process_data_define:
     mov [rbp-24], rdi
     mov ebx, [rdi+8]
     mov [rsi], ebx
+    mov [rbp-52], ebx
     mov rbx, rsi
     mov eax, [rsi+12]
     add rbx, rax
@@ -4284,6 +4285,7 @@ _process_data_name_ref:
     mov rsi, [rbp-16]
     xor rdx, rdx
     mov ecx, ADDR_PATCH_TYPE_ABS 
+    sub ebx, [rbp-52]
     mov r9d, ebx
     call push_to_delayed_patch
     jmp _loop_process_data_define
