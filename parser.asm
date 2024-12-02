@@ -940,7 +940,7 @@ __ins_name_check_sp:
     jmp __ins_next_arg_check
 __ins_digit_check_sp:
     cmp eax, TOKEN_TYPE_DIGIT
-    jne _err_invalid_expr
+    jne __ins_str_check_sp
 ___ins_digit_set_sp:
     call curr_seg_ptr
     mov rdi, rax
@@ -950,6 +950,24 @@ ___ins_digit_set_sp:
     mov edi, [rbp-76]
     call inc_ins_argc
     jmp __ins_next_arg_check
+__ins_str_check_sp:
+    cmp eax, TOKEN_TYPE_STR
+    jne _err_invalid_expr
+    mov ecx, [rbp-24]
+    cmp ecx, 8
+    jg _err_str_reg_val
+    mov rsi, [rbp-32]
+    xor rax, rax
+    mov [rbp-32], rax
+    lea rdi, [rbp-32]
+    rep movsb
+    mov byte [rbp-20], TOKEN_TYPE_DIGIT
+    mov rax, [rbp-32]
+    lzcnt rbx, rax
+    mov rdx, 64
+    sub rdx, rbx
+    mov [rbp-19], dl
+    jmp ___ins_digit_set_sp
 __ins_addr_tokens:
     xor rax, rax
     mov [rbp-72], rax
@@ -2099,6 +2117,9 @@ _err_def_ext_before:
     jmp _err_start_parser
 _err_dubl_entry:
     mov rsi, ERR_DUBL_ENTRY
+    jmp _err_start_parser
+_err_str_reg_val:
+    mov rsi, ERR_INV_EXP
     jmp _err_start_parser
 _err_seg_inv_def:
     mov rsi, ERR_SEG_INV_DEF
