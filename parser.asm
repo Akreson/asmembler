@@ -1533,6 +1533,8 @@ __name_sp_macro:
     jne ___name_sp_macro_skip_comma
     cmp ecx, AUX_COMMA
     je _err_invalid_expr
+    cmp ecx, AUX_NEW_LINE 
+    je ___name_sp_macro_arg_end
     cmp ecx, AUX_SUB
     jne _err_invalid_expr
     mov dword [rbp-108], 1 
@@ -1785,17 +1787,17 @@ __kw_macr:
     mov [rbp-100], rbx
 __kw_macro_arg_loop:
     mov rdi, [rbp-40]
-    lea rsi, [rbp-16]
+    lea rsi, [rbp-32]
     call next_token
     test rax, rax
     jz _end_start_parser
-    movzx eax, byte [rbp-4]
+    movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_NAME
-    jne _err_invalid_expr
+    jne __kw_macro_arg_loop_ck_n
     mov rdi, [rbp-92]
-    mov rsi, [rbp-16]
-    movzx edx, byte [rbp-3]
-    mov ecx, [rbp-8]
+    mov rsi, [rbp-32]
+    movzx edx, byte [rbp-19]
+    mov ecx, [rbp-24]
     call hash_table_find_entry
     mov rbx, [rax]
     test rbx, rbx
@@ -1806,7 +1808,7 @@ __kw_macro_arg_loop:
     call entry_array_reserve_size
     mov rdx, rax
     mov rdi, rax
-    lea rsi, [rbp-16]
+    lea rsi, [rbp-32]
     mov ecx, 14 
     rep movsb
     mov rdi, [rbp-92]
@@ -1822,6 +1824,7 @@ __kw_macro_arg_loop:
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-20]
+__kw_macro_arg_loop_ck_n:
     cmp eax, TOKEN_TYPE_AUX
     jne ___ins_next_arg_eof
     mov ecx, [rbp-24]
