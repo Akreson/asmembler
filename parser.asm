@@ -231,11 +231,11 @@ _node_fetch_succ_pnt_unk:
     mov rdi, PATCH_LIST
     mov esi, edx
     call list_get_node_ptr
+    mov rdi, [rbp-96]
     mov r10d, [rbp-88]
     mov r9d, [rbp-84]
     mov r8, [rbp-80]
     mov edx, [rbp-72]
-    mov rdi, [rbp-96]
     mov ebx, [rdi+44]
     mov esi, [rdi+16]
     mov [rax+4], r9d
@@ -453,11 +453,9 @@ push_name_to_defined:
     mov rcx, [rsi]
     mov rdx, rax
     sub rdx, rcx
-    ;mov [rbp-40], edx
     call patch_unk_ref
 _add_entry_pnt_def:
     mov rax, [rbp-32]
-    ;mov ebx, [rbp-40]
     mov edi, [rbp-24]
     mov ecx, dword [LAST_LINE_NUM]
     mov [rax+4], edi
@@ -1659,6 +1657,7 @@ ___name_sp_macro_end:
     mov rsi, [rbp-72]
     call start_parser
     mov edi, [rbp-52]
+    mov [CURR_FILE_ENTRY_OFFSET], edi
     call get_file_entry_ptr_from_offset
     mov [rbp-40], rax
     jmp _new_entry_start_ps
@@ -1752,6 +1751,7 @@ __kw_include:
     mov rsi, rbx
     call start_parser
     mov edi, [rbp-52]
+    mov [CURR_FILE_ENTRY_OFFSET], edi
     call get_file_entry_ptr_from_offset
     mov [rbp-40], rax
     jmp _new_entry_start_ps
@@ -2158,9 +2158,11 @@ _loop_cpun:
     test esi, esi
     jz _next_loop_cpun
     mov al, [rdx+31]
+    and al, SYM_REF_MASK_REF
     cmp al, SYM_REF_MOD_EXTRN
     je _next_loop_cpun
     mov [rbp-8], rdx
+    mov r9, [rdx+16]
 __start_inner_loop_cpun:
     mov rdi, PATCH_LIST
     call list_get_node_ptr
