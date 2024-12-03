@@ -10,7 +10,6 @@ PARSER_ADDR_FLAG_SCALE     equ 0x2
 PARSER_ADDR_FLAG_REG_SCALE equ 0x3
 PARSER_ADDR_FLAG_NAME      equ 0x4
 PARSER_ADDR_FLAG_DIGIT     equ 0x8
-
 MACRO_EMPTY_ARG_FLAG equ 0xFF
 MACRO_COPY_ENTRY_SIZE equ 10
 
@@ -29,6 +28,14 @@ entry_array_data_m TEMP_PARSER_ARR, 1
 ; +16 symbol entry (round up to multible of 8, curr 16) (32b total)
 UNK_ENTRY_SIZE equ 32
 entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
+
+; linked list entry body - +4 offset in file array, +8 **ptr of buf to offset from,
+; +16 offset in buff, +20 second indirectional offset (must be 0 if not set),
+; +24 line num, +28 in file offset
+PATCH_LIST_ENTRY_SIZE equ 32
+PATCH_LIST dq 0
+dd 0, 0, PATCH_LIST_ENTRY_SIZE
+dd 0, 0
 
 ; entry
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
@@ -56,13 +63,6 @@ SEG_ENTRY_SIZE equ 64
 entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
 hash_table_data_m NAME_SYM_HASH_TABLE, 1
 
-; linked list entry body - +4 offset in file array, +8 **ptr of buf to offset from,
-; +16 offset in buff, +20 second indirectional offset (must be 0 if not set),
-; +24 line num, +28 in file offset
-PATCH_LIST_ENTRY_SIZE equ 32
-PATCH_LIST dq 0
-dd 0, 0, PATCH_LIST_ENTRY_SIZE
-dd 0, 0
 
 TOKEN_OFFSET_TO_INS_ARGC    equ 35
 TOKEN_HEADER_PLUS_TYPE      equ 21
