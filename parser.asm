@@ -1567,8 +1567,10 @@ ___name_sp_macro_skip_comma:
     test rax, rax
     jz _end_start_parser
     movzx eax, byte [rbp-20]
+    cmp eax, TOKEN_TYPE_EOF
+    je ___name_sp_macro_arg_end 
     cmp eax, TOKEN_TYPE_AUX
-    jne ___ins_next_arg_eof
+    jne _err_invalid_expr
     mov ecx, [rbp-24]
     cmp ecx, AUX_COMMA
     je __name_sp_macro
@@ -1657,7 +1659,6 @@ ___name_sp_macro_end:
     mov rsi, [rbp-72]
     call start_parser
     mov edi, [rbp-52]
-    mov [CURR_FILE_ENTRY_OFFSET], edi
     call get_file_entry_ptr_from_offset
     mov [rbp-40], rax
     jmp _new_entry_start_ps
