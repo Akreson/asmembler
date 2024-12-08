@@ -273,10 +273,10 @@ _abs_patch_rpdr:
     mov r10b, [rdx+25] 
     cmp r10b, 4
     jne _abs8_patch_rpdr
-    mov [rdi+r9], eax
+    add [rdi+r9], eax
     jmp _next_patch_rpdr
 _abs8_patch_rpdr:
-    mov [rdi+r9], rax
+    add [rdi+r9], rax
     jmp _next_patch_rpdr
 _rip_patch_rpdr:
     ;NOTE: rip ref is used only in instruction
