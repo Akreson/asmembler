@@ -1,9 +1,9 @@
-entry jump_to1
-
-segment readable
 CONST_NEG equ -1
 NAME_C equ 0x4
 NAME_C2 equ 1
+entry jump_to1
+
+segment readable
 NAME_D db 0
 
 segment readable executable
@@ -12,7 +12,6 @@ segment readable executable
     jmp jump_to1
     mov [r12], rax
     mov [r13], rax
-    mov [r12+rax], rax
     mov [r13+rax], rax
     mov [rax+r12], rax
     mov [rax+r13], rax
@@ -20,6 +19,7 @@ segment readable executable
     mov [r13+16], rax
     mov [r13+r12], rax
     mov [r12+r13], rax
+;    mov [r12+rax+NAME_D], rax
     mov dword [NAME_D], 0xffffff 
     mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
@@ -148,4 +148,5 @@ jump_to3:
     mov [r11], r10b 
     mov [r8], eax 
     mov [r9], r8
+
 

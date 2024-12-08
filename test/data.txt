@@ -1,8 +1,11 @@
 segment readable writeable
-NAME_D db "01234" dup 5
+
+NAME_S dq NAME_A
+NAME_D db 0
 dq 0xff, 0x1212121212121212, 0xdeadbeef
 dd 0x99999999, 0x44
 NAME_A dq 0x0101010101010101
 dd 0x01010101
 dw 0xee dup 5
+
 CONST0 equ 1

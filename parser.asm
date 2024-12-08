@@ -880,7 +880,7 @@ __ins_kw_check_sp:
     mov byte [rax], TOKEN_BUF_ADDR 
     mov byte [rax+1], 0
     mov byte [rax+2], 15
-    inc ebx
+    ;inc ebx
     add rax, 3
     mov [rbp-84], ebx
     mov byte [rax], TOKEN_BUF_DIRECT
@@ -913,7 +913,7 @@ __ins_aux_check_sp:
     call entry_array_reserve_size
     mov byte [rax], TOKEN_BUF_ADDR
     mov byte [rax+1], 0
-    inc ebx
+    ;inc ebx
     mov [rbp-84], ebx
     jmp __ins_addr_tokens
 ___ins_aux_check_sub_sp:
@@ -967,24 +967,133 @@ __ins_str_check_sp:
     mov [rbp-19], dl
     jmp ___ins_digit_set_sp
 __ins_addr_tokens:
-    xor rax, rax
+    xor edx, edx
+    mov byte [rbp-66], dl
+    mov byte [rbp-67], dl
+    mov eax, 237
+    mov ebx, TOKEN_KIND_SIZE
+    div ebx
     mov [rbp-72], rax
-    mov byte [rbp-65], 3
+    mov byte [rbp-66], al
     mov rdi, [rbp-40]
     lea rsi, [rbp-16]
     call next_token
-    test rax, rax
-    jz _end_start_parser
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_REG
     jne ___ins_addr_name_test
-    mov byte [rbp-68], 3
     call curr_seg_ptr
     mov rdi, rax
     lea rsi, [rbp-16]
     call push_direct
-    add byte [rbp-65], 15
-    jmp ___ins_addr_def
+    dec byte [rbp-66]
+    inc byte [rbp-67]
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_AUX
+    jne _err_invalid_addr_expr
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_RBRACKET
+    je __ins_addr_end
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_SUB
+    je ___ins_addr_rs
+    cmp ebx, AUX_ADD
+    jne _err_invalid_addr_expr
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_NAME
+    je ___ins_addr_offset_n
+    cmp al, TOKEN_TYPE_DIGIT
+    je ___ins_addr_offset_d 
+    cmp al, TOKEN_TYPE_REG
+    jne _err_invalid_addr_expr
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+    dec byte [rbp-66]
+    inc byte [rbp-67]
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_AUX
+    jne _err_invalid_addr_expr
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_RBRACKET
+    je __ins_addr_end
+    cmp ebx, AUX_MUL
+    je ___ins_addr_rr_s_check
+    cmp ebx, AUX_ADD
+    je ___ins_addr_rr_o
+    cmp ebx, AUX_SUB
+    je ___ins_addr_rr_o
+    jne _err_invalid_addr_expr
+___ins_addr_rr_s_check:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_DIGIT
+    jne ___ins_addr_check_rr_sn
+    mov rcx, [rbp-16]
+    cmp rcx, 8
+    ja _err_invalid_addr_expr
+    mov edx, ecx
+    dec ecx
+    and edx, ecx
+    test edx, edx
+    jnz _err_invalid_addr_expr
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+    dec byte [rbp-66]
+    jmp ___ins_addr_rr_s_end
+___ins_addr_check_rr_sn:
+    cmp al, TOKEN_TYPE_NAME
+    jne _err_invalid_addr_expr
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
+    call push_name_ptr_offset
+    dec byte [rbp-66]
+___ins_addr_rr_s_end:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_RBRACKET
+    je __ins_addr_end
+    cmp ebx, AUX_ADD
+    je ___ins_addr_rr_o
+    cmp ebx, AUX_SUB
+    je ___ins_addr_rr_o
+    jmp _err_invalid_addr_expr 
+___ins_addr_rr_o:
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+___ins_addr_rs:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_NAME
+    je ___ins_addr_offset_n
+    cmp al, TOKEN_TYPE_DIGIT
+    je ___ins_addr_offset_d 
+    jne _err_invalid_addr_expr
 ___ins_addr_name_test:
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_addr_expr
@@ -993,183 +1102,109 @@ ___ins_addr_name_test:
     lea rsi, [rbp-16]
     mov edx, [rbp-52]
     call push_name_ptr_offset
-    add byte [rbp-65], 13
-    mov byte [rbp-68], 2
-    ;mov byte [rbp-67], 1
-    mov eax, PARSER_ADDR_FLAG_NAME
-    mov [rbp-72], eax
-___ins_addr_def:
+    dec byte [rbp-66]
+    inc byte [rbp-67]
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, [rbp-4]
+    cmp al, TOKEN_TYPE_AUX
+    jne _err_invalid_addr_expr
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_RBRACKET
+    je __ins_addr_end
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+    mov ebx, [rbp-8]
+    cmp ebx, AUX_SUB
+    je ___ins_addr_name_o_check
+    cmp ebx, AUX_ADD
+    jne _err_invalid_addr_expr
+___ins_addr_name_o_check:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov al, byte [rbp-4]
+    cmp al, TOKEN_TYPE_DIGIT
+    je ___ins_addr_offset_d
+    cmp al, TOKEN_TYPE_NAME
+    jne _err_invalid_addr_expr
+___ins_addr_offset_n:
+    dec byte [rbp-66]
+    inc byte [rbp-67]
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    mov edx, [rbp-52]
+    call push_name_ptr_offset
+    xor rax, rax
+    mov [rbp-16], rax
+    mov [rbp-8], eax
+    mov byte [rbp-4], TOKEN_TYPE_DIGIT
+    mov byte [rbp-3], 0
+    jmp ___ins_addr_loop_mul_d
+___ins_addr_offset_d:
+    dec byte [rbp-66]
+    inc byte [rbp-67]
+___ins_addr_loop_mul_d:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
     call next_token
-    test rax, rax
-    jz _end_start_parser
-    movzx eax, byte [rbp-20]
-    cmp eax, TOKEN_TYPE_AUX
-    jne _err_invalid_expr
+    mov al, byte [rbp-20]
+    cmp al, TOKEN_TYPE_AUX
+    jne _err_invalid_addr_expr
     mov ebx, [rbp-24]
     cmp ebx, AUX_RBRACKET
-    jne ___ins_addr_def_next_aux
-    call curr_token_buf_start_ptr
-    movzx edx, byte [rbp-67]
-    mov esi, 1
-    cmp edx, 0
-    cmove edx, esi
+    je ___ins_addr_end_mul_d
+    mov cl, [rbp-66]
+    test cl, cl
+    jz _err_invalid_addr_expr
+    mov [rbp-72], ebx
+    cmp ebx, AUX_ADD
+    je ___ins_addr_mul_d_exp_d 
+    cmp ebx, AUX_SUB
+    jne  _err_invalid_addr_expr 
+___ins_addr_mul_d_exp_d:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-32]
+    call next_token
+    mov al, byte [rbp-20]
+    cmp al, TOKEN_TYPE_DIGIT
+    jne _err_invalid_addr_expr
+    mov rbx, [rbp-32]
+    mov ecx, [rbp-72]
+    cmp ecx, AUX_SUB
+    jne ___ins_addr_mul_d_add
+    neg rbx
+___ins_addr_mul_d_add:
+    add [rbp-16], rbx
+    dec byte [rbp-66]
+    jmp ___ins_addr_loop_mul_d
+___ins_addr_end_mul_d:
+    mov eax, [rbp-16]; bound to 32bits value
+    test eax, eax
+    jz __ins_addr_end
+    lzcnt ebx, eax
+    mov edx, 32
+    sub edx, ebx
+    mov [rbp-3], dl
+    call curr_seg_ptr
+    mov rdi, rax
+    lea rsi, [rbp-16]
+    call push_direct
+__ins_addr_end:
+    call curr_token_buf_ptr
     mov ecx, [rbp-84]
-    mov r8b, [rbp-65]
-    mov [rax+rcx], dl
-    add [rax+rcx+1], r8b
+    sub ebx, ecx
+    sub rax, rbx
+    mov r8b, [rbp-67]
+    mov [rax+1], r8b
+    mov [rax+2], bl
     mov edi, [rbp-76]
     call inc_ins_argc
     jmp __ins_next_arg_check
-___ins_addr_def_next_aux:
-    movzx ecx, byte [rbp-68]
-    movzx edx, byte [rbp-67]
-    cmp edx, ecx
-    ja _err_invalid_addr_expr
-    cmp ebx, AUX_ADD
-    je ___ins_addr_arith_check
-    cmp ebx, AUX_SUB
-    je ___ins_addr_arith_check 
-    cmp ebx, AUX_MUL
-    je ___ins_addr_scale_check
-    jne _err_invalid_addr_expr
-___ins_addr_arith_check:
-    movzx eax, byte [rbp-67]
-    mov esi, eax
-    mov edi, PARSER_ADDR_FLAG_BITS
-    mul edi
-    mov ecx, eax
-    mov ebx, [rbp-72]
-    mov r9d, ebx
-    shr ebx, cl
-    mov edi, PARSER_ADDR_FLAG_MASK
-    and ebx, edi
-    test ebx, ebx
-    jnz ___ins_addr_arith_check_set_curr
-    mov ebx, PARSER_ADDR_FLAG_REG
-    shl ebx, cl
-    or r9d, ebx
-    mov [rbp-72], r9d
-___ins_addr_arith_check_set_curr:
-    mov edx, ebx
-___ins_addr_arith_fetch_next:
-    inc esi
-    mov [rbp-67], sil
-    mov [rbp-66], dl
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-32]
-    call push_direct
-    add byte [rbp-65], 15
-    mov rdi, [rbp-40]
-    lea rsi, [rbp-16]
-    call next_token
-    test rax, rax
-    jz _end_start_parser
-    movzx eax, byte [rbp-4]
-    cmp eax, TOKEN_TYPE_REG
-    je ___inc_addr_arith_reg
-    cmp eax, TOKEN_TYPE_DIGIT
-    je ___inc_addr_arith_digit_offset
-    cmp eax, TOKEN_TYPE_NAME
-    je ___inc_addr_arith_name_offset
-    jmp _err_invalid_addr_expr
-___inc_addr_arith_reg:
-    mov eax, [rbp-24]
-    movzx ecx, byte [rbp-67]
-    movzx edx, byte [rbp-66]
-    cmp eax, AUX_ADD
-    jne _err_invalid_addr_expr
-    cmp ecx, 2
-    jae _err_invalid_addr_expr
-    cmp edx, PARSER_ADDR_FLAG_REG_SCALE
-    je _err_invalid_addr_expr
-    cmp edx, PARSER_ADDR_FLAG_NAME
-    je _err_invalid_addr_expr
-___inc_addr_arith_reg_pass:
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-16]
-    call push_direct
-    add byte [rbp-65], 15
-    inc byte [rbp-67]
-    jmp ___ins_addr_def
-___inc_addr_arith_digit_offset:
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-16]
-    call push_direct
-    add byte [rbp-65], 15
-    jmp ___inc_addr_arith_offset
-___inc_addr_arith_name_offset:
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-16]
-    mov edx, [rbp-52]
-    call push_name_ptr_offset
-    add byte [rbp-65], 13
-___inc_addr_arith_offset:
-    mov al, [rbp-67]
-    inc al
-    mov [rbp-67], al
-    mov [rbp-68], al
-    jmp ___ins_addr_def
-___ins_addr_scale_check:
-    movzx edx, byte [rbp-67]
-    cmp edx, 2
-    ja _err_invalid_addr_expr
-    cmp edx, 1
-    jne ___ins_addr_scale_mul
-    movzx ecx, byte [rbp-72]
-    and ecx, PARSER_ADDR_FLAG_MASK
-    cmp ecx, PARSER_ADDR_FLAG_REG_SCALE
-    je _err_invalid_addr_expr
-    cmp ecx, PARSER_ADDR_FLAG_NAME
-    je _err_invalid_addr_expr
-___ins_addr_scale_mul:
-    mov rdi, [rbp-40]
-    lea rsi, [rbp-32]
-    call next_token
-    test rax, rax
-    jz _end_start_parser
-    movzx eax, byte [rbp-20]
-    cmp eax, TOKEN_TYPE_NAME
-    je ___ins_addr_scale_mul_name
-    cmp eax, TOKEN_TYPE_DIGIT
-    jne _err_invalid_addr_expr
-    mov rcx, [rbp-32]
-    cmp rcx, 8
-    ja _err_invalid_addr_expr
-    mov rdx, rcx
-    dec rcx
-    and rdx, rcx
-    test rdx, rdx
-    jnz _err_invalid_addr_expr
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-32]
-    call push_direct
-    add byte [rbp-65], 15
-    jmp ___ins_addr_scale_set
-___ins_addr_scale_mul_name:
-    call curr_seg_ptr
-    mov rdi, rax
-    lea rsi, [rbp-32]
-    mov edx, [rbp-52]
-    call push_name_ptr_offset
-    add byte [rbp-65], 13
-___ins_addr_scale_set:
-    movzx eax, byte [rbp-67]
-    mov edi, PARSER_ADDR_FLAG_BITS
-    mul edi
-    mov ecx, eax
-    mov esi, PARSER_ADDR_FLAG_REG_SCALE
-    shl esi, cl
-    mov edx, [rbp-72]
-    or edx, esi
-    mov [rbp-72], edx
-    jmp ___ins_addr_def
 __ins_set_token_group:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
