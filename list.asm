@@ -3,15 +3,14 @@ segment readable executable
 
 ;0 ptr to mem, +8 count, +12 capacity, +16 entry size,
 ;+20 free next offset, +24 ?
-macro list_main_block_m
+macro list_main_block_m name
 {
-    ;entry array main block
-    dq 0
-    dd 0, 0, 0
-
-    ;sentinal of free and in use nodes
-    ;TODO: remove in use node track?
-    dd 0, 0
+;entry array main block
+name dq 0
+dd 0, 0, 0
+;sentinal of free and in use nodes
+;TODO: remove in use node track?
+dd 0, 0
 }
 
 LIST_BLOCK_SIZE equ 24
