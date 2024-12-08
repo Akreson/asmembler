@@ -1911,7 +1911,7 @@ __check_ref_sec_gen_a_i:
     mov al, [rdi+57]
     test al, al
     jz _success_gen_a_i
-    movzx r9d, byte [rdi+57]
+    movzx r9d, byte [rdi+55]
     add r9d, r10d
     xor r8,r8
     mov r8b, 4
