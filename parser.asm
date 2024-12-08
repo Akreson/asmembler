@@ -1696,6 +1696,7 @@ ___name_sp_macro_end:
     mov rsi, [rbp-72]
     call start_parser
     mov edi, [rbp-52]
+    mov [CURR_FILE_ENTRY_OFFSET], edi
     call get_file_entry_ptr_from_offset
     mov [rbp-40], rax
     jmp _new_entry_start_ps
@@ -2181,7 +2182,7 @@ parser_check_print_unk_name:
     sub rsp, 64
     mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
     mov ecx, [rdi+8]
-    mov eax, PATCH_LIST_ENTRY_SIZE
+    mov eax, UNK_ENTRY_SIZE
     mul ecx
     mov rdx, [rdi]
     add rax, rdx
