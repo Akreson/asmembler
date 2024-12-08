@@ -313,9 +313,11 @@ reduce_ins_offset:
     mov r8, [rsi]
     mov r9d, [rsi+8]
     lea rdi, [r8+rax]
+    add r8, r9
     mov rsi, rdi
     add rsi, rcx
-    mov ecx, r9d
+    mov rcx, r8
+    sub rcx, rsi
     rep movsb
     mov rdi, [rbp-8]
     mov r8, [rdi]
