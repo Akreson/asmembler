@@ -1183,9 +1183,11 @@ ___ins_addr_mul_d_add:
     dec byte [rbp-66]
     jmp ___ins_addr_loop_mul_d
 ___ins_addr_end_mul_d:
+    ;TODO: check overflow?
     mov eax, [rbp-16]; bound to 32bits value
     test eax, eax
     jz __ins_addr_end
+    mov [rbp-16], eax
     lzcnt ebx, eax
     mov edx, 32
     sub edx, ebx

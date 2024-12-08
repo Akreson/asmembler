@@ -7,6 +7,7 @@ segment readable
 NAME_D db 0
 
 segment readable executable
+    mov byte [rax+rdx+NAME_C+8+1], 3
     jg jump_to3
     jmp jump_to2
     jmp jump_to1
@@ -21,7 +22,6 @@ segment readable executable
     mov [r12+r13], rax
 ;    mov [r12+rax+NAME_D], rax
     mov dword [NAME_D], 0xffffff 
-    mov dword [NAME_D-NAME_C], 0xffffff 
     mov word [r8+r11], 32
 jump_to1:
     mov byte [rax+rdx], 200 

@@ -1474,6 +1474,7 @@ ___rproc_addr_2p_r_r_skip_rbp:
 __rproc_addr_3p_disp:
     mov [rbp-40], r8
     mov [rbp-48], r9
+    lea r15, [r9+1]
     mov dl, [r9]
     inc r9
     cmp dl, TOKEN_BUF_PTR_OFFSET
@@ -1482,36 +1483,48 @@ __rproc_addr_3p_disp:
     call is_name_const
     test rax, rax
     jz _err_rproc_second_param_non_const
-    mov r8, [rbp-40]
     lea rdi, [rbp-128]
-    mov r9, rdi
+    mov r15, rdi
     lea rsi, [rax+16]
     mov ecx, TOKEN_KIND_SIZE
     rep movsb
+    mov r8, [rbp-40]
+    mov r9, [rbp-48]
+    sub r9, 2
 __rproc_addr_3p_disp_digit:
+    add r9, 15
     mov ebx, [r8+9]
     cmp ebx, AUX_SUB
     jne ___rproc_addr_3p_skip_neg
-    neg qword [r9]
+    neg qword [r15]
 ___rproc_addr_3p_skip_neg:
+    mov r10, [rbp-56]
+    cmp r9, r10
+    jae ___rproc_addr_3p_disp_set
+    mov rbx, [r9+1]
+    add [r15], rbx
+    add r9, 15
+    cmp r9, r10
+    jne _err_rproc_addr_invalid_2nd
+___rproc_addr_3p_disp_set:
     mov rsi, [rbp-16]
     mov bl, [rbp-60]
     mov [rsi+1], bl
     inc byte [rsi+24]
-    mov al, [r9+13]
+    mov al, [r15+13]
     cmp al, 8
     mov dl, 0x4
     ja ___rprc_addr_3p_disp32
     or dl, MOD_ADDR_REG_DISP8
     or byte [rsi], dl
-    mov cl, [r9]
+    mov cl, [r15]
     mov [rsi+2], cl
     inc byte [rsi+24]
     jmp _success_render_process_addr
 ___rprc_addr_3p_disp32:
     or dl, MOD_ADDR_REG_DISP32
     or byte [rsi], dl
-    mov ecx, [r9]
+    mov ecx, [r15]
     mov [rsi+2], ecx
     add byte [rsi+24], 4
     jmp _success_render_process_addr
@@ -1548,18 +1561,29 @@ __rproc_addr_2p_ref_check:
     rep movsb
     mov r8, [rbp-40]
     mov r9, [rbp-48]
+    sub r8, 2
 __rproc_addr_2p_ref_neg_check:
+    add r8, 15
     mov ebx, [r9+9]
     cmp ebx, AUX_SUB
-    jne __rproc_addr_2p_ref_set
+    jne __rproc_addr_2p_ref_dig_check
     neg qword [r15]
+__rproc_addr_2p_ref_dig_check:
+    mov r10, [rbp-56]
+    cmp r8, r10
+    jae __rproc_addr_2p_ref_set
+    mov rbx, [r8+1]
+    add [r15], rbx
+    add r8, 15
+    cmp r8, r10
+    jne _err_rproc_addr_invalid_2nd
 __rproc_addr_2p_ref_set:
     mov rsi, [rbp-16]
     mov r10b, [rsi]
     or r10b, MOD_ADDR_REG
     or r10b, 0x5
     mov [rsi], r10b
-    mov edx, [r15]; in addr disp can't be bigger more then 4 bytes
+    mov edx, [r15]; in addr disp can't be bigger then 4 bytes
     mov [rsi+1], edx
     add byte [rsi+24], 4
     jmp _success_render_process_addr
