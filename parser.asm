@@ -33,9 +33,7 @@ entry_array_data_m UNKNOWN_NAME_SYM_REF_ARRAY, UNK_ENTRY_SIZE
 ; +16 offset in buff, +20 second indirectional offset (must be 0 if not set),
 ; +24 line num, +28 in file offset
 PATCH_LIST_ENTRY_SIZE equ 32
-PATCH_LIST dq 0
-dd 0, 0, PATCH_LIST_ENTRY_SIZE
-dd 0, 0
+list_main_block_m PATCH_LIST, PATCH_LIST_ENTRY_SIZE 
 
 ; entry
 ; 0 data size, +4 offset in file array, +8 offset of definition in file data,
@@ -1518,7 +1516,7 @@ ___name_const_set_empty:
     mov edi, TOKEN_KIND_SIZE
     call get_mem_def_name_buf
     mov byte [rax+13], TOKEN_TYPE_NONE
-    mov edi, [ebp-72]
+    mov edi, [rbp-72]
     mov esi, TOKEN_NAME_CONST
     call set_name_token_type
     jmp _new_entry_start_ps
