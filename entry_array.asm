@@ -21,8 +21,12 @@ entry_array_reserve_size:
     test rax, rax
     jnz _end_token_buf_reserve_size
     mov rdi, [rbp-28]
-    mov esi, [rdi+12]
-    shl esi, 1
+    mov eax, [rdi+16]
+    mov ebx, [rdi+8]
+    add ebx, [rbp-32]
+    mul ebx
+    shl eax, 1
+    mov esi, eax
     lea rdx, [rbp-20]
     call entry_array_copy_realloc
     test rax, rax
@@ -83,12 +87,17 @@ entry_array_ensure_free_space:
     sub rsp, 32
     mov ebx, [rdi+8]
     mov edx, [rdi+12]
+    mov r8d, edx
     sub edx, ebx
     cmp edx, esi
     jae _success_eaec
     mov [rbp-28], rdi
-    mov [rbp-32], esi
-    shl edx, 1
+    mov eax, [rdi+16]
+    mov ebx, [rdi+8]
+    add ebx, esi
+    mul ebx
+    shl eax, 1
+    mov esi, eax
     lea rdx, [rbp-20]
     call entry_array_copy_realloc
     test eax, eax
@@ -97,11 +106,12 @@ entry_array_ensure_free_space:
 _update_eaefs:
     mov rdi, [rbp-28]
     call entry_array_dealloc
-    mov rdi, [rbp-28]
-    mov r8, rdi
+    mov rdx, [rbp-28]
+    mov rdi, rdx
     lea rsi, [rbp-20]
     mov ecx, 20
-    mov rdi, r8
+    rep movsb
+    mov rdi, rdx
 _success_eaec:
     call entry_array_curr_ptr   
 _end_entry_array_ensure_free_space:
