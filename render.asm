@@ -3442,7 +3442,6 @@ _end_process_stos:
     pop rbp
     ret
 
-; TODO: allow use def const and check it
 ; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
 ; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
 process_ins_template4:
@@ -3480,6 +3479,8 @@ _instemp4_r:
     jne _err_invalid_first_param_instemp4
     lea r9, [rsi+15]
     movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_PTR_OFFSET
+    je __instemp4_r_i
     cmp ecx, TOKEN_BUF_DIRECT
     jne _err_invalid_second_param_instemp4
     movzx ebx, byte [r9+13]
@@ -3519,6 +3520,8 @@ _instemp4_a:
     movzx eax, byte [rsi+2]
     lea r9, [rsi+rax]
     movzx ecx, byte [r9]
+    cmp ecx, TOKEN_BUF_PTR_OFFSET
+    je __instemp4_a_i
     cmp ecx, TOKEN_BUF_DIRECT
     jne _err_invalid_second_param_instemp4
     movzx ebx, byte [r9+13]
