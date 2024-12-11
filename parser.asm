@@ -170,7 +170,12 @@ _success_realloc_pnt_unk:
     mov dword [rbp-60], 0
     mov [rbp-64], eax
     mov [rbp-68], ebx
+    xor ecx, ecx
+    mov esi, eax
 __ht_reasign_push_unk_start:
+    mov eax, [r8]
+    test eax, eax; TODO: delete entry for not checking later?
+    jz __ht_reasign_unk_next
     mov rdi, NAME_SYM_HASH_TABLE
     mov rsi, [r8+16]
     mov ecx, [r8+24]
@@ -182,6 +187,7 @@ __ht_reasign_push_unk_start:
     mov ebx, [rbp-68]
     lea r9, [rdx+rcx+16]
     mov [rax], r9
+__ht_reasign_unk_next:
     add ecx, ebx
     cmp ecx, esi
     jae __dealloc_old_push_unk
