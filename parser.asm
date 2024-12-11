@@ -445,14 +445,14 @@ push_name_to_defined:
     add rax, 16
     mov rdi, rax
     mov rsi, [rbp-16]
-    mov ecx, TOKEN_HEADER_SIZE
+    mov ecx, NAME_SYM_REF_SERV_HS
     rep movsb
     mov rbx, [rbp-8]
     mov rdi, [rbx]
     test rdi, rdi
     jz _add_entry_pnt_def
-    mov cl, [rdi+16]
-    mov [rax+16], cl
+    mov cl, [rdi+15]
+    mov [rax+15], cl
     mov rsi, NAME_SYM_REF_ARRAY
     mov rcx, [rsi]
     mov rdx, rax
