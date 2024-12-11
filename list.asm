@@ -2,12 +2,12 @@ segment readable executable
 ; first entry at offset 0 is reserved as invalid offset
 
 ;0 ptr to mem, +8 count, +12 capacity, +16 entry size,
-;+20 free next offset, +24 ?
-macro list_main_block_m name
+;+20 free next offset, +24 last get offset
+macro list_main_block_m name, size
 {
 ;entry array main block
 name dq 0
-dd 0, 0, 0
+dd 0, 0, size
 ;sentinal of free and in use nodes
 ;TODO: remove in use node track?
 dd 0, 0
@@ -139,7 +139,7 @@ list_realloc:
     jnz _success_list_realloc
     exit_m -9
 _success_list_realloc:
-    mov rdi, [rbp-32]
+    mov rdi, [rbp-40]
     call entry_array_dealloc
     mov rdi, [rbp-40]
     lea rsi, [rbp-24]
