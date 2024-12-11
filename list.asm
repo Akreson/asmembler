@@ -168,6 +168,7 @@ list_get_free:
     mov rdi, [rbp-8] 
     call list_check_get_free
 _end_list_get_free:
+    mov dword [rbx], 0
     add rsp, 8
     pop rbp
     ret
