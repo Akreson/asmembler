@@ -78,8 +78,7 @@ _list_free_insert_to_free:
     call list_insert_node
     test eax, eax
     jz _err_list_free_node
-    mov ecx, eax
-    mov [rdi+20], ecx
+    mov [rdi+20], eax
     mov eax, [rbp-4]
     jmp _end_list_free_node
 _err_list_free_node:
@@ -108,19 +107,18 @@ list_check_get_free:
     jmp _end_dlist_check_get_entry 
 _check_free_list_lcgf:
     mov rdi, [rbp-8]
-    mov ebx, [rdi+20]
-    test ebx, ebx
+    mov eax, [rdi+20]
+    test eax, eax
     jz _check_fail_dcgf
     mov rdx, [rdi]
-    lea r8, [rdx+rbx]
+    lea r8, [rdx+rax]
     mov ecx, [r8]
     mov [rdi+20], ecx
-    mov eax, ebx
     mov [rdi+24], eax
     mov rbx, r8
     jmp _end_dlist_check_get_entry
 _check_fail_dcgf:
-    xor rax, rax
+    xor eax, eax
 _end_dlist_check_get_entry:
     add rsp, 8
     pop rbp

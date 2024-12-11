@@ -125,7 +125,7 @@ hash_table_add_entry:
     shl edi, 4; 3 + 1
     call mmap_def
     xor rdx, rdx
-    sub rdx, 1
+    not rdx
     cmp rax, rdx   
     jne _start_realloc_ht
     xor rax, rax
@@ -133,15 +133,15 @@ hash_table_add_entry:
 _start_realloc_ht:
     mov ecx, 16
     mov rsi, [rbp-8]
+    mov rdx, rsi
     lea rdi, [rbp-32]
     rep movsb
-    mov rdi, [rbp-8]
-    mov ecx, [rdi+12]
-    mov r8, [rdi]
+    mov ecx, [rdx+12]
+    mov r8, [rdx]
     lea r9, [r8+rcx*8]
     shl ecx, 1
-    mov [rdi], rax
-    mov [rdi+12], ecx
+    mov [rdx], rax
+    mov [rdx+12], ecx
     mov [rbp-48], r9
 _start_realloc_loop_ht:
     mov rax, [r8]
