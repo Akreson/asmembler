@@ -466,14 +466,12 @@ _add_entry_pnt_def:
     mov [rax+12], ecx
     call get_file_entry_ptr_from_offset
     mov rbx, rax
-    mov rax, [rbp-32]
+    mov rdx, [rbp-32]
     mov ecx, [rbx+16]
-    mov ecx, 20
-    mov [rax+8], ecx
+    mov [rdx+8], ecx
     mov rdi, NAME_SYM_HASH_TABLE
     mov rsi, [rbp-8]
-    add rax, 16
-    mov rdx, rax
+    add rdx, 16
     call hash_table_add_entry
     mov rax, [rbp-32]
     mov ebx, [rbp-36]
