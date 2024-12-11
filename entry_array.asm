@@ -38,7 +38,7 @@ _success_realloc_token_brs:
     mov rdx, [rbp-28]
     mov rdi, rdx
     lea rsi, [rbp-20]
-    mov ecx, 20
+    mov ecx, ENTRY_ARRAY_DATA_SIZE
     rep movsb
     mov rdi, rdx
     mov esi, [rbp-32]

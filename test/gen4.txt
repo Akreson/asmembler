@@ -1,4 +1,17 @@
 segment readable executable
+    shl eax, NAME_C
+    shl dword [r13+r12*2], NAME_C
+    shl r13, NAME_C
+    shr eax, NAME_C
+    shr dword [r13+r12*2], NAME_C
+    shr r13, NAME_C
+    sar eax, NAME_C
+    sar dword [r13+r12*2], NAME_C
+    sar r13, NAME_C
+    sal eax, NAME_C
+    sal dword [r13+r12*2], NAME_C
+    sal r13, NAME_C
+
     shl eax,cl
     shr dword [NAME_D-NAME_C],23
     shr qword [rax], cl
