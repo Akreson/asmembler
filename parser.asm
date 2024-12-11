@@ -486,7 +486,7 @@ _end_push_name_to_defined:
 get_name_sym_ref_data:
     push rbp
     mov rbp, rsp
-    sub rsp, 44
+    sub rsp, 64
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov [rbp-20], edx
@@ -534,7 +534,7 @@ _def_sym_gnsrd:
     mov rcx, [rax]
     sub rbx, rcx
 _end_get_name_sym_ref_data:
-    add rsp, 44
+    add rsp, 64
     pop rbp
     ret
 
@@ -1540,7 +1540,6 @@ __name_sp_aux:
     jne _err_invalid_expr
     cmp ecx, AUX_NEW_LINE
     jne _err_invalid_expr
-    mov [rbp-92], r8d
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_JMP
@@ -2227,6 +2226,8 @@ _next_loop_cpun:
     add rdx, PATCH_LIST_ENTRY_SIZE
     jmp _loop_cpun
 _end_loop_cpun:
+;    mov rdi, NAME_SYM_HASH_TABLE
+;    call print_ht_sym_str
     mov al, [rbp-29]
     test al, al
     jz _return_cpun
@@ -2261,13 +2262,13 @@ init_parser_data:
     mov rsi, 2048
     call init_entry_array
     mov rdi, NAME_SYM_HASH_TABLE
-    mov rsi, 2048
+    mov rsi, 4096
     xor rdx, rdx
     call hash_table_init
     test rax, rax
     jz _fail_exit_init_parser_data 
     mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY
-    mov rsi, 256
+    mov rsi, 1024
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
@@ -2297,7 +2298,7 @@ _init_seg_loop:
     jmp _init_seg_loop
 _end_seg_loop:
     mov rdi, PATCH_LIST
-    mov esi, 256
+    mov esi, 1024
     call init_list
     test rax, rax
     jz _fail_exit_init_parser_data
