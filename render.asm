@@ -248,14 +248,13 @@ _loop_patch_rpdr:
     mov r8d, [rcx+52]
     mov [rbp-28], r8d
     mov eax, [rsi+20]; sym token buff offset
-    mov rdi, [rcx]
-    mov eax, [rdi+rax]
-    add [rbp-28], eax
+    mov rdi, [rcx]; ptr to token buf
+    mov r11d, [rdi+rax]
+    add [rbp-28], r11d
     mov rsi, [rdx+8]
     mov eax, [rdx+20]
     lea rcx, [rbx+rax]
-    mov rdi, [rcx+20]
-    xor r8, r8
+    mov rdi, [rcx+20]; ptr to render buf
     mov r8d, [rdx+16]
     mov r9d, [rsi]
     ;TODO: check if it exec, obj or bin mod
@@ -335,6 +334,7 @@ _start_loop_reduce_io:
     add rdx, rax
     test bl, bl
     jz _start_loop_reduce_io
+    mov r10d, [rsi]
     sub [rsi], ecx
     jmp _start_loop_reduce_io 
 _end_reduce_ins_offset:
@@ -778,7 +778,7 @@ default_ins_assemble:
 get_ins_pref_opc_size:
     xor eax, eax
     movzx ecx, byte [rdi+22]
-    shr eax, 6
+    shr ecx, 6
     movzx ecx, byte [rdi+23]
     shr ecx, 6
     add eax, ecx
@@ -4042,6 +4042,9 @@ process_lea:
     push rbp
     mov rbp, rsp
     sub rsp, 128
+    mov al, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
+    cmp al, 2
+    jne _err_invalid_argc_lea
     mov [rbp-8], rdi
     mov [rbp-16], rsi
     mov eax, [rdi+28]
@@ -4053,22 +4056,20 @@ process_lea:
     lea r8, [rbp-128]
     mov rdi, r8
     rep stosb
-    mov al, byte [rsi+TOKEN_OFFSET_TO_INS_ARGC]
-    cmp al, 2
-    jne _err_invalid_argc_lea
+    mov byte [r8+33], 1
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
     jne _err_invalid_first_param_lea
     movzx eax, byte [rsi+13]
     cmp eax, TOKEN_TYPE_REG
-    jne _err_instemp1_invalid_first_param 
+    jne _err_invalid_first_param_lea 
     movzx ecx, byte [rsi+15]
     cmp ecx, TOKEN_BUF_ADDR
     jne _err_invalid_second_param_lea
     mov rdi, rsi
     mov rsi, r8
-    mov rdx, [rbp-8]
+    mov rdx, [rbp-16]
     call process_gen_r_a
     test rax, rax
     jnz _err_gen_lea
@@ -4076,7 +4077,6 @@ process_lea:
     mov bl, [r8+26]
     cmp bl, REG_MASK_VAL_8B
     je _err_invalid_arg_size_lea
-    mov byte [r8+33], 1
     mov byte [r8+29], 0x8D
     jmp _lea_assemble
 _err_gen_lea:
@@ -4101,6 +4101,8 @@ _lea_assemble:
     mov rdi, [rbp-32]
     lea rsi, [rbp-128]
     call default_ins_assemble
+    mov rsi, [rbp-16]
+    mov [rsi+7], al
 _success_process_lea:
     xor eax, eax
 _end_process_lea:
