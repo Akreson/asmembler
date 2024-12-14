@@ -462,7 +462,7 @@ _loop_patch_rplr:
     je _patch_ins_rplr 
     mov [rbp-40], rcx
     mov rax, [rcx+16]
-    mov r9d, [rax]; curr sym offset
+    mov r9d, [rax]; curr ins. offset
     mov [rbp-44], r9d
     mov rdx, [rcx+8]
     mov ebx, [rdx+36]
@@ -473,16 +473,18 @@ _loop_patch_rplr:
     lea rsi, [r13+r9]
     movzx ebx, byte [rcx+5]
     movzx eax, byte [rcx+2]
-    mov r14d, [rsi+rbx]
+    mov r14d, [rsi+rbx]; neg int or 0
     cmp r10d, 0
     jl __loop_neg_of_patch_rplr
     add r10d, r14d
+    mov edx, r10d
     jmp __loop_check_th
 __loop_neg_of_patch_rplr:
     sub r10d, r14d
+    mov edx, r10d
     add r10d, eax
 __loop_check_th:
-    mov [rsi+rbx], r10d
+    mov [rsi+rbx], edx
     mov r11b, MAX_INT8
     mov r12b, MIN_INT8
     movsx r11d, r11b
@@ -492,6 +494,7 @@ __loop_check_th:
     cmp r10d, r12d
     jl __loop_patch_next
 __start_patch_before_rplr:
+    mov [rsi+rbx], r10d
     mov [rbp-84], eax
     mov r14, rcx
     mov rcx, [rbp-56]
