@@ -262,8 +262,7 @@ _loop_patch_rpdr:
     cmp al, ADDR_PATCH_TYPE_DEF_RIP
     je _rip_patch_rpdr
     cmp al, ADDR_PATCH_TYPE_ABS
-    je _abs_patch_rpdr 
-    jmp _err_invalid_type_rpdr
+    jne _err_invalid_type_rpdr 
 _abs_patch_rpdr:
     add r9d, r8d
     mov eax, [DEF_BASE_ADDR]
@@ -1088,7 +1087,7 @@ _end_render_process_imm:
 ; for r_i version by default used [r/m, imm] ins. version
 ; rdi - ptr to ins param, rsi - ptr to inc code struct
 ; rdx - ptr to token entry header
-; return eax - 0 if succes, 1 if imm less then reg
+; return eax - 0 if succes 
 process_gen_rm_i:
     push rbp
     mov rbp, rsp
@@ -1335,14 +1334,34 @@ __rproc_addr_2p_ptr_offset_check:
 __rproc_addr_2p_ptr_digit_neg_chech:
     cmp ecx, AUX_SUB
     jne __rproc_addr_2p_r_d
-    mov r12, [r15]
+    mov r14, [r15]
     neg qword [r15]   
+    mov rdi, r14
+    dec r14
+    and r14, rdi
+    test r14, r14
+    jz __rproc_addr_2p_r_d
+    movzx edi, byte [r15+13]
+    lzcnt edi, edi
+    mov ecx, 32
+    sub ecx, edi
+    mov ebx, 1
+    shl ebx, cl
+    mov [r15+13], bl
 __rproc_addr_2p_r_d:
+    mov ebx, MOD_ADDR_REG_DISP32
     movzx ecx, byte [r15+13]
-    mov ebx, MOD_ADDR_REG_DISP8
-    mov esi, MOD_ADDR_REG_DISP32
     cmp ecx, 8
-    cmovg ebx, esi
+    ja ___rproc_addr_2p_r_d_disp_set  
+    cmp ecx, 8
+    jl ___rproc_addr_2p_r_d_disp8 
+    mov r14, [r15]
+    shr r14, 63
+    test r14, r14
+    jz ___rproc_addr_2p_r_d_disp_set
+___rproc_addr_2p_r_d_disp8:
+    mov ebx, MOD_ADDR_REG_DISP8
+___rproc_addr_2p_r_d_disp_set:
     mov rsi, [rbp-16]
     mov ecx, [rbp-28]
     mov r9b, [rsi]
@@ -2348,7 +2367,7 @@ _end_process_jumps:
 process_ins_template0:
     push rbp
     mov rbp, rsp
-    sub rsp, 40
+    sub rsp, 64
     mov [rbp-8], rsi
     mov [rbp-16], rdx
     mov [rbp-24], rcx
@@ -2380,6 +2399,7 @@ _instemp0_direct:
     jne _err_invalid_first_param_instemp0
 _instemp0_r:
     lea r9, [rsi+15]
+    mov [rbp-48], r9
     movzx ecx, byte [r9]
     cmp ecx, TOKEN_BUF_ADDR
     je __instemp0_r_a
@@ -2436,6 +2456,7 @@ __instemp0_r_i:
 _instemp0_a:
     movzx eax, byte [rsi+2]
     lea r9, [rsi+rax]
+    mov [rbp-48], r9
     movzx ecx, byte [r9]
     cmp ecx, TOKEN_BUF_PTR_OFFSET
     je __instemp0_a_i
@@ -2528,7 +2549,25 @@ __instemp0_rm_i_ds:
     test r10b, r10b
     jnz _instemp0_rm_i_ds_op_align
     cmp dl, REG_MASK_VAL_8B 
-    je __instemp0_rm_i_ds_set
+    jne _instemp0_rm_i_ds_op_align
+    mov r14, [rbp-48]
+    movzx esi, byte [r14]
+    inc r14
+    cmp esi, TOKEN_BUF_PTR_OFFSET
+    jne ___instemp0_rm_i_ds_d
+    mov rdi, r14
+    call get_name_ref_type
+    mov r8, [rbp-16]
+    mov r9, [rbp-24]
+    mov r14, rax
+___instemp0_rm_i_ds_d:
+    mov r15, [r14]
+    mov eax, 128
+    cmp r15, rax
+    jb __instemp0_rm_i_ds_set
+    shr r15, 63
+    test r15, r15
+    jnz __instemp0_rm_i_ds_set   
 _instemp0_rm_i_ds_op_align:
     cmp dl, REG_MASK_VAL_32B
     ja _err_instemp0_r_i_overflow
@@ -2576,7 +2615,7 @@ _instemp0_assemble:
 _success_process_instemp0:
     xor eax, eax
 _end_process_instemp0:
-    add rsp, 40 
+    add rsp, 64
     pop rbp
     ret
 
@@ -2814,7 +2853,7 @@ process_inc:
     sub rsp, 192
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov dword [rbp-64], 0x00FFFE
+    mov dword [rbp-64], 0x0000FFFE
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]

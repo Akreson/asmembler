@@ -61,7 +61,6 @@ SEG_ENTRY_SIZE equ 64
 entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
 hash_table_data_m NAME_SYM_HASH_TABLE, 1
 
-
 TOKEN_OFFSET_TO_INS_ARGC    equ 35
 TOKEN_HEADER_PLUS_TYPE      equ 21
 TOKEN_HEADER_PLUS_INS_TOKEN equ 36 ;20+1+14+1
@@ -676,17 +675,25 @@ convert_digit_to_neg:
     movzx ecx, byte [rsi+12]
     cmp ecx, TOKEN_TYPE_DIGIT
     jne _err_convert_dtn
+    mov rbx, [rsi]
     neg qword [rsi]
-    movzx rdi, byte [rsi+13]
-    inc rdi
-    mov rsi, 8
-    call align_to_pow2
-    mov rsi, [rbp-8]
-    mov byte [rsi+13], al
-    mov al, 1
+    mov rdi, rbx
+    dec rbx
+    and rbx, rdi
+    test rbx, rbx
+    jz _skip_new_len_cdtn
+    movzx edx, byte [rsi+13]
+    lzcnt edx, edx
+    mov ecx, 32
+    sub ecx, edx
+    mov eax, 1
+    shl eax, cl
+    mov [rsi+13], al
+_skip_new_len_cdtn:
+    mov eax, 1
     jmp _end_convert_digit_to_neg
 _err_convert_dtn:
-    xor rax, rax
+    xor eax, eax
 _end_convert_digit_to_neg:
     add rsp, 8
     pop rbp
