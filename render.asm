@@ -84,6 +84,7 @@ dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
 dd 0, 0
 
 entry_array_data_m TEMP_SYM_PTR_ARR, 8
+entry_array_data_m TEMP_HELP_ARR, 1
 
 segment readable executable
 
@@ -415,46 +416,33 @@ _end_set_local_ref_in_dec_order:
     pop rbp
     ret
 
-; rdi - curr patch entry ptr, rsi - ptr to start of token buf
-; rdx - ptr to start of render buff
+; edi - curr offet to sym, esi - sub to min ins len
+; edx - stored offset
 ; return eax - [0 | 1] is min len taken, rdi - stays the same
 set_offset_local_patch:
     push rbp
     mov rbp, rsp
-    mov rax, [rdi+16]
-    mov r9d, [rax]; curr ins. offset
-    mov r13, [rdi+8]
-    mov ebx, [r13+36]
-    mov r10d, [rsi+rbx]; sym ref offset
-    movzx eax, byte [rdi+3]
-    add eax, r9d
-    sub r10d, eax 
-    lea r15, [rdx+r9]
-    movzx ebx, byte [rdi+5]
-    movzx eax, byte [rdi+2]
-    mov r14d, [r15+rbx]; neg int or 0
-    cmp r10d, 0
+    cmp edi, 0
     jl __loop_neg_of_patch_solp
-    add r10d, r14d
-    mov edx, r10d
+    add edi, edx
+    mov eax, edi
     jmp __loop_check_th_solp
 __loop_neg_of_patch_solp:
-    sub r10d, r14d
-    mov edx, r10d
-    add r10d, eax
+    sub edi, edx
+    mov eax, edi
+    add edi, esi
 __loop_check_th_solp:
-    xor eax, eax
-    mov [r15+rbx], edx
+    xor ebx, ebx
     mov r11b, MAX_INT8
     mov r12b, MIN_INT8
     movsx r11d, r11b
     movsx r12d, r12b
-    cmp r10d, r11d
+    cmp edi, r11d
     jg _end_set_offset_local_patch
-    cmp r10d, r12d
+    cmp edi, r12d
     jl _end_set_offset_local_patch
-    mov [r15+rbx], r10d
-    mov eax, 1
+    mov eax, edi
+    inc ebx
 _end_set_offset_local_patch:
     pop rbp
     ret
@@ -470,7 +458,6 @@ propagate_local_patch:
     mov r15, rsi
     mov r13, rdx
     mov rcx, r9
-    mov byte [rdi], 1
     mov rax, [rdi+16]
     mov r9d, [rax]; curr ins. offset
     movzx eax, byte [rdi+2]
@@ -531,6 +518,10 @@ render_patch_local_rel:
     push rbp
     mov rbp, rsp
     sub rsp, 128
+    mov rsi, TEMP_PARSER_ARR
+    mov rdx, TEMP_HELP_ARR
+    mov [rbp-104], rsi
+    mov [rbp-112], rdx
     mov rax, SEG_ENTRY_ARRAY
     mov rbx, [rax]
     lea rcx, [rbx+rdi]
@@ -562,18 +553,39 @@ _start_patch_rplr:
     mov [rbp-64], rax
     mov r8, rax
 _loop_patch_rplr:
-    mov r15, [rbp-24]
-    mov r13, [rbp-32]
     cmp rcx, r8
-    je _patch_ins_rplr 
+    je _fix_left_patches_rplr 
+    mov r15, [rbp-24]
+    mov r12, [rbp-32]
     mov [rbp-40], rcx
-    mov rdi, rcx
-    mov rsi, r15
-    mov rdx, r13
+    mov rax, [rcx+16]
+    mov r9d, [rax]; curr ins. offset
+    mov rbx, [rcx+8]
+    mov ebx, [rbx+36]
+    mov edi, [r15+rbx]; sym ref offset
+    movzx eax, byte [rcx+3]
+    add eax, r9d
+    sub edi, eax 
+    movzx ebx, byte [rcx+5]
+    movzx esi, byte [rcx+2]
+    add r9d, ebx
+    lea rax, [r12+r9]
+    mov [rbp-96], rax 
+    mov edx, [rax]; neg int or 0
     call set_offset_local_patch
-    mov rcx, rdi
-    test eax, eax
-    jz __loop_patch_next
+    mov rdx, [rbp-96]
+    mov [rdx], eax
+    mov rcx, [rbp-40]
+    test ebx, ebx
+    jnz ___loop_patch_prop_rplr
+    mov rdi, [rbp-104]
+    mov esi, 8
+    call entry_array_reserve_size
+    mov rcx, [rbp-40]
+    mov [rax], rcx
+    jmp __loop_patch_next
+___loop_patch_prop_rplr:
+    mov rdi, rcx
     mov rsi, [rbp-24]
     mov rdx, [rbp-32]
     mov rcx, [rbp-72] 
@@ -585,6 +597,64 @@ __loop_patch_next:
     mov r8, [rbp-64]
     add rcx, SEGMENT_PATCH_ENTRY_SIZE
     jmp _loop_patch_rplr
+_fix_left_patches_rplr:
+    mov rax, [rbp-104]
+    mov r8d, [rax+8]
+    mov r11, [rbp-112]
+    mov r12d, [r11+8]
+    cmp r8d, r12d
+    je _patch_ins_rplr 
+    mov dword [r11+8], 0
+    mov r10, [rax]
+    add r8, r10
+    mov [rbp-88], r8
+__fix_left_start_loop_rplr:
+    cmp r10, r8
+    je __file_left_end
+    mov [rbp-40], r10
+    mov r12, [rbp-32]
+    mov rcx, [r10]
+    mov rdx, [rcx+16]
+    mov r9d, [rdx]; curr ins. offset
+    movzx ebx, byte [rcx+5]
+    movzx esi, byte [rcx+2]
+    add r9d, ebx
+    lea rax, [r12+r9]
+    mov [rbp-96], rax 
+    mov edi, [rax]
+    xor edx, edx
+    call set_offset_local_patch
+    mov rdx, [rbp-96]
+    mov [rdx], eax
+    mov r10, [rbp-40]
+    test ebx, ebx
+    jnz ___fix_left_prop_rplr 
+    mov rdi, [rbp-112]
+    mov esi, 8
+    call entry_array_reserve_size
+    mov r10, [rbp-40]
+    mov rcx, [r10]
+    mov [rax], rcx
+    jmp __fix_left_next_rplr
+___fix_left_prop_rplr:
+    mov rdi, [r10]
+    mov rsi, [rbp-24]
+    mov rdx, [rbp-32]
+    mov rcx, [rbp-72] 
+    mov r8, [rbp-80]
+    mov r9, [rbp-56]
+    call propagate_local_patch
+    mov r10, [rbp-40]
+__fix_left_next_rplr:
+    mov r8, [rbp-88]
+    add r10, 8
+    jmp __fix_left_start_loop_rplr
+__file_left_end:
+    mov rax, [rbp-104]
+    mov rbx, [rbp-112]
+    mov [rbp-104], rbx
+    mov [rbp-112], rax
+    jmp _fix_left_patches_rplr
 _patch_ins_rplr:
     mov r15, [rbp-56]
     mov rax, [rbp-64]
@@ -4786,6 +4856,9 @@ start_render:
     mov rbp, rsp
     sub rsp, 2304
     mov dword [rbp-4], 0
+    mov rdi, TEMP_HELP_ARR
+    mov esi, 2048
+    call init_entry_array
     mov rdi, DELAYED_PATCH_ARR
     mov esi, 256
     call init_entry_array
@@ -4798,7 +4871,6 @@ start_render:
     mov rdi, TEMP_SYM_PTR_ARR
     mov esi, 256
     call init_entry_array
-    mov dword [TEMP_PARSER_ARR+8], 0
     ;TODO: check if it exec, obj or bin mod
     mov rdi, rsp
     call set_collate_seg_ptr
@@ -4819,6 +4891,8 @@ _render_seg_grab_loop:
     mov eax, dword [LOCAL_PATCH_ARR+8]
     test eax, eax
     jz __next_render_grap_entry
+    mov dword [TEMP_PARSER_ARR+8], 0
+    mov dword [TEMP_HELP_ARR+8], 0
     mov edi, dword [CURR_SECTION_OFFSET]
     call render_patch_local_rel
 __next_render_grap_entry:
