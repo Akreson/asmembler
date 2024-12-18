@@ -4270,6 +4270,8 @@ process_ret:
     push rbp
     mov rbp, rsp
     sub rsp, 8
+    mov eax, [rdi+28]
+    mov [rsi], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
     mov [rbp-8], rdi
     call entry_array_curr_ptr
@@ -4288,6 +4290,8 @@ process_syscall:
     push rbp
     mov rbp, rsp
     sub rsp, 8
+    mov eax, [rdi+28]
+    mov [rsi], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
     mov [rbp-8], rdi
     call entry_array_curr_ptr
@@ -4364,6 +4368,8 @@ process_int3:
     push rbp
     mov rbp, rsp
     sub rsp, 8
+    mov eax, [rdi+28]
+    mov [rsi], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
     mov [rbp-8], rdi
     call entry_array_curr_ptr
@@ -4382,6 +4388,8 @@ process_int1:
     push rbp
     mov rbp, rsp
     sub rsp, 8
+    mov eax, [rdi+28]
+    mov [rsi], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
     mov [rbp-8], rdi
     call entry_array_curr_ptr
