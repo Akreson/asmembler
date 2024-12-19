@@ -418,7 +418,7 @@ _end_set_local_ref_in_dec_order:
 
 ; edi - curr offet to sym, esi - sub to min ins len
 ; edx - stored offset
-; return eax - [0 | 1] is min len taken, rdi - stays the same
+; return eax - offset to set, ebx - [0 | 1] is min len taken, rdi - stays the same
 set_offset_local_patch:
     push rbp
     mov rbp, rsp
@@ -433,13 +433,13 @@ __loop_neg_of_patch_solp:
     add edi, esi
 __loop_check_th_solp:
     xor ebx, ebx
-    mov r11b, MAX_INT8
-    mov r12b, MIN_INT8
-    movsx r11d, r11b
-    movsx r12d, r12b
-    cmp edi, r11d
+    mov cl, MAX_INT8
+    mov dl, MIN_INT8
+    movsx ecx, cl
+    movsx edx, dl
+    cmp edi, ecx
     jg _end_set_offset_local_patch
-    cmp edi, r12d
+    cmp edi, edx
     jl _end_set_offset_local_patch
     mov eax, edi
     inc ebx
@@ -447,7 +447,9 @@ _end_set_offset_local_patch:
     pop rbp
     ret
 
-; rdi - curr patch entry ptr
+; rdi - curr patch entry ptr , rsi - ptr to start of token buf,
+; rdx - ptr to start of render buff, rcx - ptr to arr of ptr of sym,
+; r8 - ptr to last patch entry, r9 - ptr to start of patch_arr
 propagate_local_patch:
     push rbp
     mov rbp, rsp
@@ -518,7 +520,7 @@ render_patch_local_rel:
     push rbp
     mov rbp, rsp
     sub rsp, 128
-    mov rsi, TEMP_PARSER_ARR
+    mov rsi, TEMP_COMMON_ARR
     mov rdx, TEMP_HELP_ARR
     mov [rbp-104], rsi
     mov [rbp-112], rdx
@@ -4899,7 +4901,7 @@ _render_seg_grab_loop:
     mov eax, dword [LOCAL_PATCH_ARR+8]
     test eax, eax
     jz __next_render_grap_entry
-    mov dword [TEMP_PARSER_ARR+8], 0
+    mov dword [TEMP_COMMON_ARR+8], 0
     mov dword [TEMP_HELP_ARR+8], 0
     mov edi, dword [CURR_SECTION_OFFSET]
     call render_patch_local_rel

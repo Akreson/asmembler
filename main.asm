@@ -27,11 +27,11 @@ include 'render.asm'
 include 'build.asm'
 
 segment readable writeable
-
 TEST_R db "./r.bin", 0
 TEST_RW db "./rw.bin", 0
 TEST_RX db "./rx.bin", 0
 
+entry_array_data_m TEMP_COMMON_ARR, 1
 hash_table_data_m DEF_SYM_HASH_TABLE, 1
 
 segment readable executable

@@ -17,8 +17,6 @@ segment readable writeable
 LAST_LINE_NUM dd 0
 CURR_SEG_OFFSET dd 0
 
-entry_array_data_m TEMP_PARSER_ARR, 1
-
 ; entry
 ; 0 (4b) linked list entry offset to a chain of patch location,
 ;4:16 if token is _extrn_ or was defined as _global_ before def 
@@ -729,7 +727,7 @@ init_hash_table_in_temp_p_arr:
     mov rbp, rsp
     sub rsp, 20
     mov [rbp-20], edi
-    mov r8, [TEMP_PARSER_ARR]
+    mov r8, [TEMP_COMMON_ARR]
     mov rdi, r8
     mov ecx, HT_MAIN_BLOCK_SIZE
     xor eax, eax
@@ -749,7 +747,7 @@ init_hash_table_in_temp_p_arr:
     mov rbx, rdi
     mov rdi, [rbp-8]
     sub rbx, rdi
-    mov dword [TEMP_PARSER_ARR+8], ebx
+    mov dword [TEMP_COMMON_ARR+8], ebx
     mov rdx, r8
     mov esi, [rbp-20]; must be 1 byte size max
     call hash_table_init
@@ -1598,7 +1596,7 @@ ___name_sp_macro_digit_convert:
     add rdx, rbx
     mov [rbp-16], rdx
 ___name_sp_macro_skip_comma: 
-    mov rdi, TEMP_PARSER_ARR
+    mov rdi, TEMP_COMMON_ARR
     mov esi, TOKEN_KIND_SIZE
     call entry_array_reserve_size
     mov rdx, rax
@@ -1622,7 +1620,7 @@ ___name_sp_macro_skip_comma:
     cmp ecx, AUX_NEW_LINE
     jne _err_invalid_expr
 ___name_sp_macro_arg_end:
-    mov ebx, dword [TEMP_PARSER_ARR+8]
+    mov ebx, dword [TEMP_COMMON_ARR+8]
     mov [rbp-68], ebx
     mov rdx, [FILES_ARRAY]
     mov r8, [rbp-92]
@@ -1637,14 +1635,14 @@ ___name_sp_macro_arg_end:
 ___name_sp_macro_set_buf:
     cmp r9, r10
     jae ___name_sp_macro_end
-    mov rdi, TEMP_PARSER_ARR
+    mov rdi, TEMP_COMMON_ARR
     mov esi, [r9+4]
     movzx eax, byte [r9+8]
     cmp eax, MACRO_EMPTY_ARG_FLAG
     je ___name_sp_macro_skip_arg_size
     mov ecx, TOKEN_KIND_SIZE
     mul ecx
-    mov rbx, [TEMP_PARSER_ARR]
+    mov rbx, [TEMP_COMMON_ARR]
     add rbx, rax
     mov [rbp-116], rbx
     movzx ecx, byte [rbx+13]
@@ -1671,11 +1669,11 @@ ___name_sp_macro_skip_arg_size:
     mov r10, [rbp-100]
     jmp ___name_sp_macro_set_buf
 ___name_sp_macro_end:
-    mov rbx, qword [TEMP_PARSER_ARR]
-    mov edi, dword [TEMP_PARSER_ARR+8]
+    mov rbx, qword [TEMP_COMMON_ARR]
+    mov edi, dword [TEMP_COMMON_ARR+8]
     mov byte [rbx+rdi], 0
     inc edi
-    mov dword [TEMP_PARSER_ARR+8], edi
+    mov dword [TEMP_COMMON_ARR+8], edi
     mov edx, [rbp-68]
     sub edi, edx
     call alloc_virt_file
@@ -1693,13 +1691,13 @@ ___name_sp_macro_end:
     mov [rax+48], r14d
     mov [rax+52], r10d
     mov [rax+56], r11d
-    mov rbx, qword [TEMP_PARSER_ARR]
+    mov rbx, qword [TEMP_COMMON_ARR]
     mov edx, [rbp-68]
     lea rsi, [rbx+rdx]
     mov rdi, [rax]
     mov rcx, [rax+8]
     rep movsb
-    mov dword [TEMP_PARSER_ARR+8], 0
+    mov dword [TEMP_COMMON_ARR+8], 0
     mov rdi, rax
     mov rsi, [rbp-72]
     call start_parser
@@ -1850,7 +1848,7 @@ __kw_macro_arg_loop:
     test rbx, rbx
     jnz _err_macro_arg_rep
     mov [rbp-108], rax
-    mov rdi, TEMP_PARSER_ARR
+    mov rdi, TEMP_COMMON_ARR
     mov esi, 15
     call entry_array_reserve_size
     mov rdx, rax
@@ -1977,7 +1975,7 @@ __kw_macro_set_entry_size:
     mov eax, dword [NAME_SYM_REF_ARRAY+8]
     sub eax, ebx
     mov [rdx], eax
-    mov dword [TEMP_PARSER_ARR+8], 0
+    mov dword [TEMP_COMMON_ARR+8], 0
     jmp _new_entry_start_ps
 __kw_name_mod:
     mov rdi, [rbp-40]
@@ -2265,7 +2263,7 @@ segment_entry_init:
 init_parser_data:
     push rbp
     mov rbp, rsp
-    mov rdi, TEMP_PARSER_ARR
+    mov rdi, TEMP_COMMON_ARR
     mov rsi, 2048
     call init_entry_array
     mov rdi, NAME_SYM_HASH_TABLE
