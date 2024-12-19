@@ -3531,7 +3531,7 @@ _instemp3_set_op:
     mov esi, [rax+9]
     mov rdi, r8
     call set_def_pref_by_symbol
-    jmp _success_instemp3
+    jmp _instemp3_assemble
 _err_instemp3_parse:
     mov rsi, ERR_INS_FORMAT
     mov rdi, [rbp-8]
