@@ -31,6 +31,7 @@ TEST_R db "./r.bin", 0
 TEST_RW db "./rw.bin", 0
 TEST_RX db "./rx.bin", 0
 
+entry_array_data_m BUILD_ARR, 1
 entry_array_data_m TEMP_COMMON_ARR, 1
 hash_table_data_m DEF_SYM_HASH_TABLE, 1
 
@@ -116,9 +117,11 @@ _exit_init_def_sym_table:
     pop rbp
     ret
 
+
 _start:
     mov rbp, rsp
     sub rsp, 40
+    mov esi, 2048
     call init_def_sym_table
     test rax, rax
     jz _end_start
@@ -178,9 +181,7 @@ _start:
     mov rdi, BUILD_ARR
     mov rsi, 65536
     call init_entry_array
-    mov rdi, TEMP_BUILD_ARR
-    mov rsi, 2048
-    call init_entry_array
+    mov dword [TEMP_COMMON_ARR+8], 0
 _end_start:
     add rsp, 40
     exit_m 0
