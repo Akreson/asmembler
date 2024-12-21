@@ -49,6 +49,7 @@ ERR_SYM_EXT_DEF db "Symbol already has benn defined as external", 0
 ERR_SYM_EXT_ALR_DEF db "Symbol already has been defined and can't be external", 0
 ERR_SYM_PUB_TYPE db "Symbol can't be referenced as global in executable", 0
 ERR_DUBL_ENTRY db "Entry symbol already have been defined", 0
+ERR_SEG_IN_N_EXE db "Segment can't be declared in non executable file type", 0
 
 ; RENDER
 ERR_INS_UNSUPPORT db "Instruction is unsupported"

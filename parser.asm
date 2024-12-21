@@ -1733,6 +1733,9 @@ _begin_kw_sp:
     rep movsb
     jmp ___name_data_def_kw_new_rip
 __kw_segm_sp:
+    mov bl, [BUILD_TYPE]
+    cmp bl, BUILD_TYPE_ELF_EXE
+    jne _err_seg_in_non_exe
     ;TODO: catch wrong combination?
     xor eax, eax
     mov [rbp-56], eax
@@ -2169,6 +2172,9 @@ _err_dubl_entry:
 _err_str_reg_val:
     mov rsi, ERR_INV_EXP
     jmp _err_start_parser
+_err_seg_in_non_exe:
+    mov rsi, ERR_SEG_IN_N_EXE
+    jmp _err_start_parser
 _err_seg_inv_def:
     mov rsi, ERR_SEG_INV_DEF
 _err_start_parser:
@@ -2179,6 +2185,72 @@ _err_start_parser:
     call err_print
 _end_start_parser:
     add rsp, 256
+    pop rbp
+    ret
+
+; rdi - ptr to file entry, esi - offset of curr file entry
+parser_check_format:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-40], rdi
+    mov [rbp-52], esi
+_check_parser_first:
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_KEYWORD
+    jne _set_bin_seg_pcf
+    mov ecx, [rbp-8]
+    cmp ecx, KW_FORMAT
+    jne _end_parser_check_format
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_KEYWORD
+    jne _err_parsre_check_format
+    mov ecx, [rbp-8]
+    cmp ecx, KW_F_ELF64
+    jne __check_next_pcf
+    mov byte [BUILD_TYPE], BUILD_TYPE_ELF_OBJ
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov ecx, [rbp-8]
+    movzx eax, byte [rbp-4]
+    cmp eax, TOKEN_TYPE_KEYWORD
+    jne ___check_nl_pcf
+    cmp ecx, KW_EXTB
+    jne _err_parsre_check_format
+    mov byte [BUILD_TYPE], BUILD_TYPE_ELF_EXE
+    mov rdi, [rbp-40]
+    lea rsi, [rbp-16]
+    call next_token
+    mov ecx, [rbp-8]
+    movzx eax, byte [rbp-4]
+___check_nl_pcf:
+    cmp eax, TOKEN_TYPE_AUX
+    jne _err_parsre_check_format
+    cmp ecx, AUX_NEW_LINE
+    jne _err_parsre_check_format
+    jmp _end_parser_check_format 
+__check_next_pcf:
+    cmp eax, KW_F_BIN
+    jne _err_parsre_check_format
+_set_bin_seg_pcf:
+    mov dword [CURR_SEG_OFFSET], SEG_ENTRY_SIZE
+    jmp _end_parser_check_format 
+_err_parsre_check_format:
+    mov rsi, ERR_INV_EXP
+    mov edi, [rbp-52]
+    xor rdx, rdx
+    xor ecx, ecx
+    mov r9, -4
+    call err_print
+_end_parser_check_format:
+    add rsp, 64
     pop rbp
     ret
 
@@ -2248,14 +2320,12 @@ segment_entry_init:
     mov rbp, rsp
     mov dword [rdi+16], 1
     mov dword [rdi+36], 1
-    mov rsi, 50
-    shl rsi, 10
+    mov rsi, 40960
     push rdi
     call init_entry_array
     pop rdi
     add rdi, ENTRY_ARRAY_DATA_SIZE
-    mov rsi, 8
-    shl rsi, 10
+    mov rsi, 8192
     call init_entry_array
     pop rbp
     ret
@@ -2284,11 +2354,11 @@ init_parser_data:
     test rax, rax
     jz _fail_exit_init_parser_data
     mov rdi, SEG_ENTRY_ARRAY
-    mov rsi, 8
+    mov rsi, 16
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
-    mov ecx, 8
+    mov ecx, 16
 _init_seg_loop:
     dec ecx
     test ecx, ecx

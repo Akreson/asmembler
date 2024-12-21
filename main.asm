@@ -1,17 +1,17 @@
 format ELF64 executable
 
-BUILD_TYPE_EXE equ 1
-BUILD_TYPE_OBJ equ 2
-BUILD_TYPE_BIN equ 3
+BUILD_TYPE_ELF_EXE equ 1
+BUILD_TYPE_ELF_OBJ equ 2
+BUILD_TYPE_BIN     equ 3
 
 segment readable writeable
 
 ENTRY_SYM_ARR_PTR dq 0
 ENTRY_SYM_OFFSET dd 0
-DEF_BASE_ADDR dd 0x400000
 CURR_FILE_ENTRY_OFFSET dd 0
 IS_ENTRY_DEFINED db 0
-BUILD_TYPE db 0
+DEF_BASE_ADDR dd 0x400000
+BUILD_TYPE db BUILD_TYPE_BIN
 
 include 'err_msg.asm'
 include 'sys_call.asm'
@@ -120,7 +120,7 @@ _exit_init_def_sym_table:
 
 _start:
     mov rbp, rsp
-    sub rsp, 40
+    sub rsp, 64
     mov esi, 2048
     call init_def_sym_table
     test rax, rax
@@ -146,8 +146,12 @@ _start:
     jz _end_start
     mov dword [LAST_LINE_NUM], 1
     mov [rbp-8], rax
+    mov [rbp-12], ebx
     mov rdi, rax
     mov esi, ebx
+    call parser_check_format
+    mov rdi, [rbp-8]
+    mov esi, [rbp-12]
     call start_parser
     call parser_check_print_unk_name
     call start_render
@@ -183,7 +187,7 @@ _start:
     call init_entry_array
     mov dword [TEMP_COMMON_ARR+8], 0
 _end_start:
-    add rsp, 40
+    add rsp, 64
     exit_m 0
 
 segment readable executable
