@@ -745,7 +745,7 @@ _set_collate_sg_check3:
     mov [rdi], rbx
     add rdi, 8
 _set_collate_sg_check4:
-    mov eax, 3
+    mov eax, 7
     mul ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
@@ -755,6 +755,16 @@ _set_collate_sg_check4:
     mov [rdi], rbx
     add rdi, 8
 _set_collate_sg_check5:
+    mov eax, 3
+    mul ecx
+    lea rbx, [r8+rax]
+    mov esi, [rbx+8]
+    test esi, esi
+    jz _set_collate_sg_check6
+    inc r9d
+    mov [rdi], rbx
+    add rdi, 8
+_set_collate_sg_check6:
     mov eax, 1
     mul ecx
     lea rbx, [r8+rax]
@@ -4606,9 +4616,9 @@ render_process_segment:
     sub rsp, 128
     mov [rbp-8], rdi
     mov rbx, rdi
-    mov rax, qword [SEG_ENTRY_ARRAY]
+    mov rax, [SEG_ENTRY_ARRAY]
     sub rbx, rax
-    mov dword [CURR_SECTION_OFFSET], ebx
+    mov [CURR_SECTION_OFFSET], ebx
     xor rax, rax
     mov [rbp-12], eax
     add rdi, ENTRY_ARRAY_DATA_SIZE
