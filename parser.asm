@@ -2201,7 +2201,7 @@ _check_parser_first:
     call next_token
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_KEYWORD
-    jne _set_bin_seg_pcf
+    jne _first_check_fail
     mov ecx, [rbp-8]
     cmp ecx, KW_FORMAT
     jne _end_parser_check_format
@@ -2236,6 +2236,11 @@ ___check_nl_pcf:
     cmp ecx, AUX_NEW_LINE
     jne _err_parsre_check_format
     jmp _end_parser_check_format 
+_first_check_fail:
+    xor rbx, rbx
+    mov rax, [rbp-40]
+    mov [rax+16], rbx
+    jmp _set_bin_seg_pcf
 __check_next_pcf:
     cmp eax, KW_F_BIN
     jne _err_parsre_check_format
