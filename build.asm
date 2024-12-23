@@ -1,4 +1,4 @@
-EM_X86_64 equ 6; AMD x86-64 architecture
+EM_X86_64 equ 62; AMD x86-64 architecture
 
 ;elf type
 ET_NONE equ 0; No file type
@@ -7,10 +7,18 @@ ET_EXEC equ 2; Executable file
 ET_DYN  equ 3; Shared object file
 ET_CORE equ 4; Core file
 
+PT_NULL    equ 0
+PT_LOAD	   equ 1
+PT_DYNAMIC equ 2
+PT_INTERP  equ 3
+PT_NOTE	   equ 4
+PT_SHLIB   equ 5
+PT_PHDR	   equ 6
+PT_TLS     equ 7
+
 ; Legal values for sh_type (section type).
 SHT_NULL          equ 0; Section header table entry unused
-SHT_PROGBITS      equ 1; Program data
-SHT_SYMTAB        equ 2; Symbol table
+SHT_PROGBITS      equ 1; Program data SHT_SYMTAB        equ 2; Symbol table
 SHT_STRTAB        equ 3; String table
 SHT_RELA          equ 4; Relocation entries with addends
 SHT_HASH          equ 5; Symbol hash table
@@ -52,7 +60,6 @@ STT_GNU_IFUNC equ 10; Symbol is indirect code object
 STT_HIOS      equ 12; End of OS-specific
 STT_LOPROC    equ 13; Start of processor-specific
 STT_HIPROC    equ 15; End of processor-specific
-
 
 ; Symbol table indices are found in the hash buckets and chain table
 ; of a symbol hash table section.  This special index value indicates
@@ -131,7 +138,7 @@ P_align  equ 48; Segment alignment
 
 SECTION_HEADER_SIZE equ 64
 SH_name      equ 0;  Section name (string tbl index)
-SH_type      equ 4;  Section type
+SH_type      equ 4;  Section type 
 SH_flags     equ 8;  Section flags
 SH_addr      equ 16; Section virtual addr at execution
 SH_offset    equ 24; Section file offset
@@ -142,18 +149,110 @@ SH_addralign equ 48; Section alignment
 SH_entsize   equ 56; Entry size if section holds table
 
 segment readable executable
-
+;TODO: fix P_offset and P_vaddr aligment
 build_executable:
     push rbp
     mov rbp, rsp
     sub rsp, 64
+    mov dword [rbp-12], ELF_HEADER_SIZE
+    mov eax, [DEF_BASE_ADDR]
+    mov [rbp-44], eax
     lea rdi, [BUILD_ARR]
-    mov esi, 64
+    mov esi, ELF_HEADER_SIZE
     call entry_array_reserve_size
     mov [rbp-8], rax
+    mov rdx, rax
+    mov rdi, rax
+    xor eax, eax
+    mov ecx, ELF_HEADER_SIZE
+    rep stosb
     mov rbx, 0x00010102464C457F
-    mov qword [rax], rbx
-    mov qword [rax+8], 0
+    mov [rdx], rbx
+    mov qword [rdx+8], 0
+    mov word [rdx+E_type], ET_EXEC
+    mov word [rdx+E_machine], EM_X86_64
+    mov qword [rdx+E_phoff], ELF_HEADER_SIZE
+    mov word [rdx+E_ehsize], ELF_HEADER_SIZE
+    mov word [rdx+E_phentsize], PROG_HEADER_SIZE
+    mov word [rdx+E_shentsize], SECTION_HEADER_SIZE 
+    mov rdi, TEMP_COMMON_ARR
+    mov esi, 64
+    call entry_array_ensure_free_space
+    mov [rbp-24], rax
+    mov rdi, rax
+    call render_set_collate_seg_ptr
+    mov rcx, [rbp-8]
+    mov word [rcx+E_phnum], ax
+    mov edx, eax
+    shl eax, 3
+    add rax, [rbp-24]
+    mov [rbp-32], rax
+    mov eax, PROG_HEADER_SIZE 
+    mul edx
+    mov esi, eax
+    add [rbp-12], eax
+    lea rdi, [BUILD_ARR]
+    call entry_array_reserve_size
+    mov [rbp-56], rax
+    mov r10, [rbp-24]
+    mov r8, [rbp-32]
+    mov r11d, [rbp-44]
+_start_loop_build_exe_seg:
+    cmp r10, r8
+    je _end_loop_build_exe_seg 
+    mov rdi, [r10]
+    xor r9, r9
+    mov ebx, [rdi+48]
+    mov ecx, [rbp-12]
+    mov r12d, [rdi+52]
+    add r12, r11
+    mov edx, [rdi+56]
+    mov esi, [rdi+28]
+    mov dword [rax+P_type], PT_LOAD
+    mov [rax+P_flags], bx
+    mov [rax+P_offset], rcx
+    mov [rax+P_vaddr], r12
+    mov [rax+P_paddr], r9d
+    mov [rax+P_filesz], esi
+    mov [rax+P_memsz], rdx
+    mov dword [rax+P_align], 4096
+    add [rbp-12], esi
+    add qword [rbp-56], PROG_HEADER_SIZE
+    lea rdi, [BUILD_ARR]
+    call entry_array_reserve_size
+    mov rdi, rax
+    mov r10, [rbp-24]
+    mov rdx, [r10]
+    mov rsi, [rdx+20]
+    mov ecx, [rdx+28]
+    rep movsb
+    mov r8, [rbp-32]
+    mov rax, [rbp-56]
+    add r10, 8
+    mov [rbp-24], r10
+    jmp _start_loop_build_exe_seg
+_end_loop_build_exe_seg:
+    mov edi, [ENTRY_SYM_OFFSET]
+    mov rcx, [ENTRY_SYM_ARR_PTR]
+    add rdi, [rcx]
+    mov eax, [rdi+32]
+    mov ebx, [rdi+36]
+    add rax, [SEG_ENTRY_ARRAY]
+    add rbx, [rax]
+    mov r11d, [rbp-44]
+    add r11d, [rax+52]
+    add r11d, [rbx]
+    mov rsi, [rbp-8]
+    mov [rsi+E_entry], r11
+
+    mov rdi, TEST_EXE
+    call open_file_w_trunc
+    mov rdi, rax
+    lea r8, [BUILD_ARR]
+    mov rsi, [r8]
+    mov edx, [r8+8]
+    call write
+_end_build_executable:
     add rsp, 64
     pop rbp
     ret

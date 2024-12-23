@@ -709,7 +709,7 @@ _end_render_patch_local_rel:
 
 ; rdi - ptr to buf of ptr to seg entry
 ; return eax - count of segments
-set_collate_seg_ptr:
+render_set_collate_seg_ptr:
     push rbp
     mov rbp, rsp
     xor r9, r9
@@ -4893,8 +4893,7 @@ start_render:
     call init_entry_array
     ;TODO: check if it exec, obj or bin mod
     mov rdi, rsp
-    call set_collate_seg_ptr
-    mov [rbp-8], eax
+    call render_set_collate_seg_ptr
     shl eax, 3
     mov [rbp-8], rsp
     mov rbx, rsp

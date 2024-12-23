@@ -543,8 +543,8 @@ _end_get_name_sym_ref_data:
 
 ;do not modifies rcx-rdi reg
 curr_token_buf_ptr:
-    mov r9, qword [SEG_ENTRY_ARRAY]
-    mov r8d, dword [CURR_SEG_OFFSET]
+    mov r9, [SEG_ENTRY_ARRAY]
+    mov r8d, [CURR_SEG_OFFSET]
     add r9, r8
     mov rax, [r9]
     mov ebx, [r9+8]
@@ -553,16 +553,16 @@ curr_token_buf_ptr:
 
 ;do not modifies rbx-rdi reg
 curr_token_buf_start_ptr:
-    mov r9, qword [SEG_ENTRY_ARRAY]
-    mov r8d, dword [CURR_SEG_OFFSET]
+    mov r9, [SEG_ENTRY_ARRAY]
+    mov r8d, [CURR_SEG_OFFSET]
     add r9, r8
     mov rax, [r9]
     ret
 
 ;do not modifies rbx-rdi reg
 curr_seg_ptr:
-    mov rax, qword [SEG_ENTRY_ARRAY]
-    mov r8d, dword [CURR_SEG_OFFSET]
+    mov rax, [SEG_ENTRY_ARRAY]
+    mov r8d, [CURR_SEG_OFFSET]
     add rax, r8
     ret
 
