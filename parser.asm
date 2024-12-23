@@ -448,9 +448,15 @@ push_name_to_defined:
     mov rdi, [rbx]
     test rdi, rdi
     jz _add_entry_pnt_def
+    lea rsi, [NAME_SYM_REF_ARRAY]
     mov cl, [rdi+15]
+    test cl, cl
+    jz _patch_pnt_def
     mov [rax+15], cl
-    mov rsi, NAME_SYM_REF_ARRAY
+    mov ebx, [rbp-36]
+    mov [ENTRY_SYM_OFFSET], ebx
+    mov [ENTRY_SYM_ARR_PTR], rsi
+_patch_pnt_def:
     mov rcx, [rsi]
     mov rdx, rax
     sub rdx, rcx
@@ -2107,15 +2113,16 @@ __kw_entry:
     mov rbx, [rax]
 ___kw_entry_define_sym:
     mov byte [IS_ENTRY_DEFINED], 1
-    or byte [rbx+16], SYM_REF_EXT_ENTRY
-    mov rax, qword [NAME_SYM_REF_ARRAY]
-    mov rdx, qword [UNKNOWN_NAME_SYM_REF_ARRAY]
-    mov cl, [rbx+15]
+    or byte [rbx+15], SYM_REF_EXT_ENTRY
+    lea rax, [NAME_SYM_REF_ARRAY]
+    lea rdx, [UNKNOWN_NAME_SYM_REF_ARRAY]
+    mov cl, [rbx+14]
     cmp cl, 0
     cmovz rax, rdx
     sub rbx, NAME_SYM_REF_SERV_HS 
+    mov r8, [rax]
     mov rsi, rbx
-    sub rsi, rax
+    sub rsi, r8
     mov [ENTRY_SYM_OFFSET], esi
     mov [ENTRY_SYM_ARR_PTR], rax
     test cl, cl
@@ -2123,7 +2130,8 @@ ___kw_entry_define_sym:
     jmp _new_entry_start_ps 
 __kw_entry_err:
     mov ebx, [ENTRY_SYM_OFFSET]
-    add rbx, [ENTRY_SYM_ARR_PTR]
+    mov rdx, [ENTRY_SYM_ARR_PTR]
+    add rbx, [rdx]
     call name_entry_print_info
     jmp _err_dubl_entry
 
