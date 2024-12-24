@@ -149,11 +149,15 @@ SH_addralign equ 48; Section alignment
 SH_entsize   equ 56; Entry size if section holds table
 
 segment readable executable
-;TODO: fix P_offset and P_vaddr aligment
-build_executable:
+
+; -8 8, -12 4, -16 4, -24 8, -32 8, -40 8, -44 4, -56 8, -60 4
+; rdi - ptr to arr of ptr to seg, esi - count of elements
+build_exe_set_main_info:
     push rbp
     mov rbp, rsp
     sub rsp, 64
+    mov [rbp-24], rdi
+    mov [rbp-16], esi
     mov dword [rbp-12], ELF_HEADER_SIZE
     mov eax, [DEF_BASE_ADDR]
     mov [rbp-44], eax
@@ -164,6 +168,7 @@ build_executable:
     mov rdx, rax
     mov rdi, rax
     xor eax, eax
+    mov [rbp-60], eax
     mov ecx, ELF_HEADER_SIZE
     rep stosb
     mov rbx, 0x00010102464C457F
@@ -174,13 +179,8 @@ build_executable:
     mov qword [rdx+E_phoff], ELF_HEADER_SIZE
     mov word [rdx+E_ehsize], ELF_HEADER_SIZE
     mov word [rdx+E_phentsize], PROG_HEADER_SIZE
-    mov word [rdx+E_shentsize], SECTION_HEADER_SIZE 
-    mov rdi, TEMP_COMMON_ARR
-    mov esi, 64
-    call entry_array_ensure_free_space
-    mov [rbp-24], rax
-    mov rdi, rax
-    call render_set_collate_seg_ptr
+    mov word [rdx+E_shentsize], r9w
+    mov eax, [rbp-16]
     mov rcx, [rbp-8]
     mov word [rcx+E_phnum], ax
     mov edx, eax
@@ -195,46 +195,94 @@ build_executable:
     call entry_array_reserve_size
     mov [rbp-56], rax
     mov r10, [rbp-24]
-    mov r8, [rbp-32]
-    mov r11d, [rbp-44]
+    mov r14, [rbp-32]
 _start_loop_build_exe_seg:
-    cmp r10, r8
-    je _end_loop_build_exe_seg 
+    cmp r10, r14
+    je _end_build_exe_set_main_info 
     mov rdi, [r10]
-    xor r9, r9
-    mov ebx, [rdi+48]
-    mov ecx, [rbp-12]
-    mov r12d, [rdi+52]
-    add r12, r11
-    mov edx, [rdi+56]
     mov esi, [rdi+28]
-    mov dword [rax+P_type], PT_LOAD
-    mov [rax+P_flags], bx
-    mov [rax+P_offset], rcx
-    mov [rax+P_vaddr], r12
+    xor r9, r9
+    mov [rbp-40], rdi
     mov [rax+P_paddr], r9d
+    mov qword [rax+P_align], 4096
+    mov dword [rax+P_type], PT_LOAD
+    mov ebx, [rdi+48]
+    mov [rax+P_flags], bx
     mov [rax+P_filesz], esi
-    mov [rax+P_memsz], rdx
-    mov dword [rax+P_align], 4096
+    mov ecx, [rbp-12]
     add [rbp-12], esi
-    add qword [rbp-56], PROG_HEADER_SIZE
+    mov [rax+P_offset], rcx
+    add ecx, [rbp-60]
+    add ecx, [rbp-44]
+    mov [rdi+52], ecx
+    mov [rax+P_vaddr], rcx
+    mov [rbp-8], ecx
+    mov edi, ecx
+    add edi, esi
+    mov esi, 4096
+    call align_to_pow2
+    mov ebx, eax
+    mov ecx, [rbp-8]
+    shr ecx, 12
+    shr ebx, 12
+    sub ebx, ecx
+    shl ebx, 12
+    mov rdi, [rbp-40]
+    mov rax, [rbp-56]
+    mov [rdi+56], ebx
+    mov [rax+P_memsz], ebx
+    add [rbp-60], ebx
+    add rax, PROG_HEADER_SIZE
+    mov [rbp-56], rax
+    add r10, 8
+    mov [rbp-24], r10
+    jmp _start_loop_build_exe_seg
+_end_build_exe_set_main_info:
+    add rsp, 64
+    pop rbp
+    ret
+
+; rdi - ptr to entry sym
+build_executable:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-64], rdi
+    mov rdi, TEMP_COMMON_ARR
+    mov esi, 64
+    call entry_array_ensure_free_space
+    mov [rbp-8], rax
+    mov rdi, rax
+    call render_set_collate_seg_ptr
+    mov [rbp-12], eax
+    mov rdi, [rbp-8]
+    mov esi, eax
+    call build_exe_set_main_info
+    call render_patch_delayed_ref
+    mov r10, [rbp-8]
+    mov r14d, [rbp-12]
+    shl r14d, 3
+    add r14, r10
+    mov [rbp-24], r14
+_start_loop_copy_seg_be:
+    cmp r10, r14
+    je _end_loop_copy_seg_be 
+    mov rdi, [r10]
+    mov esi, [rdi+28]
     lea rdi, [BUILD_ARR]
     call entry_array_reserve_size
     mov rdi, rax
-    mov r10, [rbp-24]
+    mov r10, [rbp-8]
     mov rdx, [r10]
     mov rsi, [rdx+20]
     mov ecx, [rdx+28]
     rep movsb
-    mov r8, [rbp-32]
-    mov rax, [rbp-56]
+    mov r14, [rbp-24]
     add r10, 8
-    mov [rbp-24], r10
-    jmp _start_loop_build_exe_seg
-_end_loop_build_exe_seg:
-    mov edi, [ENTRY_SYM_OFFSET]
-    mov rcx, [ENTRY_SYM_ARR_PTR]
-    add rdi, [rcx]
+    mov [rbp-8], r10
+    jmp _start_loop_copy_seg_be
+_end_loop_copy_seg_be:
+    mov rdi, [rbp-64]
     mov eax, [rdi+32]
     mov ebx, [rdi+36]
     add rax, [SEG_ENTRY_ARRAY]
@@ -242,7 +290,7 @@ _end_loop_build_exe_seg:
     mov r11d, [rbp-44]
     add r11d, [rax+52]
     add r11d, [rbx]
-    mov rsi, [rbp-8]
+    mov rsi, [BUILD_ARR]
     mov [rsi+E_entry], r11
 
     mov rdi, TEST_EXE

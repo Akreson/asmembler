@@ -268,8 +268,9 @@ _loop_patch_rpdr:
 _abs_patch_rpdr:
     add r9d, r8d
     mov eax, [DEF_BASE_ADDR]
-    mov ecx, [rbp-28]
-    add rax, rcx
+    ;mov ecx, [rbp-28]
+    ;add rax, rcx
+    mov eax, [rbp-28]
     mov r10b, [rdx+25] 
     cmp r10b, 4
     jne _abs8_patch_rpdr
@@ -4904,7 +4905,7 @@ _render_seg_grab_loop:
     mov rdx, [rbp-8]
     mov rcx, [rbp-16]
     cmp rdx, rcx
-    je _set_seg_addr_start_render
+    je _end_start_render
     mov rdi, [rdx]
     call render_process_segment
     mov eax, dword [LOCAL_PATCH_ARR+8]
@@ -4917,33 +4918,6 @@ _render_seg_grab_loop:
 __next_render_grap_entry:
     add dword [rbp-8], 8
     jmp _render_seg_grab_loop
-_set_seg_addr_start_render:
-    xor eax, eax
-    mov [rbp-28], eax 
-    mov [rbp-8], rsp
-_loop_set_asr:
-    mov rdx, [rbp-8]
-    mov rcx, [rbp-16]
-    cmp rdx, rcx
-    je _do_patchs_start_render
-    mov rax, [rdx]
-    mov edi, [rax+28]
-    test edi, edi
-    jz __next_loop_set_asr
-    mov [rbp-24], rax
-    mov ecx, [rbp-28]
-    mov [rax+52], ecx
-    mov esi, 4096
-    call align_to_pow2
-    mov rbx, [rbp-24]
-    mov [rbx+56], eax
-    add [rbp-28], eax
-__next_loop_set_asr:
-    add dword [rbp-8], 8
-    jmp _loop_set_asr
-_do_patchs_start_render:
-    ;TODO: check if it exec, obj or bin mod
-    call render_patch_delayed_ref
 _end_start_render:
     add rsp, 2304
     pop rbp

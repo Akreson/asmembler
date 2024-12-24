@@ -23,6 +23,7 @@ _end_log2_val_ceil:
     ret
 
 ; rdi - val to align, rsi - pow2 align to
+; return rax - aligned val
 align_to_pow2:
     mov rax, rdi
     mov r8, rsi

@@ -1,3 +1,5 @@
+format ELF64 executable
+
 CONST_NEG equ -1
 NAME_C equ 0x4
 NAME_C2 equ 1
@@ -7,6 +9,7 @@ segment readable
 NAME_D db 0
 
 segment readable executable
+    lea rsi, qword [NAME_D]
     jg jump_to3
     jmp jump_to2
     jmp jump_to1
@@ -152,4 +155,61 @@ jump_to3:
     mov [r8], eax 
     mov [r9], r8
 
+    jmp _err_dubl_entry
+_err_macro_arg_rep:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_macro_to_many_arg:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_invalid_command_in_macr_def:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_segment_not_set:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_out_of_range_value:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_invalid_const_value:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_defined_symbol:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_invalid_addr_expr:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_invalid_expr:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_def_ext:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_def_pub:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_def_mod_def:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_def_ext_before:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_dubl_entry:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_str_reg_val:
+    mov rsi, NAME_D
+    jmp _err_start_parser
+_err_seg_inv_def:
+    mov rsi, NAME_D
+_err_start_parser:
+    mov edi, [rbp-52]
+    xor rdx, rdx
+    xor ecx, ecx
+    mov r9, -4
+_end_start_parser:
+    add rsp, 256
+    pop rbp
+    ret
 
