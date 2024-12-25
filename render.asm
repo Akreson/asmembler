@@ -1453,6 +1453,7 @@ __rproc_addr_2p_check_arith1:
     jne __rproc_addr_2p_2nd_reg
     lea r15, [r9+1]
     mov ecx, [r8+9]
+    add r9, 15
     jmp __rproc_addr_2p_ptr_digit_neg_chech 
 __rproc_addr_2p_ptr_offset_check:
     cmp dl, TOKEN_BUF_PTR_OFFSET
@@ -1463,6 +1464,7 @@ __rproc_addr_2p_ptr_offset_check:
     jz _err_rproc_second_param_non_const
     mov r8, [rbp-40]
     mov r9, [rbp-48]
+    add r9, 13
     lea rdi, [rbp-128]
     mov r15, rdi
     lea rsi, [rax+16]
@@ -1471,14 +1473,14 @@ __rproc_addr_2p_ptr_offset_check:
     mov ecx, [r8+9]
 __rproc_addr_2p_ptr_digit_neg_chech:
     cmp ecx, AUX_SUB
-    jne __rproc_addr_2p_r_d
+    jne __rproc_addr_2p_ptr_offset_check_d
     mov r14, [r15]
     neg qword [r15]   
     mov rdi, r14
     dec r14
     and r14, rdi
     test r14, r14
-    jz __rproc_addr_2p_r_d
+    jz __rproc_addr_2p_ptr_offset_check_d
     movzx edi, byte [r15+13]
     lzcnt edi, edi
     mov ecx, 32
@@ -1486,6 +1488,16 @@ __rproc_addr_2p_ptr_digit_neg_chech:
     mov ebx, 1
     shl ebx, cl
     mov [r15+13], bl
+__rproc_addr_2p_ptr_offset_check_d:
+    ;mov r9, [rbp-48]
+    mov r10, [rbp-56]
+    cmp r9, r10
+    jae __rproc_addr_2p_r_d
+    mov rbx, [r9+1]
+    add [r15], rbx
+    add r9, 15
+    cmp r9, r10
+    jne _err_rproc_addr_invalid_2nd
 __rproc_addr_2p_r_d:
     mov ebx, MOD_ADDR_REG_DISP32
     movzx ecx, byte [r15+13]
