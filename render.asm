@@ -72,7 +72,7 @@ entry_array_data_m RELOC_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 entry_array_data_m DELAYED_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 
 ; TODO: move this struct to segment entry?
-; entry body - 0 have min ins. len, 1 reserved, +2 sub to min ins len, +3 total ins bytes
+; entry body - 0 have min ins. len, +1 processed, +2 sub to min ins len, +3 total ins bytes
 ; +4 type, +5 offset to disp from start of ins
 ; +6 max size of disp, +7 min size of disp
 ; +8 ptr to symbol, +16 ptr to token entry header
@@ -141,7 +141,7 @@ push_to_local_patch:
     mov r12d, [rbp-32]
     mov r13d, [rbp-36]
     mov r14d, [rbp-52]
-    mov byte [rbx], 0
+    mov word [rbx], 0
     mov [rbx+2], r14b
     mov [rbx+3], cl
     mov [rbx+4], r11b
@@ -424,15 +424,15 @@ set_offset_local_patch:
     push rbp
     mov rbp, rsp
     cmp edi, 0
-    jl __loop_neg_of_patch_solp
+    jl _neg_of_patch_solp
     add edi, edx
     mov eax, edi
-    jmp __loop_check_th_solp
-__loop_neg_of_patch_solp:
+    jmp _check_th_solp
+_neg_of_patch_solp:
     sub edi, edx
     mov eax, edi
     add edi, esi
-__loop_check_th_solp:
+_check_th_solp:
     xor ebx, ebx
     mov cl, MAX_INT8
     mov dl, MIN_INT8
@@ -502,7 +502,19 @@ __prop_loop_patch_after_rplr:
     movzx ebx, byte [rcx+5]
     add r11d, ebx
     mov r10d, [rbp-12]
+    mov dl, [rcx+1]
+    test dl, dl
+    jnz ___prop_is_processed_affter_rplr
     sub [r13+r11], r10d
+    jmp __prop_loop_patch_after_next_rplr
+___prop_is_processed_affter_rplr:
+    mov eax, [r13+r11]
+    mov esi, r10d
+    neg esi
+    cmp eax, 0
+    cmovl r10d, esi
+    sub eax, r10d
+    mov [r13+r11], eax
 __prop_loop_patch_after_next_rplr:
     add r12, 8
     jmp __prop_loop_patch_after_rplr
@@ -598,6 +610,7 @@ ___loop_patch_prop_rplr:
     mov rcx, [rbp-40]
 __loop_patch_next:
     mov r8, [rbp-64]
+    mov byte [rcx+1], 1
     add rcx, SEGMENT_PATCH_ENTRY_SIZE
     jmp _loop_patch_rplr
 _fix_left_patches_rplr:
