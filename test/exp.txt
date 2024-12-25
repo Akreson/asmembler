@@ -1,14 +1,80 @@
 format ELF64 executable
-
 CONST_NEG equ -1
 NAME_C equ 0x4
 NAME_C2 equ 1
+NAME_SYM_REF_HEADER_SIZE equ 32
 entry jump_to1
 
 segment readable
 NAME_D db 0
 
 segment readable executable
+next_token:
+    lea r9, [r8+NAME_SYM_REF_HEADER_SIZE+8]
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov rbx, [rdi]
+    mov rcx, [rdi+16]; curr pos
+    mov [rbp-24], rbx
+    mov rdx, [rdi+8]
+    mov [rbp-32], rdx
+    mov esi, dword [NAME_D]
+    mov [rbp-80], rcx
+    mov dword [rbp-84], 0
+_loop_skip_wt_nt:
+    movzx edi, byte [rbx+rcx]
+    cmp edi, 0
+    je jump_to7
+    cmp edi,NAME_C
+    jne __loop_skip_check_space ;//////////////
+__comment_skip_loop:
+    inc rcx
+    cmp rcx, rdx
+    je jump_to7
+    movzx edi, byte [rbx+rcx]
+    cmp edi, NAME_C
+    jne __comment_skip_loop
+    mov [rbp-40], rcx
+    jmp _aux_check_nt
+__loop_skip_check_space:
+    call next_token
+    test eax, eax
+    jz _char_check_nt
+    mov rdx, [rbp-32]
+    inc rcx
+    cmp rcx, rdx
+    je jump_to7
+    jmp _loop_skip_wt_nt ;//////////////
+_char_check_nt:
+    mov r9, rcx
+    mov r8, [rbp-80]
+    sub rcx, r8
+    mov [rbp-84], ecx
+    mov rcx, r9
+    mov [rbp-40], rcx
+    mov [rbp-48], edi
+    call next_token
+    test rax, rax
+    jnz jump_to7
+    mov edi, [rbp-48]
+    mov ebx, '_'
+    cmp edi, ebx
+    je jump_to7
+    call next_token
+    test eax, eax
+    jnz jump_to7
+    mov edi, [rbp-48]
+    mov ebx, NAME_C
+    mov edx, NAME_C
+    cmp edi, ebx
+    je jump_to7
+    cmp edi, edx
+    je jump_to7
+_aux_check_nt:
+
     lea rsi, qword [NAME_D]
     jg jump_to3
     jmp jump_to2

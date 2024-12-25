@@ -1,3 +1,5 @@
+format ELF64 executable 
+
 include "tf/inc.asm"
 
 CONST0 equ 1
