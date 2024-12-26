@@ -206,7 +206,7 @@ _start_loop_build_exe_seg:
     mov [rax+P_paddr], r9d
     mov qword [rax+P_align], 4096
     mov dword [rax+P_type], PT_LOAD
-    mov ebx, [rdi+48]
+    mov bx, [rdi+48]
     mov [rax+P_flags], bx
     mov [rax+P_filesz], esi
     mov ecx, [rbp-12]

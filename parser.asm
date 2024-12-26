@@ -1,3 +1,6 @@
+DEF_TOKEN_BUF_SIZE equ 40960
+DEF_REN_BUF_SIZE   equ 8192
+
 TOKEN_BUF_NONE       equ 0
 TOKEN_BUF_PTR_OFFSET equ 1
 TOKEN_BUF_DIRECT     equ 2
@@ -53,7 +56,7 @@ NAME_SYM_REF_SERV_HS     equ 16
 entry_array_data_m NAME_SYM_REF_ARRAY, 1
 
 ; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
-; +40 file array id start, +44 file array id end, +48 mod (4b), +52 offset from base
+; +40 [if sec. - ptr to sec. token], +48 mod (2b), 2b reserved, +52 offset from base
 ; +56 aligned to 2^12 rendered size
 SEG_ENTRY_SIZE equ 64
 entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
@@ -1786,7 +1789,7 @@ __assign_segment_collate:
     mov dword [CURR_SEG_OFFSET], eax
     mov rdx, qword [SEG_ENTRY_ARRAY]
     add rdx, rax
-    mov [rdx+48], ebx
+    mov [rdx+48], bx
     jmp _new_entry_start_ps
 __kw_include:
     mov rdi, [rbp-40]
@@ -2253,7 +2256,7 @@ __check_next_pcf:
     cmp eax, KW_F_BIN
     jne _err_parsre_check_format
 _set_bin_seg_pcf:
-    mov dword [CURR_SEG_OFFSET], SEG_ENTRY_SIZE
+    mov dword [CURR_SEG_OFFSET], 0
     jmp _end_parser_check_format 
 _err_parsre_check_format:
     mov rsi, ERR_INV_EXP
@@ -2327,25 +2330,34 @@ _return_cpun:
     pop rbp
     ret
 
-; rdi - ptr to segment entry
+; rdi - ptr to segment entry, esi - token buf size, edx - render buf size
 segment_entry_init:
     push rbp
     mov rbp, rsp
+    sub rsp, 16
+    mov [rbp-8], rdi
+    mov [rbp-12], edx
     mov dword [rdi+16], 1
     mov dword [rdi+36], 1
-    mov rsi, 40960
-    push rdi
+    test esi, esi
+    jz _init_next_seg_entry_init
     call init_entry_array
-    pop rdi
+    mov rdi, [rbp-8]
+_init_next_seg_entry_init:
     add rdi, ENTRY_ARRAY_DATA_SIZE
-    mov rsi, 8192
+    mov esi, [rbp-12]
+    test esi, esi
+    jz _end_segment_entry_init
     call init_entry_array
+_end_segment_entry_init:
+    add rsp, 16
     pop rbp
     ret
 
 init_parser_data:
     push rbp
     mov rbp, rsp
+    sub rsp, 32
     mov rdi, TEMP_COMMON_ARR
     mov rsi, 2048
     call init_entry_array
@@ -2361,40 +2373,111 @@ init_parser_data:
     test rax, rax
     jz _fail_exit_init_parser_data
     mov rdi, NAME_SYM_REF_ARRAY
-    mov rsi, 1
+    mov esi, 1
     shl rsi, 20
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
-    mov rdi, SEG_ENTRY_ARRAY
-    mov rsi, 16
-    call init_entry_array
-    test rax, rax
-    jz _fail_exit_init_parser_data
-    mov ecx, 16
-_init_seg_loop:
-    dec ecx
-    test ecx, ecx
-    jz _end_seg_loop
-    mov rdi, qword [SEG_ENTRY_ARRAY]
-    mov eax, SEG_ENTRY_SIZE
-    mul ecx
-    add rdi, rax
-    push rcx
-    call segment_entry_init
-    pop rcx
-    jmp _init_seg_loop
-_end_seg_loop:
     mov rdi, PATCH_LIST
     mov esi, 1024
     call init_list
     test rax, rax
     jz _fail_exit_init_parser_data
+    mov bl, [BUILD_TYPE]
+    cmp bl, BUILD_TYPE_ELF_EXE
+    jne _init_parser_check_o
+    mov rdi, SEG_ENTRY_ARRAY
+    mov esi, 8
+    call init_entry_array
+    test rax, rax
+    jz _fail_exit_init_parser_data
+    mov ecx, 8
+_init_seg_loop:
+    dec ecx
+    test ecx, ecx
+    jz _init_parser_success
+    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov eax, SEG_ENTRY_SIZE
+    mul ecx
+    add rdi, rax
+    push rcx
+    mov esi, DEF_TOKEN_BUF_SIZE
+    mov edx, DEF_REN_BUF_SIZE
+    call segment_entry_init
+    pop rcx
+    jmp _init_seg_loop
+_init_parser_check_o:
+    cmp bl, BUILD_TYPE_ELF_OBJ
+    jne _init_parser_check_b
+    mov rdi, SEG_ENTRY_ARRAY
+    mov esi, 48
+    call init_entry_array
+    test rax, rax
+    jz _fail_exit_init_parser_data
+    lea rdx, [SEG_ENTRY_ARRAY]
+    mov rdi, [rdx]
+    mov ecx, SEG_ENTRY_SIZE
+    mov esi, [rdx+8]
+    imul ecx, esi
+    xor eax, eax
+    rep stosb
+    lea rbx, [DUMMY_NODE_AUX+SEC_NAME_OFFSET_FROM_DUMMY]
+    mov [rbp-8], rbx
+_init_sections_loop:
+    mov al, [rbx+13]
+    test al, al
+    jz _init_parser_success
+    mov ecx, [rbx+8]
+    cmp ecx, KW_SEC_RELA
+    je __next_init_sec_loop
+    mov [rbp-12], ecx
+    mov r8d, ecx
+    and ecx, SEC_INDEX_MASK
+    and r8d, IS_SEC_USER_DEF_MASK
+    mov esi, DEF_TOKEN_BUF_SIZE
+    mov eax, 0
+    cmp r8d, r8d
+    cmovz esi, eax
+    mov edx, DEF_REN_BUF_SIZE
+    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov eax, SEG_ENTRY_SIZE
+    mul ecx
+    add rdi, rax
+    mov [rdi+40], rbx
+    call segment_entry_init
+    mov ecx, [rbp-12]
+    mov ebx, KW_SEC_RELA
+    cmp ecx, ebx
+    ja __next_init_sec_loop
+    and ecx, SEC_INDEX_MASK
+    and ebx, SEC_INDEX_MASK
+    add ecx, ebx
+    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov eax, SEG_ENTRY_SIZE
+    mul ecx
+    add rdi, rax
+    mov esi, 0
+    mov edx, DEF_REN_BUF_SIZE
+    call segment_entry_init
+__next_init_sec_loop:
+    mov rbx, [rbp-8]
+    add rbx, TOKEN_KIND_SIZE
+    jmp _init_sections_loop
+_init_parser_check_b:
+    mov rdi, SEG_ENTRY_ARRAY
+    mov esi, 1
+    call init_entry_array
+    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov esi, DEF_TOKEN_BUF_SIZE
+    mov edx, DEF_REN_BUF_SIZE
+    call segment_entry_init
+_init_parser_success:
     mov rax, 1
     jmp _end_init_parser_data
 _fail_exit_init_parser_data:
     xor rax, rax
 _end_init_parser_data:
+    add rsp, 32
     pop rbp
     ret
 

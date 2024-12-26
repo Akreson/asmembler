@@ -128,9 +128,6 @@ _start:
     call init_file_array
     test rax, rax
     jz _end_start
-    call init_parser_data
-    test rax, rax
-    jz _end_start
     mov rdi, BUILD_ARR
     mov rsi, 65536
     call init_entry_array
@@ -153,6 +150,9 @@ _start:
     mov rdi, rax
     mov esi, ebx
     call parser_check_format
+    call init_parser_data
+    test rax, rax
+    jz _end_start
     mov rdi, [rbp-8]
     mov esi, [rbp-12]
     call start_parser
