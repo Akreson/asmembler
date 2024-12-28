@@ -2417,7 +2417,7 @@ _init_parser_check_o:
     lea rdx, [SEG_ENTRY_ARRAY]
     mov rdi, [rdx]
     mov ecx, SEG_ENTRY_SIZE
-    mov esi, [rdx+8]
+    mov esi, [rdx+12]
     imul ecx, esi
     xor eax, eax
     rep stosb
@@ -2462,6 +2462,7 @@ _init_sections_loop:
 __next_init_sec_loop:
     mov rbx, [rbp-8]
     add rbx, TOKEN_KIND_SIZE
+    mov [rbp-8], rbx
     jmp _init_sections_loop
 _init_parser_check_b:
     mov rdi, SEG_ENTRY_ARRAY
