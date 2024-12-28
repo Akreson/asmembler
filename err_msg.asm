@@ -50,6 +50,10 @@ ERR_SYM_EXT_ALR_DEF db "Symbol already has been defined and can't be external", 
 ERR_SYM_PUB_TYPE db "Symbol can't be referenced as global in executable", 0
 ERR_DUBL_ENTRY db "Entry symbol already have been defined", 0
 ERR_SEG_IN_N_EXE db "Segment can't be declared in non executable file type", 0
+ERR_SEC_IN_N_OBJ db "Section can't be declared in non object file type", 0
+ERR_SEC_INV_MOD db "Invalid combination of modifier for sections", 0
+ERR_ENTRY_UNDF db "_entry_ symbol can't be in undefined state in executable", 0
+ERR_ENTRY_IN_OBJ db "_entry_ symbol can't be defined in obj file", 0
 
 ; RENDER
 ERR_INS_UNSUPPORT db "Instruction is unsupported"

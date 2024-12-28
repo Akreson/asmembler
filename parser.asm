@@ -1722,6 +1722,8 @@ _begin_kw_sp:
     mov eax, [rbp-8]
     cmp eax, KW_SEGMT
     je __kw_segm_sp
+    cmp eax, KW_SECT
+    je __kw_sect_sp
     cmp eax, KW_MACR
     je __kw_macr
     cmp eax, KW_INCL
@@ -1747,9 +1749,15 @@ __kw_segm_sp:
     cmp bl, BUILD_TYPE_ELF_EXE
     jne _err_seg_in_non_exe
     ;TODO: catch wrong combination?
+    jmp ___kw_sec_segm_qul_start
+__kw_sect_sp:
+    mov bl, [BUILD_TYPE]
+    cmp bl, BUILD_TYPE_ELF_OBJ
+    jne _err_sec_in_non_obj
+___kw_sec_segm_qul_start:
     xor eax, eax
     mov [rbp-56], eax
-___kw_segm_loop_sp:
+___kw_sec_segm_loop_sp:
     mov rdi, [rbp-40]
     lea rsi, [rbp-32]
     call next_token
@@ -1757,12 +1765,12 @@ ___kw_segm_loop_sp:
     jz _end_start_parser
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_AUX
-    jne ___kw_segm_next_check
+    jne ___kw_sec_segm_next_check
     mov ebx, [rbp-24]
     cmp ebx, AUX_NEW_LINE
-    je __assign_segment_collate
+    je ___kw_sec_seg_loop_end
     jmp _err_invalid_expr
-___kw_segm_next_check:
+___kw_sec_segm_next_check:
     cmp eax, TOKEN_TYPE_KEYWORD
     jne _err_invalid_expr
     mov ebx, [rbp-24]
@@ -1778,9 +1786,8 @@ ___kw_segm_next_check:
     jnz _err_seg_inv_def
     or edx, ecx
     mov [rbp-56], edx
-    jmp ___kw_segm_loop_sp
-__assign_segment_collate:
-    ;TODO: add file id start and end
+    jmp ___kw_sec_segm_loop_sp
+___kw_sec_seg_loop_end:
     mov eax, [rbp-56]
     test eax, eax
     jz _err_seg_inv_def
@@ -1788,9 +1795,19 @@ __assign_segment_collate:
     mov ecx, SEG_ENTRY_SIZE
     mul ecx
     mov dword [CURR_SEG_OFFSET], eax
-    mov rdx, qword [SEG_ENTRY_ARRAY]
-    add rdx, rax
-    mov [rdx+48], bx
+    mov rdi, qword [SEG_ENTRY_ARRAY]
+    add rdi, rax
+    mov dl, [BUILD_TYPE]
+    cmp dl, BUILD_TYPE_ELF_EXE
+    jne __assign_sec_collate_sp
+__assign_segment_collate_sp:
+    ;TODO: add file id start and end
+    mov [rdi+48], bx
+    jmp _new_entry_start_ps
+__assign_sec_collate_sp:
+    mov rax, [rdi+40]
+    test rax, rax
+    jz _err_invalid_sec_modifier
     jmp _new_entry_start_ps
 __kw_include:
     mov rdi, [rbp-40]
@@ -2090,7 +2107,9 @@ __kw_mod_check_last_char:
     jne _err_invalid_expr
     jmp _new_entry_start_ps
 __kw_entry:
-    ; TODO: check if file type obj file
+    mov bl, [BUILD_TYPE]
+    cmp bl, BUILD_TYPE_ELF_OBJ
+    je _err_entry_in_obj
     mov dl, [IS_ENTRY_DEFINED]
     test dl, dl
     jnz __kw_entry_err
@@ -2186,6 +2205,15 @@ _err_str_reg_val:
     jmp _err_start_parser
 _err_seg_in_non_exe:
     mov rsi, ERR_SEG_IN_N_EXE
+    jmp _err_start_parser
+_err_sec_in_non_obj:
+    mov rsi, ERR_SEC_IN_N_OBJ
+    jmp _err_start_parser
+_err_invalid_sec_modifier:
+    mov rsi, ERR_SEC_INV_MOD
+    jmp _err_start_parser
+_err_entry_in_obj:
+    mov rsi, ERR_ENTRY_IN_OBJ
     jmp _err_start_parser
 _err_seg_inv_def:
     mov rsi, ERR_SEG_INV_DEF
