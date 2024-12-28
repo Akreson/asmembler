@@ -370,12 +370,12 @@ get_mem_def_name_buf:
     test rax, rax
     jnz _end_get_mem_def_name_buf 
     mov rdi, NAME_SYM_REF_ARRAY
-    mov esi, [rdi]
+    mov esi, [rdi+12]
     shl esi, 1
     lea rdx, [rbp-24]
     call entry_array_copy_realloc
     test rax, rax
-    jnz _success_realloc_pnt_unk 
+    jnz _success_realloc_pnt_def 
     exit_m -9
 _success_realloc_pnt_def:
     mov rdi, NAME_SYM_REF_ARRAY
@@ -393,11 +393,12 @@ __ht_reasign_pnt_def:
     mov rsi, [r8+16]
     mov ecx, [r8+24]
     movzx edx, byte [r8+29]
+    mov r8b, [r8+30]
     call hash_table_find_entry
     mov rdx, [rbp-40]
     mov ecx, [rbp-44]
     mov esi, [rbp-48]
-    mov ebx, [rdx]
+    mov ebx, [rdx+rcx]
     lea r9, [rdx+rcx+16]
     mov [rax], r9
     add ecx, ebx
@@ -1925,7 +1926,7 @@ __kw_macro_set_entries:
     je __kw_macro_end
     jmp __kw_macro_set_entries
 ___kw_macro_entr_check_n:
-    cmp eax, TOKEN_TYPE_KEYWORD
+    cmp eax, TOKEN_TYPE_KEYWORD; TODO: add check
     cmp ecx, KW_INCL
     je _err_invalid_command_in_macr_def
     cmp ecx, KW_MACR
@@ -2373,8 +2374,7 @@ init_parser_data:
     test rax, rax
     jz _fail_exit_init_parser_data
     mov rdi, NAME_SYM_REF_ARRAY
-    mov esi, 1
-    shl rsi, 20
+    mov esi, 20480
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
