@@ -2459,9 +2459,12 @@ _init_sections_loop:
     cmp ecx, KW_SEC_RELA
     je __next_init_sec_loop
     mov [rbp-12], ecx
+    mov r10d, ecx
     mov r8d, ecx
     and ecx, SEC_INDEX_MASK
     and r8d, IS_SEC_USER_DEF_MASK
+    and r10d, SEC_ATTR_MASK
+    shr r10d, 16
     mov esi, DEF_TOKEN_BUF_SIZE
     mov eax, 0
     cmp r8d, r8d
@@ -2471,6 +2474,7 @@ _init_sections_loop:
     mov eax, SEG_ENTRY_SIZE
     mul ecx
     add rdi, rax
+    mov [rdi+48], r10w
     mov [rdi+40], rbx
     call segment_entry_init
     mov ecx, [rbp-12]
