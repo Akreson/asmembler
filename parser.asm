@@ -46,17 +46,19 @@ list_main_block_m PATCH_LIST, PATCH_LIST_ENTRY_SIZE
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
 ; +32 segment offset, +36 offset to entry header in seg token buf
+; +40 meta info ([if obj file - idx in symtab]), +42 is used for reloc, +43 1b reserved
 ;(TOKEN_NAME_MACR)
 ; +32 start offset of body in file buff, +36 start line of body in file,
 ; +40 copy entires (4 offset, 4 len, 1 arg num) _n_ times
 NAME_CONST_ENTRY_SIZE    equ 46
-NAME_DATA_ENTRY_SIZE     equ 40
+NAME_DATA_ENTRY_SIZE     equ 44
+NAME_DATA_BODY_SIZE      equ 12
 NAME_SYM_REF_HEADER_SIZE equ 32
 NAME_SYM_REF_SERV_HS     equ 16
 entry_array_data_m NAME_SYM_REF_ARRAY, 1
 
 ; entry - 0 (entry array, work size 1b) token buf, +20 (entry array, work size 1b) render buf
-; +40 [if sec. - ptr to sec. token], +48 mod (2b), 2b reserved, +52 offset from base
+; +40 [if sec. - ptr to sec. token], +48 mod (2b), +49 sec idx in sec.arr., 1b reserved, +52 offset from base
 ; +56 aligned to 2^12 rendered size
 SEG_ENTRY_SIZE equ 64
 entry_array_data_m SEG_ENTRY_ARRAY, SEG_ENTRY_SIZE
@@ -1328,7 +1330,7 @@ ___name_data_def:
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_DATA
-    mov edi, 8
+    mov edi, NAME_DATA_BODY_SIZE
     call get_mem_def_name_buf
     mov [rbp-84], rax
     call curr_token_buf_ptr
@@ -1558,7 +1560,7 @@ __name_sp_aux:
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_JMP
-    mov edi, 8
+    mov edi, NAME_DATA_BODY_SIZE
     call get_mem_def_name_buf
     mov [rbp-84], rax
     call curr_token_buf_ptr
@@ -2435,6 +2437,7 @@ _init_seg_loop:
     pop rcx
     jmp _init_seg_loop
 _init_parser_check_o:
+    ; TODO: do similar init for exe type?
     cmp bl, BUILD_TYPE_ELF_OBJ
     jne _init_parser_check_b
     mov rdi, SEG_ENTRY_ARRAY
