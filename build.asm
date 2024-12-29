@@ -16,6 +16,18 @@ PT_SHLIB   equ 5
 PT_PHDR	   equ 6
 PT_TLS     equ 7
 
+; Special section indices
+SHN_UNDEF     equ 0; Undefined section
+SHN_LORESERVE equ 0xff00; Start of reserved indices
+SHN_LOPROC    equ 0xff00; Start of processor-specific
+SHN_HIPROC    equ 0xff1f; End of processor-specific
+SHN_LOOS      equ 0xff20; Start of OS-specific
+SHN_HIOS      equ 0xff3f; End of OS-specific
+SHN_ABS	      equ 0xfff1; Associated symbol is absolute
+SHN_COMMON    equ 0xfff2; Associated symbol is common
+SHN_XINDEX    equ 0xffff; Index is in extra table
+SHN_HIRESERVE equ 0xffff; End of reserved indices
+
 ; Legal values for sh_type (section type).
 SHT_NULL          equ 0; Section header table entry unused
 SHT_PROGBITS      equ 1; Program data SHT_SYMTAB        equ 2; Symbol table
@@ -34,6 +46,21 @@ SHT_PREINIT_ARRAY equ 16; Array of pre-constructors
 SHT_GROUP         equ 17; Section group
 SHT_SYMTAB_SHNDX  equ 18; Extended section indices
 SHT_NUM           equ 19; Number of defined types.
+
+SHF_WRITE            equ 0x0; Writable
+SHF_ALLOC            equ 0x1; Occupies memory during execution
+SHF_EXECINSTR        equ 0x2; Executable
+SHF_MERGE            equ 0x10; Might be merged
+SHF_STRINGS          equ 0x20; Contains nul-terminated strings
+SHF_INFO_LINK        equ 0x40; `sh_info' contains SHT index
+SHF_LINK_ORDER       equ 0x80; Preserve order after combining
+SHF_OS_NONCONFORMING equ 0x100; Non-standard OS specific handling required
+SHF_GROUP            equ 0x200; Section is member of a group.
+SHF_TLS              equ 0x400; Section hold thread-local data.
+SHF_COMPRESSED       equ 0x800; Section with compressed data.
+SHF_MASKOS           equ 0x0ff00000; OS-specific.
+SHF_MASKPROC         equ 0xf0000000; Processor-specific
+SHF_GNU_RETAIN       equ 0x200000; Not to be GCed by linker.
 
 ; Legal values for ST_BIND subfield of st_info (symbol binding).
 STB_LOCAL      equ 0; Local symbol
@@ -147,6 +174,19 @@ SH_link      equ 40; Link to another section
 SH_info      equ 44; Additional section information
 SH_addralign equ 48; Section alignment
 SH_entsize   equ 56; Entry size if section holds table
+
+SYM64_TABLE_ENTRY_SIZE equ 24
+ST_name  equ 0; Symbol name (string tbl index)
+ST_info  equ 4; Symbol type and binding
+ST_other equ 5; Symbol visibility
+ST_shndx equ 6; Section index
+ST_value equ 8; Symbol value
+ST_size  equ 16; Symbol size
+
+RELA64_ENTRY_SIZE equ 24
+RA64_offset equ 0
+RA64_info   equ 8
+RA64_addend equ 16
 
 segment readable executable
 
