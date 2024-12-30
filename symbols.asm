@@ -260,7 +260,7 @@ KW_SEC_RODATA   equ 0x30041404
 KW_SEC_TEXT     equ 0x30051405
 KW_SEC_DATA     equ 0x30061406
 KW_SEC_DEBUG    equ 0x30000408
-; NOTE: rel. must be before sec. that can has rel entries
+; NOTE: rel. sec. group must be before sections that can have rel entries
 KW_SEC_RELA     equ 0x30040410
 KW_SEC_SYMTAB   equ 0x30000420
 KW_SEC_STRTAB   equ 0x30000421
@@ -271,7 +271,6 @@ SIZE_HASH_DEF_SYM_TABLE equ 2048
 
 segment readable
 
-;STR_ "", 0
 STR_AL   db "al"
 STR_CL   db "cl"
 STR_DL   db "dl"

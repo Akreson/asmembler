@@ -64,7 +64,7 @@ segment readable writeable
 CURR_SECTION_OFFSET dd 0
 
 ; entry body - 0 ptr to sym, +8 ptr to token entry header,
-; +16 offset to disp from start of ins, +20 offset of section to patch in, 
+; +16 offset to disp from start of ins, +20 offset of seg/sec to patch in, 
 ; +24 type, +25 size of patch, (2b reserved)
  
 ADDR_ARR_PATCH_ENTRY_SIZE equ 28
@@ -172,11 +172,16 @@ push_to_delayed_patch:
     and al, [rdi+15]
     cmp al, SYM_REF_MOD_EXTRN
     je _rel_entry_ptdp
+    mov cl, [BUILD_TYPE]
+    cmp cl, BUILD_TYPE_ELF_OBJ 
+    je _rel_entry_ptdp
     mov rdi, DELAYED_PATCH_ARR
     mov esi, 1
     call entry_array_reserve_size
     jmp _set_prdp
 _rel_entry_ptdp:
+    mov rbx, [rbp-8]
+    mov byte [rbx+26], 1
     mov rdi, RELOC_PATCH_ARR
     mov esi, 1
     call entry_array_reserve_size
@@ -298,6 +303,8 @@ _end_render_patch_delayed_ref:
     add rsp, 64
     pop rbp
     ret
+
+render_set_rela_entry:
 
 ; rdi - ptr to token buff entry_array, rsi - ptr to render entry_array
 ; rdx - ptr to header start from, ecx - amount of bytes to shift

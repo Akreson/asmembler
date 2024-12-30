@@ -1,7 +1,6 @@
 EM_X86_64 equ 62; AMD x86-64 architecture
 
-;elf type
-ET_NONE equ 0; No file type
+;elf type ET_NONE equ 0; No file type
 ET_REL  equ 1; Relocatable file
 ET_EXEC equ 2; Executable file
 ET_DYN  equ 3; Shared object file
@@ -341,6 +340,157 @@ _end_loop_copy_seg_be:
     mov edx, [r8+8]
     call write
 _end_build_executable:
+    add rsp, 64
+    pop rbp
+    ret
+
+; -20 STB_LOCAL entry_arr, -40 STB_GLOBAL entry_arr, -60 SHN_UNDEF entry_arr
+; -72 curr name_sym_arr ptr, -80 end name_sym_arr_ptr, -88 curr symtab entry ptr 
+; -96 ptr to .strtab render arr
+SYMTAB_BUILD_ENTRY_SIZE equ 32; SYM64_TABLE_ENTRY_SIZE + ptr 
+set_symtab_for_obj_file:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov edx, SYMTAB_BUILD_ENTRY_SIZE
+    xor eax, eax
+    lea rdi, [rbp-60]
+    mov ecx, 60
+    rep stosb
+    mov [rbp-44], edx
+    mov [rbp-24], edx
+    mov [rbp-4], edx
+    lea rdi, [rbp-60]
+    mov rsi, 128 
+    call init_entry_array
+    lea rdi, [rbp-40]
+    mov rsi, 128 
+    call init_entry_array
+    lea rdi, [rbp-20]
+    mov rsi, 128 
+    call init_entry_array
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    mov eax, KW_SEC_STRTAB
+    and eax, SEC_INDEX_MASK 
+    mov ecx, SEG_ENTRY_SIZE
+    mul ecx
+    lea rdi, [rbx+rax+20]
+    mov [rbp-96], rdi
+    lea rdx, [NAME_SYM_REF_ARRAY] 
+    mov rsi, [rdx]
+    mov r9d, [rdx+8]
+    add r9, rsi
+    mov [rbp-72], rsi
+    mov [rbp-80], r9
+_start_loop_set_symtabl_of:
+    cmp rsi, r9
+    je _end_loop_set_symtabl_of
+    mov [rbp-72], rsi
+    mov al, [rsi+31] 
+    and al, SYM_REF_MASK_REF
+    cmp al, SYM_REF_MOD_PUBLIC
+    jne _loop_set_st_of_ch_p
+    lea rdi, [rbp-40]
+    mov byte [rbp-61], STB_GLOBAL
+    jmp __set_info_common_ssfof
+_loop_set_st_of_ch_p:
+    mov cl, [rsi+42]
+    test cl, cl
+    jz _next_loop_set_symtabl_of
+    cmp al, SYM_REF_MOD_EXTRN 
+    je __set_undf_sym_ssfof
+    lea rdi, [rbp-20]
+    mov byte [rbp-61], STB_LOCAL
+__set_info_common_ssfof:
+    mov [rbp-104], rdi
+    mov esi, 1
+    call entry_array_reserve_size
+    mov [rbp-88], rax
+    mov r15, rax
+    mov rdi, rax
+    xor eax, eax
+    mov ecx, SYMTAB_BUILD_ENTRY_SIZE
+    rep stosb
+    mov rsi, [rbp-72]
+    mov bl, [rbp-61] 
+    shl bl, 4 
+    mov r8d, STT_OBJECT
+    mov r10d, STT_FUNC 
+    mov r11b, [rsi+30] 
+    cmp r11b, TOKEN_NAME_JMP 
+    cmove r8d, r10d
+    or bl, r8b
+    mov [r15+ST_info], bl
+    mov [r15+SYM64_TABLE_ENTRY_SIZE], rsi
+    mov r14, [rbp-104]
+    mov ecx, [r14+8]
+    jmp __set_symtab_of_common_val
+__set_undf_sym_ssfof:
+    lea rdi, [rbp-60]
+    mov esi, 1
+    call entry_array_reserve_size
+    mov [rbp-88], rax
+    mov r15, rax
+    mov rdi, rax
+    xor eax, eax
+    mov ecx, SYMTAB_BUILD_ENTRY_SIZE
+    rep stosb
+    mov rsi, [rbp-72]
+    mov bl, STB_GLOBAL
+    shl bl, 4 
+    mov [r15+ST_info], bl
+    mov [r15+SYM64_TABLE_ENTRY_SIZE], rsi
+    mov ecx, [rbp-52]
+    jmp __set_symtab_of_common_idx
+__set_symtab_of_common_val:
+    mov r8, qword [SEG_ENTRY_ARRAY]
+    mov edi, [rsi+32]
+    mov r11d, [rsi+36]
+    mov r14, [r8+rdi]
+    add r14, r11
+    mov ebx, [r14]
+    mov r12b, [r8+rdi+49]
+    mov [r15+ST_value], ebx 
+    mov [r15+ST_shndx], r12b 
+__set_symtab_of_common_idx:
+    dec ecx
+    mov [rsi+40], cx; truncate to 16 bits!
+    mov rdi, [rbp-96]
+    movzx esi, byte [rsi+29]
+    inc esi
+    call entry_array_reserve_size
+    mov r8, [rbp-88]
+    mov rdx, [rbp-72]
+    mov [r8+ST_name], ebx
+    mov rdi, rax
+    mov rsi, [rdx+16]
+    movzx ecx, byte [rdx+29]
+    rep movsb
+    mov byte [rdi], 0
+    mov rsi, rdx
+    mov r9, [rbp-80]
+_next_loop_set_symtabl_of:
+    mov r10d, [rsi]
+    add rsi, r10
+    jmp _start_loop_set_symtabl_of
+_end_loop_set_symtabl_of:
+_end_set_symtab_for_obj_file:
+    lea rdi, [rbp-60]
+    call entry_array_dealloc
+    lea rdi, [rbp-40]
+    call entry_array_dealloc
+    lea rdi, [rbp-20]
+    call entry_array_dealloc
+    add rsp, 128
+    pop rbp
+    ret
+
+build_object_file:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    call set_symtab_for_obj_file
+_end_build_object_file:
     add rsp, 64
     pop rbp
     ret

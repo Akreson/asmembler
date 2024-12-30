@@ -160,7 +160,7 @@ _start:
     call start_render
     mov al, [BUILD_TYPE]
     cmp al, BUILD_TYPE_ELF_EXE 
-    jne _check_next_start
+    jne _check_b_o_start
     mov bl, [IS_ENTRY_DEFINED]
     test bl, bl
     jz _err_entry_not_defined_start
@@ -173,7 +173,12 @@ _start:
     mov dword [TEMP_COMMON_ARR+8], 0
     call build_executable
     jmp _print_info_start
-_check_next_start:
+_check_b_o_start:
+    cmp al, BUILD_TYPE_ELF_OBJ 
+    jne _b_b_start
+    call build_object_file
+    jmp _print_info_start
+_b_b_start:
     call render_patch_delayed_ref
 _print_info_start:
     mov rdi, TEST_RW
