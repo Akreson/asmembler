@@ -2467,10 +2467,10 @@ _init_sections_loop:
     and ecx, SEC_INDEX_MASK
     and r8d, IS_SEC_USER_DEF_MASK
     and r10d, SEC_ATTR_MASK
-    shr r10d, 16
+    shl r10d, SEC_ATTR_SHIFT
     mov esi, DEF_TOKEN_BUF_SIZE
     mov eax, 0
-    cmp r8d, r8d
+    test r8d, r8d 
     cmovz esi, eax
     mov edx, DEF_REN_BUF_SIZE
     mov rdi, qword [SEG_ENTRY_ARRAY]
