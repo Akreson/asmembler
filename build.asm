@@ -187,6 +187,7 @@ RA64_offset equ 0
 RA64_info   equ 8
 RA64_addend equ 16
 
+SYMTAB_BUILD_ENTRY_SIZE equ 32; SYM64_TABLE_ENTRY_SIZE + ptr 
 segment readable executable
 
 ; -8 8, -12 4, -16 4, -24 8, -32 8, -40 8, -44 4, -56 8, -60 4
@@ -212,7 +213,8 @@ build_exe_set_main_info:
     rep stosb
     mov rbx, 0x00010102464C457F
     mov [rdx], rbx
-    mov qword [rdx+8], 0
+    xor r9, r9
+    mov qword [rdx+8], r9
     mov word [rdx+E_type], ET_EXEC
     mov word [rdx+E_machine], EM_X86_64
     mov qword [rdx+E_phoff], ELF_HEADER_SIZE
@@ -344,14 +346,146 @@ _end_build_executable:
     pop rbp
     ret
 
+; rdi - ptr to temp arr for sections headers, rsi - shstrtab ptr to entry array
+set_user_def_sec_obj_file:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-16], rdi
+    mov [rbp-40], rsi
+    mov esi, SECTION_HEADER_SIZE
+    call entry_array_reserve_size
+    mov byte [rbp-63], 1
+    lea rdi, [BUILD_ARR]
+    mov esi, ELF_HEADER_SIZE
+    call entry_array_reserve_size
+    mov [rbp-8], rax
+    mov rdx, rax
+    mov rdi, rax
+    xor eax, eax
+    mov [rbp-60], eax
+    mov ecx, ELF_HEADER_SIZE
+    rep stosb
+    mov rbx, 0x00010102464C457F
+    mov [rdx], rbx
+    xor r9, r9
+    mov qword [rdx+8], r9
+    mov word [rdx+E_type], ET_REL
+    mov word [rdx+E_machine], EM_X86_64
+    mov word [rdx+E_ehsize], ELF_HEADER_SIZE
+    mov word [rdx+E_shentsize], SECTION_HEADER_SIZE
+    mov rdx, [SEG_ENTRY_ARRAY]
+    mov r8d, KW_SEC_RELA
+    mov ecx, SEG_ENTRY_SIZE
+    and r8d, SEC_INDEX_MASK
+    imul r8d, ecx
+    add r8, rdx
+    mov [rbp-24], rdx
+    mov [rbp-32], r8
+_start_loop_dsof:
+    cmp rdx, r8
+    je _end_loop_dsof
+    mov rax, [rdx+40]
+    test rax, rax
+    jz _next_loop_dsof
+    mov [rbp-24], rdx
+    mov rdi, [rbp-16]
+    mov esi, SECTION_HEADER_SIZE
+    call entry_array_reserve_size
+    mov [rbp-48], rax
+    mov rdx, [rbp-24]
+    mov cl, [rbp-63]
+    inc byte [rbp-63]
+    mov [rdx+49], cl
+    mov rbx, [rdx+40]
+    mov rdi, [rbp-40]
+    movzx esi, byte [rbx+13]
+    inc esi
+    call entry_array_reserve_size
+    mov r9, [rbp-48]
+    mov rdx, [rbp-24]
+    mov r10, [rdx+40]
+    mov rdi, rax 
+    mov rsi, [r10]
+    movzx ecx, byte [r10+13]
+    rep movsb
+    mov byte [rdi], 0
+    mov r11d, [r10+8]
+    and r11d, SEC_ATTR_MASK
+    shl r11d, SEC_ATTR_SHIFT
+    mov [r9+SH_flags], r11d
+    mov [r9+SH_name], ebx
+    lea rdi, [BUILD_ARR]
+    mov esi, [rdx+28]
+    call entry_array_reserve_size
+    mov rdx, [rbp-24]
+    mov r9, [rbp-48]
+    mov rdi, rax
+    mov rsi, [rdx+20]
+    mov ecx, [rdx+28]
+    mov [r9+SH_offset], ebx
+    mov [r9+SH_size], ecx
+    mov dword [r9+SH_type], SHT_PROGBITS
+    rep movsb
+    mov r8, [rbp-32]
+_next_loop_dsof:
+    add rdx, SEG_ENTRY_SIZE
+    jmp _start_loop_dsof
+_end_loop_dsof:
+_end_set_user_def_sec_obj_file:
+    add rsp, 64
+    pop rbp
+    ret
+
+; rdi - ptr to symtab entry array, rsi - ptr to symtab build entry array, edx - offset addend
+merge_sym_to_symrab_obj:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-20], edx
+    mov rdx, [rsi] 
+    mov r8d, [rsi+8]
+    mov r9d, r8d
+    mov eax, SYMTAB_BUILD_ENTRY_SIZE
+    imul r8d, eax
+    add r8, rdx
+    mov [rbp-32], rdx
+    mov [rbp-40], r8
+    mov esi, SYM64_TABLE_ENTRY_SIZE 
+    imul esi, r9d
+    call entry_array_reserve_size
+    mov [rbp-48], rax
+    mov rdi, rax
+    mov rdx, [rbp-32]
+    mov r8, [rbp-40]
+_start_loop_mstso:
+    cmp rdx, r8
+    je _end_merge_sym_to_symrab_obj
+    mov rbx, [rdx+SYM64_TABLE_ENTRY_SIZE]
+    add [rbx+40], dx
+    mov rsi, rdx
+    mov ecx, SYM64_TABLE_ENTRY_SIZE
+    rep movsb
+    add rdx, SYMTAB_BUILD_ENTRY_SIZE
+    jmp _start_loop_mstso
+_end_merge_sym_to_symrab_obj:
+    add rsp, 64
+    pop rbp
+    ret
+
 ; -20 STB_LOCAL entry_arr, -40 STB_GLOBAL entry_arr, -60 SHN_UNDEF entry_arr
 ; -72 curr name_sym_arr ptr, -80 end name_sym_arr_ptr, -88 curr symtab entry ptr 
-; -96 ptr to .strtab render arr
-SYMTAB_BUILD_ENTRY_SIZE equ 32; SYM64_TABLE_ENTRY_SIZE + ptr 
+; -96 ptr to .strtab render arr, -100 curr addend for sym num patch,
+; -104 first non local sym, -128 passed rdi
+; rdi - symtab ptr entry array
+; return eax - first non local sym in symtab 
 set_symtab_for_obj_file:
     push rbp
     mov rbp, rsp
     sub rsp, 128
+    mov [rbp-128], rdi
     mov edx, SYMTAB_BUILD_ENTRY_SIZE
     xor eax, eax
     lea rdi, [rbp-60]
@@ -474,6 +608,27 @@ _next_loop_set_symtabl_of:
     add rsi, r10
     jmp _start_loop_set_symtabl_of
 _end_loop_set_symtabl_of:
+    mov rdi, [rbp-128]
+    mov esi, 1
+    call entry_array_reserve_size
+    mov rdi, [rbp-128] 
+    lea rsi, [rbp-20]
+    mov edx, 1
+    mov eax, [rbp-12]
+    inc eax
+    mov [rbp-100], eax
+    mov [rbp-104], eax
+    call merge_sym_to_symrab_obj
+    mov rdi, [rbp-128] 
+    lea rsi, [rbp-40]
+    mov edx, [rbp-100]
+    mov eax, [rbp-32]
+    add [rbp-100], eax
+    call merge_sym_to_symrab_obj
+    mov rdi, [rbp-128] 
+    lea rsi, [rbp-60]
+    mov edx, [rbp-100]
+    call merge_sym_to_symrab_obj
 _end_set_symtab_for_obj_file:
     lea rdi, [rbp-60]
     call entry_array_dealloc
@@ -481,6 +636,7 @@ _end_set_symtab_for_obj_file:
     call entry_array_dealloc
     lea rdi, [rbp-20]
     call entry_array_dealloc
+    mov eax, [rbp-104]
     add rsp, 128
     pop rbp
     ret
@@ -489,7 +645,29 @@ build_object_file:
     push rbp
     mov rbp, rsp
     sub rsp, 64
+    mov rdi, TEMP_COMMON_ARR
+    mov eax, SECTION_HEADER_SIZE
+    mov esi, 48 
+    imul esi, eax
+    call entry_array_ensure_free_space
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    mov eax, KW_SEC_SHSTRTAB
+    and eax, SEC_INDEX_MASK 
+    mov ecx, SEG_ENTRY_SIZE
+    mul ecx
+    lea rsi, [rbx+rax+20]
+    mov [rbp-8], rsi
+    lea rdi, [TEMP_COMMON_ARR]
+    call set_user_def_sec_obj_file
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    mov eax, KW_SEC_SYMTAB
+    and eax, SEC_INDEX_MASK 
+    mov ecx, SEG_ENTRY_SIZE
+    mul ecx
+    lea rdi, [rbx+rax+20]
+    mov [rbp-16], rdi
     call set_symtab_for_obj_file
+    mov [rbp-20], rax
 _end_build_object_file:
     add rsp, 64
     pop rbp
