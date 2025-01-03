@@ -190,6 +190,173 @@ RA64_addend equ 16
 SYMTAB_BUILD_ENTRY_SIZE equ 32; SYM64_TABLE_ENTRY_SIZE + ptr 
 segment readable executable
 
+render_patch_delayed_ref:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    lea rsi, [DELAYED_PATCH_ARR]
+    mov ecx, [rsi+8]
+    mov eax, ADDR_ARR_PATCH_ENTRY_SIZE
+    mul ecx
+    mov rdx, [rsi]
+    mov rdi, rdx
+    add rdi, rax
+    mov [rbp-8], rdx
+    mov [rbp-16], rdi
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    ;mov [rbp-24], rbx
+_loop_patch_rpdr:
+    cmp rdx, rdi
+    je _end_render_patch_delayed_ref
+    mov rsi, [rdx]
+    mov eax, [rsi+16]; sym seg offset
+    lea rcx, [rbx+rax]
+    mov r8d, [rcx+52]
+    mov [rbp-28], r8d
+    mov eax, [rsi+20]; sym token buff offset
+    mov rdi, [rcx]; ptr to token buf
+    mov r11d, [rdi+rax]; ref sym offset in render buff
+    add [rbp-28], r11d
+    mov rsi, [rdx+8]
+    mov eax, [rdx+20]
+    lea rcx, [rbx+rax]
+    mov rdi, [rcx+20]; ptr to render buf
+    mov r8d, [rdx+16]
+    mov r9d, [rsi]; ins / data start offset in render buf
+    ;TODO: check if it exec, obj or bin mod
+    mov al, [rdx+24]
+    cmp al, ADDR_PATCH_TYPE_DEF_RIP
+    je __rip_patch_rpdr
+    cmp al, ADDR_PATCH_TYPE_ABS
+    jne _err_invalid_type_rpdr 
+__abs4_patch_rpdr:
+    add r9d, r8d
+    mov eax, [DEF_BASE_ADDR]
+    ;mov ecx, [rbp-28]
+    ;add rax, rcx
+    mov eax, [rbp-28]
+    mov r10b, [rdx+25] 
+    cmp r10b, 4
+    jne __abs8_patch_rpdr
+    add [rdi+r9], eax
+    jmp _next_patch_rpdr
+__abs8_patch_rpdr:
+    add [rdi+r9], rax
+    jmp _next_patch_rpdr
+__rip_patch_rpdr:
+    ;NOTE: rip ref is used only in instruction
+    movzx eax, byte [rsi+7]
+    add eax, r9d
+    add eax, [rcx+52]
+    mov ecx, [rbp-28]
+    sub ecx, eax
+    add r9d, r8d
+    add [rdi+r9], ecx
+_next_patch_rpdr:
+    add rdx, ADDR_ARR_PATCH_ENTRY_SIZE
+    mov rdi, [rbp-16]
+    jmp _loop_patch_rpdr
+_err_invalid_type_rpdr:
+_end_render_patch_delayed_ref:
+    add rsp, 64
+    pop rbp
+    ret
+
+render_set_rela_entry:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+    mov dword [rbp-28], 0
+    lea rsi, [RELOC_PATCH_ARR]
+    mov ecx, [rsi+8]
+    mov eax, ADDR_ARR_PATCH_ENTRY_SIZE
+    mul ecx
+    mov rdx, [rsi]
+    mov r8, rdx
+    add r8, rax
+    mov [rbp-8], rdx
+    mov [rbp-16], r8
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    mov [rbp-24], rbx
+_loop_set_rsre:
+    cmp rdx, r8
+    je _end_loop_set_rsre
+    mov eax, [rdx+20]
+    mov ecx, [rbp-28]
+    cmp eax, ecx
+    je __skip_set_rela_arr
+    mov ebx, KW_SEC_RELA
+    mov ecx, SEG_ENTRY_SIZE
+    and ebx, SEC_INDEX_MASK
+    imul ebx, ecx
+    add eax, ebx
+    mov [rbp-28], eax
+    mov rcx, [SEG_ENTRY_ARRAY]
+    lea rdi, [rcx+rax+20]
+    mov [rbp-40], rdi
+__skip_set_rela_arr:
+    mov [rbp-8], rdx
+    mov rdi, [rbp-40]
+    mov esi, RELA64_ENTRY_SIZE
+    call entry_array_reserve_size
+    mov [rbp-48], rax
+    mov rsi, rax
+    mov rbx, [rbp-24]
+    mov rdx, [rbp-8]
+    mov r15, [rdx]
+    mov eax, [r15+16]; sym seg offset
+    lea rcx, [rbx+rax]
+    mov eax, [r15+20]; sym token buff offset
+    mov rdi, [rcx]; ptr to token buf
+    ;mov r11d, [rdi+rax]; ref sym offset in render buff
+    mov r14, [rdx+8]
+    mov eax, [rdx+20]
+    lea rcx, [rbx+rax]
+    mov rdi, [rcx+20]; ptr to render buf
+    mov r8d, [rdx+16]
+    mov r9d, [r14]; ins / data start offset in render buf
+    movzx r11, word [r15+24]
+    shl r11, 32
+    xor ebx, ebx
+    mov al, [rdx+24]
+    cmp al, ADDR_PATCH_TYPE_DEF_RIP
+    je _rip_patch_rsre
+    cmp al, ADDR_PATCH_TYPE_ABS
+    jne _err_invalid_type_rsre
+__abs8_patch_rsre:
+    mov r10b, [rdx+25] 
+    cmp r10b, 8
+    jne _err_abs8_patch_rsre
+    add r9d, r8d
+    mov r10d, [rdi+r9]
+    mov [rdi+r9], ebx
+    or r11, R_X86_64_64 
+    mov [rsi+RA64_offset], r9
+    mov [rsi+RA64_info], r11 
+    mov [rsi+RA64_addend], r10
+    jmp _next_patch_rsre
+_rip_patch_rsre:
+    movzx eax, byte [r14+7]
+    add r9d, r8d
+    sub r8d, eax
+    mov r10d, [rdi+r9]
+    add r10d, r8d
+    mov [rdi+r9], ebx
+    or r11, R_X86_64_PC32 
+    mov [rsi+RA64_offset], r9
+    mov [rsi+RA64_info], r11 
+    mov [rsi+RA64_addend], r10
+_next_patch_rsre:
+    add rdx, ADDR_ARR_PATCH_ENTRY_SIZE
+    mov r8, [rbp-16]
+    jmp _loop_set_rsre
+_end_loop_set_rsre:
+_err_abs8_patch_rsre:
+_err_invalid_type_rsre:
+_end_render_set_rela_entry:
+    add rsp, 64
+    pop rbp
+    ret
 ; -8 8, -12 4, -16 4, -24 8, -32 8, -40 8, -44 4, -56 8, -60 4
 ; rdi - ptr to arr of ptr to seg, esi - count of elements
 build_exe_set_main_info:
@@ -668,6 +835,14 @@ build_object_file:
     mov [rbp-16], rdi
     call set_symtab_for_obj_file
     mov [rbp-20], rax
+    call render_set_rela_entry
+    mov rdi, TEST_EXE
+    call open_file_w_trunc
+    mov rdi, rax
+    lea r8, [BUILD_ARR]
+    mov rsi, [r8]
+    mov edx, [r8+8]
+    call write
 _end_build_object_file:
     add rsp, 64
     pop rbp

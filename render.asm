@@ -65,9 +65,9 @@ CURR_SECTION_OFFSET dd 0
 
 ; entry body - 0 ptr to sym, +8 ptr to token entry header,
 ; +16 offset to disp from start of ins, +20 offset of seg/sec to patch in, 
-; +24 type, +25 size of patch, (2b reserved)
+; +24 type, +25 size of patch, (6b reserved)
  
-ADDR_ARR_PATCH_ENTRY_SIZE equ 28
+ADDR_ARR_PATCH_ENTRY_SIZE equ 32 
 entry_array_data_m RELOC_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 entry_array_data_m DELAYED_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 
@@ -230,81 +230,6 @@ _delayed_push_tap:
 _end_push_to_addr_patch:
     pop rbp
     ret
-
-render_patch_delayed_ref:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 64
-    lea rsi, [DELAYED_PATCH_ARR]
-    mov ecx, [rsi+8]
-    mov eax, ADDR_ARR_PATCH_ENTRY_SIZE
-    mul ecx
-    mov rdx, [rsi]
-    mov rdi, rdx
-    add rdi, rax
-    mov [rbp-8], rdx
-    mov [rbp-16], rdi
-    mov rbx, qword [SEG_ENTRY_ARRAY]
-    mov [rbp-24], rbx
-_loop_patch_rpdr:
-    cmp rdx, rdi
-    je _end_render_patch_delayed_ref
-    mov rsi, [rdx]
-    mov eax, [rsi+16]; sym seg offset
-    lea rcx, [rbx+rax]
-    mov r8d, [rcx+52]
-    mov [rbp-28], r8d
-    mov eax, [rsi+20]; sym token buff offset
-    mov rdi, [rcx]; ptr to token buf
-    mov r11d, [rdi+rax]
-    add [rbp-28], r11d
-    mov rsi, [rdx+8]
-    mov eax, [rdx+20]
-    lea rcx, [rbx+rax]
-    mov rdi, [rcx+20]; ptr to render buf
-    mov r8d, [rdx+16]
-    mov r9d, [rsi]
-    ;TODO: check if it exec, obj or bin mod
-    mov al, [rdx+24]
-    cmp al, ADDR_PATCH_TYPE_DEF_RIP
-    je _rip_patch_rpdr
-    cmp al, ADDR_PATCH_TYPE_ABS
-    jne _err_invalid_type_rpdr 
-_abs_patch_rpdr:
-    add r9d, r8d
-    mov eax, [DEF_BASE_ADDR]
-    ;mov ecx, [rbp-28]
-    ;add rax, rcx
-    mov eax, [rbp-28]
-    mov r10b, [rdx+25] 
-    cmp r10b, 4
-    jne _abs8_patch_rpdr
-    add [rdi+r9], eax
-    jmp _next_patch_rpdr
-_abs8_patch_rpdr:
-    add [rdi+r9], rax
-    jmp _next_patch_rpdr
-_rip_patch_rpdr:
-    ;NOTE: rip ref is used only in instruction
-    xor eax, eax
-    mov al, [rsi+7]
-    add eax, r9d
-    add eax, [rcx+52]
-    mov ecx, [rbp-28]
-    sub ecx, eax
-    add r9d, r8d
-    add [rdi+r9], ecx
-_next_patch_rpdr:
-    add rdx, ADDR_ARR_PATCH_ENTRY_SIZE
-    mov rdi, [rbp-16]
-    jmp _loop_patch_rpdr
-_err_invalid_type_rpdr:
-_end_render_patch_delayed_ref:
-    add rsp, 64
-    pop rbp
-    ret
-
-render_set_rela_entry:
 
 ; rdi - ptr to token buff entry_array, rsi - ptr to render entry_array
 ; rdx - ptr to header start from, ecx - amount of bytes to shift
