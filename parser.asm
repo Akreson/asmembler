@@ -2426,7 +2426,7 @@ _init_seg_loop:
     dec ecx
     test ecx, ecx
     jz _init_parser_success
-    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov rdi, [SEG_ENTRY_ARRAY]
     mov eax, SEG_ENTRY_SIZE
     mul ecx
     add rdi, rax
@@ -2460,7 +2460,15 @@ _init_sections_loop:
     jz _init_parser_success
     mov ecx, [rbx+8]
     cmp ecx, KW_SEC_RELA
-    je __next_init_sec_loop
+    jne __init_sec_skip_rela
+    mov rdi, [SEG_ENTRY_ARRAY]
+    and ecx, SEC_INDEX_MASK
+    mov eax, SEG_ENTRY_SIZE
+    mul ecx
+    add rdi, rax
+    mov [rdi+40], rbx
+    jmp __next_init_sec_loop
+__init_sec_skip_rela:
     mov [rbp-12], ecx
     mov r10d, ecx
     mov r8d, ecx
