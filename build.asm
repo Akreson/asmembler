@@ -600,12 +600,13 @@ _next_loop_dsof:
     jmp _start_loop_dsof
 _end_loop_dsof:
 _end_set_user_def_sec_obj_file:
+    mov eax, [rbp-60]
     add rsp, 64
     pop rbp
     ret
 
 ; rdi - ptr to symtab entry array, rsi - ptr to symtab build entry array, edx - offset addend
-merge_sym_to_symrab_obj:
+merge_sym_to_symtab_obj:
     push rbp
     mov rbp, rsp
     sub rsp, 64
@@ -785,17 +786,17 @@ _end_loop_set_symtabl_of:
     inc eax
     mov [rbp-100], eax
     mov [rbp-104], eax
-    call merge_sym_to_symrab_obj
+    call merge_sym_to_symtab_obj
     mov rdi, [rbp-128] 
     lea rsi, [rbp-40]
     mov edx, [rbp-100]
     mov eax, [rbp-32]
     add [rbp-100], eax
-    call merge_sym_to_symrab_obj
+    call merge_sym_to_symtab_obj
     mov rdi, [rbp-128] 
     lea rsi, [rbp-60]
     mov edx, [rbp-100]
-    call merge_sym_to_symrab_obj
+    call merge_sym_to_symtab_obj
 _end_set_symtab_for_obj_file:
     lea rdi, [rbp-60]
     call entry_array_dealloc
