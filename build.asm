@@ -46,6 +46,7 @@ SHT_GROUP         equ 17; Section group
 SHT_SYMTAB_SHNDX  equ 18; Extended section indices
 SHT_NUM           equ 19; Number of defined types.
 
+; Legal values for sh_flags.
 SHF_WRITE            equ 0x0; Writable
 SHF_ALLOC            equ 0x1; Occupies memory during execution
 SHF_EXECINSTR        equ 0x2; Executable
@@ -262,11 +263,14 @@ _end_render_patch_delayed_ref:
     pop rbp
     ret
 
+; -8 8, -16 8, -24 8, -28 4, -32 4, -40 8, -48 8
+; return eax - count of .rela sec.
 render_set_rela_entry:
     push rbp
     mov rbp, rsp
     sub rsp, 64
-    mov dword [rbp-28], 0
+    xor rbx, rbx
+    mov [rbp-32], rbx
     lea rsi, [RELOC_PATCH_ARR]
     mov ecx, [rsi+8]
     mov eax, ADDR_ARR_PATCH_ENTRY_SIZE
@@ -294,6 +298,7 @@ _loop_set_rsre:
     mov rcx, [SEG_ENTRY_ARRAY]
     lea rdi, [rcx+rax+20]
     mov [rbp-40], rdi
+    inc dword [rbp-32]
 __skip_set_rela_arr:
     mov [rbp-8], rdx
     mov rdi, [rbp-40]
@@ -354,9 +359,11 @@ _end_loop_set_rsre:
 _err_abs8_patch_rsre:
 _err_invalid_type_rsre:
 _end_render_set_rela_entry:
+    mov eax, [rbp-32]
     add rsp, 64
     pop rbp
     ret
+
 ; -8 8, -12 4, -16 4, -24 8, -32 8, -40 8, -44 4, -56 8, -60 4
 ; rdi - ptr to arr of ptr to seg, esi - count of elements
 build_exe_set_main_info:
@@ -513,7 +520,9 @@ _end_build_executable:
     pop rbp
     ret
 
+; -8 8, -16 8, -40 8, -48 8, -60 4, -63 `
 ; rdi - ptr to temp arr for sections headers, rsi - shstrtab ptr to entry array
+; return eax - count of written sec
 set_user_def_sec_obj_file:
     push rbp
     mov rbp, rsp
@@ -555,6 +564,10 @@ _start_loop_dsof:
     mov rax, [rdx+40]
     test rax, rax
     jz _next_loop_dsof
+    mov ecx, [rdx+28]
+    test ecx, ecx
+    jz _next_loop_dsof
+    inc dword [rbp-60]
     mov [rbp-24], rdx
     mov rdi, [rbp-16]
     mov esi, SECTION_HEADER_SIZE
@@ -809,10 +822,116 @@ _end_set_symtab_for_obj_file:
     pop rbp
     ret
 
+; rdi - ptr to temp arr for sections headers, rsi - shstrtab ptr to entry array
+; edx - symtab idx
+set_rela_sec_for_obj_file:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 128
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-84], edx
+    mov ebx, KW_SEC_RELA
+    mov ecx, SEG_ENTRY_SIZE
+    and ebx, SEC_INDEX_MASK
+    imul ebx, ecx
+    mov [rbp-60], ebx
+    mov rsi, [SEG_ENTRY_ARRAY]
+    lea rdx, [rsi+rbx]
+    mov [rbp-24], rdx
+    mov [rbp-56], rdx
+    mov eax, KW_SEC_SYMTAB 
+    and eax, SEC_INDEX_MASK
+    imul eax, ecx
+    lea r8, [rsi+rax]
+    mov [rbp-32], r8
+_start_loop_srsfof:
+    cmp rdx, r8
+    je _end_loop_srsfof
+    mov eax, [rdx+28]
+    test eax, eax
+    jz _next_loop_srsfof
+    mov [rbp-24], rdx
+    mov rdi, [rbp-8]
+    mov esi, SECTION_HEADER_SIZE
+    call entry_array_reserve_size
+    mov [rbp-48], rax
+    mov rdx, [rbp-24]
+    mov r14, [rbp-56]
+    mov rbx, [r14+40]
+    movzx esi, byte [rbx+13]
+    mov r10d, [rbp-60]
+    sub rdx, r10
+    mov [rbp-80], rdx
+    mov rax, [rdx+40]
+    mov [rbp-72], rax 
+    mov r11, [rax]
+    add sil, [rax+13] 
+    inc esi
+    mov rdi, [rbp-16]
+    call entry_array_reserve_size
+    mov [rbp-64], ebx
+    mov rdi, rax
+    mov r10, [rbp-56]
+    mov rdx, [r10+40]
+    mov rsi, [rdx]
+    movzx ecx, byte [rdx+13]
+    rep movsb
+    mov r11, [rbp-72]
+    mov rsi, [r11]
+    movzx ecx, byte [rax+13]
+    rep movsb
+    mov byte [rdi], 0
+    mov r9, [rbp-48]
+    mov dword [r9+SH_flags], SHF_INFO_LINK 
+    mov [r9+SH_name], ebx
+    mov rdx, [rbp-24]
+    lea rdi, [BUILD_ARR]
+    mov esi, [rdx+28]
+    call entry_array_reserve_size
+    mov r15, [rbp-24]
+    mov r9, [rbp-48]
+    mov rdi, rax
+    mov rsi, [r15+20]
+    mov ecx, [r15+28]
+    mov [r9+SH_size], ecx
+    rep movsb
+    mov [r9+SH_offset], ebx
+    mov dword [r9+SH_type], SHT_RELA
+    mov r10d, [rbp-84]
+    mov [r9+SH_link], r10d
+    mov rax, [rbp-80]
+    mov rdi, [SEG_ENTRY_ARRAY]
+    sub rax, rdi
+    xor rdx, rdx
+    mov ebx, SEG_ENTRY_SIZE
+    div rbx
+    mov [r9+SH_info], eax
+    mov rdx, r15
+    mov r8, [rbp-32]
+_next_loop_srsfof:
+    add rdx, SEG_ENTRY_SIZE
+    jmp _start_loop_srsfof
+_end_loop_srsfof:
+_end_set_rela_sec_for_obj_file:
+    add rsp, 128
+    pop rbp
+    ret
+
+write_sec_obj_file:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+_end_write_sec_obj_file:
+    add rsp, 64
+    pop rbp
+    ret
+
 build_object_file:
     push rbp
     mov rbp, rsp
     sub rsp, 64
+    mov dword [rbp-64], 0
     mov rdi, TEMP_COMMON_ARR
     mov eax, SECTION_HEADER_SIZE
     mov esi, 48 
@@ -827,6 +946,7 @@ build_object_file:
     mov [rbp-8], rsi
     lea rdi, [TEMP_COMMON_ARR]
     call set_user_def_sec_obj_file
+    add [rbp-64], eax
     mov rbx, qword [SEG_ENTRY_ARRAY]
     mov eax, KW_SEC_SYMTAB
     and eax, SEC_INDEX_MASK 
@@ -835,8 +955,14 @@ build_object_file:
     lea rdi, [rbx+rax+20]
     mov [rbp-16], rdi
     call set_symtab_for_obj_file
-    mov [rbp-20], rax
+    mov [rbp-24], rax
     call render_set_rela_entry
+    add eax, [rbp-64]
+    mov [rbp-64], eax
+    mov edx, eax
+    lea rdi, [TEMP_COMMON_ARR]
+    mov rsi, [rbp-8]
+    call set_rela_sec_for_obj_file
     mov rdi, TEST_EXE
     call open_file_w_trunc
     mov rdi, rax
