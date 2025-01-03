@@ -2473,7 +2473,7 @@ _init_sections_loop:
     test r8d, r8d 
     cmovz esi, eax
     mov edx, DEF_REN_BUF_SIZE
-    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov rdi, [SEG_ENTRY_ARRAY]
     mov eax, SEG_ENTRY_SIZE
     mul ecx
     add rdi, rax
@@ -2483,11 +2483,11 @@ _init_sections_loop:
     mov ecx, [rbp-12]
     mov ebx, KW_SEC_RELA
     cmp ecx, ebx
-    ja __next_init_sec_loop
+    jb __next_init_sec_loop
     and ecx, SEC_INDEX_MASK
     and ebx, SEC_INDEX_MASK
     add ecx, ebx
-    mov rdi, qword [SEG_ENTRY_ARRAY]
+    mov rdi, [SEG_ENTRY_ARRAY]
     mov eax, SEG_ENTRY_SIZE
     mul ecx
     add rdi, rax
