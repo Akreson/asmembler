@@ -918,10 +918,47 @@ _end_set_rela_sec_for_obj_file:
     pop rbp
     ret
 
+; rdi - ptr to temp arr for sections headers, rsi - shstrtab ptr to entry array,
+; rdx - ptr to sec data
+; return rax - ptr to sec struct
 write_sec_obj_file:
     push rbp
     mov rbp, rsp
     sub rsp, 64
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov [rbp-24], rdx
+    mov esi, SECTION_HEADER_SIZE
+    call entry_array_reserve_size
+    mov [rbp-32], rax
+    mov rdx, [rbp-24]
+    mov rbx, [rdx+40]
+    mov [rbp-40], rbx
+    mov rdi, [rbp-16]
+    movzx esi, byte [rbx+13]
+    inc esi
+    call entry_array_reserve_size
+    mov r9, [rbp-32]
+    mov [r9+SH_name], ebx
+    mov rdi, rax
+    mov rbx, [rbp-40]
+    mov rsi, [rbx]
+    movzx ecx, byte [rbx+13]
+    rep movsb
+    mov byte [rdi], 0
+    mov rdx, [rbp-24]
+    lea rdi, [BUILD_ARR]
+    mov esi, [rdx+28]
+    call entry_array_reserve_size
+    mov rdx, [rbp-24]
+    mov r9, [rbp-32]
+    mov rdi, rax
+    mov rsi, [rdx+20]
+    mov ecx, [rdx+28]
+    mov [r9+SH_offset], ebx
+    mov [r9+SH_size], ecx
+    rep movsb
+    mov rax, r9
 _end_write_sec_obj_file:
     add rsp, 64
     pop rbp
@@ -932,7 +969,8 @@ build_object_file:
     mov rbp, rsp
     sub rsp, 64
     mov dword [rbp-64], 0
-    mov rdi, TEMP_COMMON_ARR
+    lea rdi, [TEMP_COMMON_ARR]
+    mov [rbp-32], rdi
     mov eax, SECTION_HEADER_SIZE
     mov esi, 48 
     imul esi, eax
@@ -940,11 +978,11 @@ build_object_file:
     mov rbx, qword [SEG_ENTRY_ARRAY]
     mov eax, KW_SEC_SHSTRTAB
     and eax, SEC_INDEX_MASK 
-    mov ecx, SEG_ENTRY_SIZE
-    mul ecx
+    mov edx, SEG_ENTRY_SIZE
+    mul edx
     lea rsi, [rbx+rax+20]
     mov [rbp-8], rsi
-    lea rdi, [TEMP_COMMON_ARR]
+    mov rdi, [rbp-32]
     call set_user_def_sec_obj_file
     add [rbp-64], eax
     mov rbx, qword [SEG_ENTRY_ARRAY]
@@ -952,17 +990,64 @@ build_object_file:
     and eax, SEC_INDEX_MASK 
     mov ecx, SEG_ENTRY_SIZE
     mul ecx
-    lea rdi, [rbx+rax+20]
+    lea rdi, [rbx+rax]
     mov [rbp-16], rdi
+    add rdi, 20
     call set_symtab_for_obj_file
     mov [rbp-24], rax
     call render_set_rela_entry
     add eax, [rbp-64]
     mov [rbp-64], eax
     mov edx, eax
-    lea rdi, [TEMP_COMMON_ARR]
+    mov rdi, [rbp-32]
     mov rsi, [rbp-8]
     call set_rela_sec_for_obj_file
+    mov rdx, [rbp-16]
+    mov rdi, [rbp-32]
+    mov rsi, [rbp-8]
+    call write_sec_obj_file
+    mov dword [rax+SH_type], SHT_SYMTAB
+    mov ecx, [rbp-64]
+    inc ecx
+    mov r8d, [rbp-24]
+    mov [rax+SH_link], ecx
+    mov [rax+SH_info], r8d
+    mov qword [rax+SH_entsize], SYM64_TABLE_ENTRY_SIZE
+    mov [rbp-64], ecx
+    mov rbx, qword [SEG_ENTRY_ARRAY]
+    mov eax, KW_SEC_STRTAB
+    and eax, SEC_INDEX_MASK 
+    mov ecx, SEG_ENTRY_SIZE
+    mul ecx
+    lea rdx, [rbx+rax]
+    mov rdi, [rbp-32]
+    mov rsi, [rbp-8]
+    call write_sec_obj_file
+    inc dword [rbp-64]
+    mov dword [rax+SH_type], SHT_STRTAB
+    mov rdx, [rbp-8]
+    sub rdx, 20
+    mov rdi, [rbp-32]
+    mov rsi, [rbp-8]
+    call write_sec_obj_file
+    mov dword [rax+SH_type], SHT_STRTAB
+    mov rdi, [BUILD_ARR]
+    mov ecx, [rbp-64]
+    mov [rdi+E_shstrndx], cx
+    inc ecx
+    mov [rdi+E_shnum], cx
+    mov rax, [rbp-32]
+    lea rdi, [BUILD_ARR]
+    mov esi, [rax+8]
+    call entry_array_reserve_size
+    mov rdi, rax
+    mov rdx, [BUILD_ARR]
+    mov [rdx+E_shoff], rbx
+    mov rax, [rbp-32]
+    mov rsi, [rax]
+    mov ecx, [rax+8]
+    rep movsb
+
     mov rdi, TEST_EXE
     call open_file_w_trunc
     mov rdi, rax

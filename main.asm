@@ -158,6 +158,12 @@ _start:
     call start_parser
     call parser_check_print_unk_name
     call start_render
+    lea rdx, [TEMP_COMMON_ARR]
+    mov rdi, [rdx]
+    mov ecx, [rdx+12]
+    xor eax, eax
+    rep stosb
+    mov [rdx+8], eax
     mov al, [BUILD_TYPE]
     cmp al, BUILD_TYPE_ELF_EXE 
     jne _check_b_o_start
@@ -170,7 +176,6 @@ _start:
     mov dl, [rdi+30]
     test dl, dl
     jz _err_entry_undef_sym
-    mov dword [TEMP_COMMON_ARR+8], 0
     call build_executable
     jmp _print_info_start
 _check_b_o_start:
