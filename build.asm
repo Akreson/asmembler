@@ -8,8 +8,7 @@ ET_CORE equ 4; Core file
 
 PT_NULL    equ 0
 PT_LOAD	   equ 1
-PT_DYNAMIC equ 2
-PT_INTERP  equ 3
+PT_DYNAMIC equ 2 PT_INTERP  equ 3
 PT_NOTE	   equ 4
 PT_SHLIB   equ 5
 PT_PHDR	   equ 6
@@ -29,12 +28,12 @@ SHN_HIRESERVE equ 0xffff; End of reserved indices
 
 ; Legal values for sh_type (section type).
 SHT_NULL          equ 0; Section header table entry unused
-SHT_PROGBITS      equ 1; Program data SHT_SYMTAB        equ 2; Symbol table
+SHT_PROGBITS      equ 1; Program data
+SHT_SYMTAB        equ 2; Symbol table
 SHT_STRTAB        equ 3; String table
 SHT_RELA          equ 4; Relocation entries with addends
 SHT_HASH          equ 5; Symbol hash table
-SHT_DYNAMIC       equ 6; Dynamic linking information
-SHT_NOTE          equ 7; Notes
+SHT_DYNAMIC       equ 6; Dynamic linking information SHT_NOTE          equ 7; Notes
 SHT_NOBITS        equ 8; Program space with no data (bss)
 SHT_REL           equ 9; Relocation entries, no addends
 SHT_SHLIB         equ 10; Reserved
@@ -293,8 +292,8 @@ _loop_set_rsre:
     mov ecx, SEG_ENTRY_SIZE
     and ebx, SEC_INDEX_MASK
     imul ebx, ecx
-    add eax, ebx
     mov [rbp-28], eax
+    add eax, ebx
     mov rcx, [SEG_ENTRY_ARRAY]
     lea rdi, [rcx+rax+20]
     mov [rbp-40], rdi
@@ -320,7 +319,7 @@ __skip_set_rela_arr:
     mov rdi, [rcx+20]; ptr to render buf
     mov r8d, [rdx+16]
     mov r9d, [r14]; ins / data start offset in render buf
-    movzx r11, word [r15+24]
+    movzx r11d, word [r15+24]
     shl r11, 32
     xor ebx, ebx
     mov al, [rdx+24]
@@ -391,6 +390,7 @@ build_exe_set_main_info:
     mov qword [rdx+8], r9
     mov word [rdx+E_type], ET_EXEC
     mov word [rdx+E_machine], EM_X86_64
+    mov dword [rdx+E_version], 1
     mov qword [rdx+E_phoff], ELF_HEADER_SIZE
     mov word [rdx+E_ehsize], ELF_HEADER_SIZE
     mov word [rdx+E_phentsize], PROG_HEADER_SIZE
@@ -520,7 +520,7 @@ _end_build_executable:
     pop rbp
     ret
 
-; -8 8, -16 8, -40 8, -48 8, -60 4, -63 `
+; -8 8, -16 8, -40 8, -48 8, -63 1
 ; rdi - ptr to temp arr for sections headers, rsi - shstrtab ptr to entry array
 ; return eax - count of written sec
 set_user_def_sec_obj_file:
@@ -539,7 +539,6 @@ set_user_def_sec_obj_file:
     mov rdx, rax
     mov rdi, rax
     xor eax, eax
-    mov [rbp-60], eax
     mov ecx, ELF_HEADER_SIZE
     rep stosb
     mov rbx, 0x00010102464C457F
@@ -548,6 +547,7 @@ set_user_def_sec_obj_file:
     mov qword [rdx+8], r9
     mov word [rdx+E_type], ET_REL
     mov word [rdx+E_machine], EM_X86_64
+    mov dword [rdx+E_version], 1
     mov word [rdx+E_ehsize], ELF_HEADER_SIZE
     mov word [rdx+E_shentsize], SECTION_HEADER_SIZE
     mov rdx, [SEG_ENTRY_ARRAY]
@@ -567,7 +567,6 @@ _start_loop_dsof:
     mov ecx, [rdx+28]
     test ecx, ecx
     jz _next_loop_dsof
-    inc dword [rbp-60]
     mov [rbp-24], rdx
     mov rdi, [rbp-16]
     mov esi, SECTION_HEADER_SIZE
@@ -593,8 +592,8 @@ _start_loop_dsof:
     mov r11d, [r10+8]
     and r11d, SEC_ATTR_MASK
     shl r11d, SEC_ATTR_SHIFT
-    mov [r9+SH_flags], r11d
     mov [r9+SH_name], ebx
+    mov [r9+SH_flags], r11
     lea rdi, [BUILD_ARR]
     mov esi, [rdx+28]
     call entry_array_reserve_size
@@ -603,9 +602,9 @@ _start_loop_dsof:
     mov rdi, rax
     mov rsi, [rdx+20]
     mov ecx, [rdx+28]
-    mov [r9+SH_offset], ebx
-    mov [r9+SH_size], ecx
     mov dword [r9+SH_type], SHT_PROGBITS
+    mov [r9+SH_offset], rbx
+    mov [r9+SH_size], rcx
     rep movsb
     mov r8, [rbp-32]
 _next_loop_dsof:
@@ -613,7 +612,7 @@ _next_loop_dsof:
     jmp _start_loop_dsof
 _end_loop_dsof:
 _end_set_user_def_sec_obj_file:
-    mov eax, [rbp-60]
+    movzx eax, byte [rbp-63]
     add rsp, 64
     pop rbp
     ret
@@ -641,11 +640,12 @@ merge_sym_to_symtab_obj:
     mov rdi, rax
     mov rdx, [rbp-32]
     mov r8, [rbp-40]
+    mov eax, [rbp-20]
 _start_loop_mstso:
     cmp rdx, r8
     je _end_merge_sym_to_symrab_obj
     mov rbx, [rdx+SYM64_TABLE_ENTRY_SIZE]
-    add [rbx+40], dx
+    add [rbx+40], ax
     mov rsi, rdx
     mov ecx, SYM64_TABLE_ENTRY_SIZE
     rep movsb
@@ -764,12 +764,14 @@ __set_symtab_of_common_val:
     mov r14, [r8+rdi]
     add r14, r11
     mov ebx, [r14]
-    mov r12b, [r8+rdi+49]
-    mov [r15+ST_value], ebx 
-    mov [r15+ST_shndx], r12b 
+    movzx r12d, byte [r8+rdi+49]
+    mov [r15+ST_shndx], r12w 
+    mov [r15+ST_value], rbx 
 __set_symtab_of_common_idx:
     dec ecx
     mov [rsi+40], cx; truncate to 16 bits!
+    mov byte [rsi+43], 1
+    movzx eax, word [rsi+40]
     mov rdi, [rbp-96]
     movzx esi, byte [rsi+29]
     inc esi
@@ -790,7 +792,7 @@ _next_loop_set_symtabl_of:
     jmp _start_loop_set_symtabl_of
 _end_loop_set_symtabl_of:
     mov rdi, [rbp-128]
-    mov esi, 1
+    mov esi, SYM64_TABLE_ENTRY_SIZE
     call entry_array_reserve_size
     mov rdi, [rbp-128] 
     lea rsi, [rbp-20]
@@ -865,7 +867,6 @@ _start_loop_srsfof:
     mov [rbp-80], rdx
     mov rax, [rdx+40]
     mov [rbp-72], rax 
-    mov r11, [rax]
     add sil, [rax+13] 
     inc esi
     mov rdi, [rbp-16]
@@ -879,7 +880,7 @@ _start_loop_srsfof:
     rep movsb
     mov r11, [rbp-72]
     mov rsi, [r11]
-    movzx ecx, byte [rax+13]
+    movzx ecx, byte [r11+13]
     rep movsb
     mov byte [rdi], 0
     mov r9, [rbp-48]
@@ -901,12 +902,9 @@ _start_loop_srsfof:
     mov r10d, [rbp-84]
     mov [r9+SH_link], r10d
     mov rax, [rbp-80]
-    mov rdi, [SEG_ENTRY_ARRAY]
-    sub rax, rdi
-    xor rdx, rdx
-    mov ebx, SEG_ENTRY_SIZE
-    div rbx
-    mov [r9+SH_info], eax
+    movzx edx, byte [rax+49]
+    mov [r9+SH_info], edx
+    mov qword [r9+SH_entsize], RELA64_ENTRY_SIZE
     mov rdx, r15
     mov r8, [rbp-32]
 _next_loop_srsfof:
