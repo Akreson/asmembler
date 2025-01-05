@@ -176,14 +176,11 @@ push_to_delayed_patch:
     cmp bl, BUILD_TYPE_ELF_OBJ 
     jne _del_entry_ptdp
     cmp ecx, ADDR_PATCH_TYPE_ABS
-    jne _del_entry_ptdp
-    mov r9d, [rsi]
-    sub rdx, r9
+    je _rel_entry_ptdp
+    mov edx, [CURR_SECTION_OFFSET]
     mov r8d, [rdi+16]
-    mov rcx, [SEG_ENTRY_ARRAY]
-    add rcx, r8
-    mov rax, [rcx]
-    cmp rax, rdx
+    cmp edx, r8d
+    je _del_entry_ptdp
 _rel_entry_ptdp:
     mov rbx, [rbp-8]
     mov byte [rbx+26], 1
