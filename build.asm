@@ -531,6 +531,9 @@ set_user_def_sec_obj_file:
     mov [rbp-40], rsi
     mov esi, SECTION_HEADER_SIZE
     call entry_array_reserve_size
+    mov rdi, [rbp-40]
+    mov esi, 1
+    call entry_array_reserve_size
     mov byte [rbp-63], 1
     lea rdi, [BUILD_ARR]
     mov esi, ELF_HEADER_SIZE
@@ -691,6 +694,8 @@ set_symtab_for_obj_file:
     mul ecx
     lea rdi, [rbx+rax+20]
     mov [rbp-96], rdi
+    mov esi, 1
+    call entry_array_reserve_size
     lea rdx, [NAME_SYM_REF_ARRAY] 
     mov rsi, [rdx]
     mov r9d, [rdx+8]
@@ -820,6 +825,7 @@ _end_set_symtab_for_obj_file:
     lea rdi, [rbp-20]
     call entry_array_dealloc
     mov eax, [rbp-104]
+    dec eax
     add rsp, 128
     pop rbp
     ret
