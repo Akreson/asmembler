@@ -73,7 +73,7 @@ TOKEN_HEADER_SIZE           equ 20
 ; (header)(20b)
 ; 0(4) offset in render buf, +4(2) file entry id, +6 skip flag (is token group represent renderable info.),
 ; +7 (count of rendered bytes for TOKEN_TYPE_INS), +8(4) line num, +12(4) entry size in bytes
-; token buf, +16 offset to line in file buff
+; token buf, +16 offset to line in file buff?
 ; (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
 ; token type, qul size keyword token,(1) size of unit in bytes, 

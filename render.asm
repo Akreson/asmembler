@@ -168,28 +168,38 @@ push_to_delayed_patch:
     mov [rbp-28], ecx
     mov [rbp-32], r8d
     mov [rbp-36], r9d
-    mov al, SYM_REF_MASK_REF
-    and al, [rdi+15]
+    mov al, [rdi+15]
+    and al, SYM_REF_MASK_REF
     cmp al, SYM_REF_MOD_EXTRN
     je _rel_entry_ptdp
-    mov cl, [BUILD_TYPE]
-    cmp cl, BUILD_TYPE_ELF_OBJ 
-    je _rel_entry_ptdp
-    mov rdi, DELAYED_PATCH_ARR
-    mov esi, 1
-    call entry_array_reserve_size
-    jmp _set_prdp
+    mov bl, [BUILD_TYPE]
+    cmp bl, BUILD_TYPE_ELF_OBJ 
+    jne _del_entry_ptdp
+    cmp ecx, ADDR_PATCH_TYPE_ABS
+    jne _del_entry_ptdp
+    mov r9d, [rsi]
+    sub rdx, r9
+    mov r8d, [rdi+16]
+    mov rcx, [SEG_ENTRY_ARRAY]
+    add rcx, r8
+    mov rax, [rcx]
+    cmp rax, rdx
 _rel_entry_ptdp:
     mov rbx, [rbp-8]
     mov byte [rbx+26], 1
     mov rdi, RELOC_PATCH_ARR
     mov esi, 1
     call entry_array_reserve_size
+    jmp _set_prdp
+_del_entry_ptdp:
+    mov rdi, DELAYED_PATCH_ARR
+    mov esi, 1
+    call entry_array_reserve_size
 _set_prdp:
     mov [rbp-48], rax
     mov rdi, [rbp-8]
     mov rsi, [rbp-16]
-    mov rdx, [rbp-24]; unused now
+    ;mov rdx, [rbp-24]; unused now
     mov ecx, [rbp-28]
     mov r8d, [rbp-32]
     mov r9d, [rbp-36]

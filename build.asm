@@ -8,7 +8,8 @@ ET_CORE equ 4; Core file
 
 PT_NULL    equ 0
 PT_LOAD	   equ 1
-PT_DYNAMIC equ 2 PT_INTERP  equ 3
+PT_DYNAMIC equ 2
+PT_INTERP  equ 3
 PT_NOTE	   equ 4
 PT_SHLIB   equ 5
 PT_PHDR	   equ 6
@@ -825,7 +826,6 @@ _end_set_symtab_for_obj_file:
     lea rdi, [rbp-20]
     call entry_array_dealloc
     mov eax, [rbp-104]
-    dec eax
     add rsp, 128
     pop rbp
     ret
@@ -999,6 +999,7 @@ build_object_file:
     add rdi, 20
     call set_symtab_for_obj_file
     mov [rbp-24], rax
+    call render_patch_delayed_ref
     call render_set_rela_entry
     add eax, [rbp-64]
     mov [rbp-64], eax
