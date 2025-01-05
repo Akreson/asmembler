@@ -333,7 +333,7 @@ __abs8_patch_rsre:
     cmp r10b, 8
     jne _err_abs8_patch_rsre
     add r9d, r8d
-    mov r10d, [rdi+r9]
+    movsxd r10, dword [rdi+r9]
     mov [rdi+r9], ebx
     or r11, R_X86_64_64 
     mov [rsi+RA64_offset], r9
@@ -344,8 +344,9 @@ _rip_patch_rsre:
     movzx eax, byte [r14+7]
     add r9d, r8d
     sub r8d, eax
-    mov r10d, [rdi+r9]
-    add r10d, r8d
+    movsxd r10, dword [rdi+r9]
+    movsxd r8, r8d
+    add r10, r8
     mov [rdi+r9], ebx
     or r11, R_X86_64_PC32 
     mov [rsi+RA64_offset], r9
@@ -458,7 +459,7 @@ _end_build_exe_set_main_info:
     pop rbp
     ret
 
-; rdi - ptr to entry sym
+; rdi - ptr to entry sym, 
 build_executable:
     push rbp
     mov rbp, rsp
@@ -508,14 +509,6 @@ _end_loop_copy_seg_be:
     add r11d, [rbx]
     mov rsi, [BUILD_ARR]
     mov [rsi+E_entry], r11
-
-    mov rdi, TEST_EXE
-    call open_file_w_trunc
-    mov rdi, rax
-    lea r8, [BUILD_ARR]
-    mov rsi, [r8]
-    mov edx, [r8+8]
-    call write
 _end_build_executable:
     add rsp, 64
     pop rbp
@@ -1052,14 +1045,6 @@ build_object_file:
     mov rsi, [rax]
     mov ecx, [rax+8]
     rep movsb
-
-    mov rdi, TEST_EXE
-    call open_file_w_trunc
-    mov rdi, rax
-    lea r8, [BUILD_ARR]
-    mov rsi, [r8]
-    mov edx, [r8+8]
-    call write
 _end_build_object_file:
     add rsp, 64
     pop rbp

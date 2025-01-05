@@ -15,6 +15,9 @@ ERR_PROCESSED_STR db "Processed line ", 0
 ERR_PROCESSED_FROM_STR db "Processed from - ", 0
 ERR_CALLED_FROM_STR db "Called from - ", 0
 
+ERR_MISSED_ARG db "Not enough arguments", 0
+ERR_ENTRY_NOT_DEFINED db "Entry symbol not defined", 0
+
 ; FILE
 ERR_NOT_A_FILE db ": is not a regular file", 0
 ERR_FILE_MISS db ": unable to get info about file", 0

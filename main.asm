@@ -30,7 +30,6 @@ segment readable writeable
 TEST_R db "./r.bin", 0
 TEST_RW db "./rw.bin", 0
 TEST_RX db "./rx.bin", 0
-TEST_EXE db "./test_exe", 0
 
 entry_array_data_m BUILD_ARR, 1
 entry_array_data_m TEMP_COMMON_ARR, 1
@@ -132,8 +131,8 @@ _start:
     mov rsi, 65536
     call init_entry_array
     mov rax, [rbp]
-    cmp rax, 2
-    jb _end_start
+    cmp rax, 3
+    jb _err_arg_missed
     mov rdi, [rbp+16]
     call get_zero_str_len
     mov rdi, [rbp+16]
@@ -177,14 +176,22 @@ _start:
     test dl, dl
     jz _err_entry_undef_sym
     call build_executable
-    jmp _print_info_start
+    jmp _wirte_output_start
 _check_b_o_start:
     cmp al, BUILD_TYPE_ELF_OBJ 
     jne _b_b_start
     call build_object_file
-    jmp _print_info_start
+    jmp _wirte_output_start
 _b_b_start:
     call render_patch_delayed_ref
+_wirte_output_start:
+    mov rdi, [rbp+24]
+    call open_file_w_trunc
+    mov rdi, rax
+    lea r8, [BUILD_ARR]
+    mov rsi, [r8]
+    mov edx, [r8+8]
+    call write
 _print_info_start:
     mov rdi, TEST_RW
     call open_file_w_trunc
@@ -212,8 +219,18 @@ _print_info_start:
     mov rsi, [r8+20]
     mov edx, [r8+28]
     call write
-
+    jmp _end_start
+_err_arg_missed:
+    lea rsi, [ERR_MISSED_ARG]
+    jmp _err_start
 _err_entry_not_defined_start:
+    lea rsi, [ERR_ENTRY_NOT_DEFINED]
+_err_start:
+    xor edi, edi
+    xor rdx, rdx
+    xor ecx, ecx
+    mov r9, -1
+    call err_print
 _err_entry_undef_sym:
 _end_start:
     add rsp, 64
