@@ -3844,7 +3844,9 @@ process_ins_template5:
     mov rdi, rdx
     mov r8, rdx
     rep stosb
-    mov byte [r8+33], 1
+    mov rcx, [rbp-24]
+    mov bl, [rcx+10]
+    mov byte [r8+33], bl 
     add rsi, TOKEN_HEADER_PLUS_INS_TOKEN
     movzx ebx, byte [rsi]
     cmp ebx, TOKEN_BUF_DIRECT
