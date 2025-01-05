@@ -45,8 +45,7 @@ list_main_block_m PATCH_LIST, PATCH_LIST_ENTRY_SIZE
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
-; +32 segment offset, +36 offset to entry header in seg token buf
-; +40 meta info ([if obj file - idx in symtab]), +42 is used for reloc, +43 1b reserved
+; +32 segment offset, +36 offset to entry header in seg token buf +40 meta info ([if obj file - idx in symtab]), +42 is used for reloc, +43 1b reserved
 ;(TOKEN_NAME_MACR)
 ; +32 start offset of body in file buff, +36 start line of body in file,
 ; +40 copy entires (4 offset, 4 len, 1 arg num) _n_ times
@@ -73,8 +72,8 @@ TOKEN_HEADER_SIZE           equ 20
 ; (header)(20b)
 ; 0(4) offset in render buf, +4(2) file entry id, +6 skip flag (is token group represent renderable info.),
 ; +7 (count of rendered bytes for TOKEN_TYPE_INS), +8(4) line num, +12(4) entry size in bytes
-; token buf, +16 offset to line in file buff?
-; (body) 
+; token buf, +16 offset to line in file buff
+; +20 (body) 
 ; +16(1) token type, +17 [(8) ptr to token | (TOKEN_KIND_SIZE) token body, [if TOKEN_KIND_INS +31 argc]] ... (n times)
 ; token type, qul size keyword token,(1) size of unit in bytes, 
 ; [direct digit | str token | ptr offset | direct dub kw, direct digit ... [n times]
@@ -1946,10 +1945,14 @@ __kw_macro_set_entries:
     jmp __kw_macro_set_entries
 ___kw_macro_entr_check_n:
     cmp eax, TOKEN_TYPE_KEYWORD; TODO: add check
-    cmp ecx, KW_INCL
-    je _err_invalid_command_in_macr_def
-    cmp ecx, KW_MACR
-    je _err_invalid_command_in_macr_def
+    jne ___kw_macro_check_int_name
+    mov ebx, ecx
+    mov edx, DATA_QUL_TYPE_MASK
+    and ebx, edx
+    cmp ebx, edx
+    jne _err_invalid_command_in_macr_def
+    jne __kw_macro_set_entries 
+___kw_macro_check_int_name:
     cmp eax, TOKEN_TYPE_NAME
     jne __kw_macro_set_entries 
     mov rdi, [rbp-92]
