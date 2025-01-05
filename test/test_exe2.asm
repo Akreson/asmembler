@@ -1421,7 +1421,8 @@ init_def_sym_table:
     push rbp
     mov rbp, rsp
     sub rsp, 28
-    mov qword [rbp-8], DEF_SYM_TABLE
+    lea rax, [DEF_SYM_TABLE]
+    mov qword [rbp-8], rax
     mov rdi, DEF_SYM_HASH_TABLE
     mov [rbp-16], rdi
     mov rsi, SIZE_HASH_DEF_SYM_TABLE

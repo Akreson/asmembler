@@ -1081,16 +1081,24 @@ _rproc_imm_name:
     mov rsi, [rbp-16]
     mov r9, [rbp-24]
     mov edx, [rbp-28]
-    cmp edx, REG_MASK_VAL_32B
+    movzx ebx, byte [BUILD_TYPE]
+    mov r11d, REG_MASK_VAL_32B
+    mov r12d, REG_MASK_VAL_64B
+    mov r13d, 4
+    mov r14d, 8
+    cmp ebx, BUILD_TYPE_ELF_EXE
+    cmovne r11d, r12d
+    cmovne r13d, r14d
+    cmp edx, r11d
     jb _err_rproc_imm_overflow
     mov r10, rax
     sub r10, NAME_SYM_REF_SERV_HS
     xor ecx, ecx
-    mov byte [r9], REG_MASK_VAL_32B
+    mov byte [r9], r11b
     movzx eax, byte [rsi+24]
     mov [rsi+rax], ecx
     mov ecx, eax
-    add eax, 4
+    add eax, r13d
     mov byte [rsi+24], al 
     mov [rsi+55], cl
     mov byte [rsi+57], 1
