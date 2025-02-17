@@ -534,7 +534,7 @@ macro def_symbol_m value, type, str_ptr, str_len
     dq str_ptr; / general prt to struct / digit container
     dd value ; len for TOKEN_TYPE_STR
     db type
-    db str_len
+    db str_len; last set bit for TOKEN_TYPE_DIGIT
     ; (only for _name_ type token in memory)
     ;db name type (only for _name_ type token in memory)
     ;db name mod

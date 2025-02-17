@@ -1,4 +1,7 @@
+format ELF64 executable
+entry _start
 segment readable executable
+_start:
     dec dword [NAME_D-NAME_C]
     dec word [r8+r11]
     dec byte [rax+rdx]

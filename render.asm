@@ -2854,6 +2854,7 @@ _end_process_test:
     pop rbp
     ret
 
+; TODO: fix err line num print (off by one) 
 ; rdi - segment ptr, rsi - ptr to token entry to process, rdx - ins code struct
 ; rcx - opcode list for instemp0 pattern, r8 - ptr to stack of caller
 process_ins_template1:
@@ -3158,7 +3159,7 @@ __imul_2op_r_a:
     mov byte [r8+34], OP12_TYPE_R_A
     mov rdi, rsi
     mov rsi, r8
-    mov rdx, [rbp-8]
+    mov rdx, [rbp-16]
     call process_gen_r_a
     test rax, rax
     jnz _err_gen_imul
@@ -3189,6 +3190,7 @@ _imul_3op:
 _imul_3op_r_r:
     lea rdi, [rbx+15]
 _imul_3op_parse_digit:
+    mov [rbp-48], rdi
     mov edx, 2
     movzx ecx, byte [r8+26]
     mov r8, [rbp-16]
@@ -3200,6 +3202,47 @@ _imul_3op_parse_digit:
     movzx esi, byte [r8+28]
     cmp esi, REG_MASK_VAL_64B
     je _err_imul_i_overflow
+    movzx edi, byte [r8+26]
+    cmp esi, edi
+    ja _err_imul_i_overflow
+    mov r14, [rbp-48]
+    mov al, [r14]
+    inc r14
+    cmp al, TOKEN_BUF_PTR_OFFSET
+    jne _imul_3op_set_op_skip_deref_name
+    mov rdi, r14
+    call get_name_ref_type
+    lea r8, [rbp-192]
+    movzx edi, byte [r8+26]
+    movzx esi, byte [r8+28]
+    mov r14, rax
+_imul_3op_set_op_skip_deref_name:
+    mov r15, [r14]
+    cmp edi, REG_MASK_VAL_16B
+    jne _imul_3op_check_8b_i
+    mov r13, r15
+    shr r13, 63
+    jz __imul_3op_check_16b_nn
+    mov rax, -32768 
+    cmp r15, rax
+    jl _err_imul_i_overflow
+    jmp _imul_3op_non_b
+__imul_3op_check_16b_nn:
+    mov eax, 32767 
+    cmp r15, rax
+    jg _err_imul_i_overflow
+    jmp _imul_3op_non_b
+_imul_3op_check_8b_i:
+    cmp esi, REG_MASK_VAL_8B
+    jne _imul_3op_set_op
+    mov eax, 128
+    cmp r15, rax
+    jb _imul_3op_set_op
+    shr r15, 63
+    test r15, r15
+    jnz _imul_3op_set_op   
+    jmp _imul_3op_non_b
+_imul_3op_set_op:
     cmp esi, REG_MASK_VAL_8B
     jne _imul_3op_non_b
     mov byte [r8+29], 0x6B
@@ -3231,7 +3274,9 @@ _err_imul_i_overflow:
 _err_arg_size_imul:
     mov rsi, ERR_INS_INV_ARGS_SIZE
 _err_parse_imul:
-    ;TODO: add err
+    mov rdi, [rbp-16]
+    call set_reg_for_err_print
+    call err_print
     mov eax, 1
     jmp _end_process_imul
 _imul_assemble:
