@@ -458,8 +458,8 @@ push_name_to_defined:
     mov cl, [rdi+15]
     and cl, SYM_REF_MASK_EXT
     cmp cl, SYM_REF_EXT_ENTRY
-    jz _patch_pnt_def
-    ;mov [rax+15], cl
+    jne _patch_pnt_def
+    mov [rax+15], cl
     mov ebx, [rbp-36]
     mov [ENTRY_SYM_OFFSET], ebx
     mov [ENTRY_SYM_ARR_PTR], rsi
