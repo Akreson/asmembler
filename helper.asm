@@ -140,44 +140,44 @@ _end_print_digit:
     ret
 
 ;rdi - ptr to ht main block
-print_ht_sym_str:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 24
-    mov r8, [rdi]
-    mov r9, r8
-    mov [rbp-8], r8
-    mov ebx, [rdi+12]
-    shl ebx, 3
-    add r9, rbx
-    mov [rbp-16], r9
-_loop_start_phtss:
-    mov r8, [rbp-8]
-    mov r9, [rbp-16]
-    cmp r8, r9
-    jae _end_print_ht_sym_str
-    mov rbx, [r8]
-    add r8, 8
-    mov [rbp-8], r8
-    test rbx, rbx
-    jz _loop_start_phtss
-    mov [rbp-24], rbx
-    mov rdi, [rbp-8]
-    sub rdi, 8
-    mov rsi, 16
-    call print_u_digit
-    call print_new_line
-    mov rbx, [rbp-24]
-    mov rdi, [rbx]
-    movzx esi, byte [rbx+13]
-    call print_len_str
-    call print_new_line
-    call print_new_line
-    jmp _loop_start_phtss
-_end_print_ht_sym_str:
-    add rsp, 24
-    pop rbp
-    ret
+;print_ht_sym_str:
+;    push rbp
+;    mov rbp, rsp
+;    sub rsp, 24
+;    mov r8, [rdi]
+;    mov r9, r8
+;    mov [rbp-8], r8
+;    mov ebx, [rdi+12]
+;    shl ebx, 3
+;    add r9, rbx
+;    mov [rbp-16], r9
+;_loop_start_phtss:
+;    mov r8, [rbp-8]
+;    mov r9, [rbp-16]
+;    cmp r8, r9
+;    jae _end_print_ht_sym_str
+;    mov rbx, [r8]
+;    add r8, 8
+;    mov [rbp-8], r8
+;    test rbx, rbx
+;    jz _loop_start_phtss
+;    mov [rbp-24], rbx
+;    mov rdi, [rbp-8]
+;    sub rdi, 8
+;    mov rsi, 16
+;    call print_u_digit
+;    call print_new_line
+;    mov rbx, [rbp-24]
+;    mov rdi, [rbx]
+;    movzx esi, byte [rbx+13]
+;    call print_len_str
+;    call print_new_line
+;    call print_new_line
+;    jmp _loop_start_phtss
+;_end_print_ht_sym_str:
+;    add rsp, 24
+;    pop rbp
+;    ret
 
 _print_end_num_line:
     mov rdi, STR_RBRACKET

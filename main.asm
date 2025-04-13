@@ -193,32 +193,32 @@ _wirte_output_start:
     mov edx, [r8+8]
     call write
 _print_info_start:
-    mov rdi, TEST_RW
-    call open_file_w_trunc
-    mov r8, [SEG_ENTRY_ARRAY]
-    add r8, 384 
-    mov rdi, rax
-    mov rsi, [r8+20]
-    mov edx, [r8+28]
-    call write
-
-    mov rdi, TEST_R
-    call open_file_w_trunc
-    mov r8, [SEG_ENTRY_ARRAY]
-    add r8, 256
-    mov rdi, rax
-    mov rsi, [r8+20]
-    mov edx, [r8+28]
-    call write
-
-    mov rdi, TEST_RX
-    call open_file_w_trunc
-    mov r8, [SEG_ENTRY_ARRAY]
-    add r8, 320
-    mov rdi, rax
-    mov rsi, [r8+20]
-    mov edx, [r8+28]
-    call write
+;    mov rdi, TEST_RW
+;    call open_file_w_trunc
+;    mov r8, [SEG_ENTRY_ARRAY]
+;    add r8, 384 
+;    mov rdi, rax
+;    mov rsi, [r8+20]
+;    mov edx, [r8+28]
+;    call write
+;
+;    mov rdi, TEST_R
+;    call open_file_w_trunc
+;    mov r8, [SEG_ENTRY_ARRAY]
+;    add r8, 256
+;    mov rdi, rax
+;    mov rsi, [r8+20]
+;    mov edx, [r8+28]
+;    call write
+;
+;    mov rdi, TEST_RX
+;    call open_file_w_trunc
+;    mov r8, [SEG_ENTRY_ARRAY]
+;    add r8, 320
+;    mov rdi, rax
+;    mov rsi, [r8+20]
+;    mov edx, [r8+28]
+;    call write
     jmp _end_start
 _err_arg_missed:
     lea rsi, [ERR_MISSED_ARG]
