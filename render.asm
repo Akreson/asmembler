@@ -4942,10 +4942,3 @@ _end_start_render:
     pop rbp
     ret
 
-render_set_segments:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 64
-    add rsp, 64
-    pop rbp
-    ret
