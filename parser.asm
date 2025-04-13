@@ -45,7 +45,8 @@ list_main_block_m PATCH_LIST, PATCH_LIST_ENTRY_SIZE
 ; +32 sym token
 ;(TOKEN_NAME_JMP)
 ;(TOKEN_NAME_DATA)
-; +32 segment offset, +36 offset to entry header in seg token buf +40 meta info ([if obj file - idx in symtab]), +42 is used for reloc, +43 1b reserved
+; +32 segment offset, +36 offset to entry header in seg token buf,
+; +40 meta info ([if obj file - idx in symtab]), +42 is used for reloc, +43 1b reserved
 ;(TOKEN_NAME_MACR)
 ; +32 start offset of body in file buff, +36 start line of body in file,
 ; +40 copy entires (4 offset, 4 len, 1 arg num) _n_ times
@@ -455,9 +456,10 @@ push_name_to_defined:
     jz _add_entry_pnt_def
     lea rsi, [NAME_SYM_REF_ARRAY]
     mov cl, [rdi+15]
-    test cl, cl
+    and cl, SYM_REF_MASK_EXT
+    cmp cl, SYM_REF_EXT_ENTRY
     jz _patch_pnt_def
-    mov [rax+15], cl
+    ;mov [rax+15], cl
     mov ebx, [rbp-36]
     mov [ENTRY_SYM_OFFSET], ebx
     mov [ENTRY_SYM_ARR_PTR], rsi
@@ -706,6 +708,19 @@ _err_convert_dtn:
 _end_convert_digit_to_neg:
     add rsp, 8
     pop rbp
+    ret
+
+; edi - curr seg offset
+set_last_name_data_h_info:
+    push rdi
+    mov edi, NAME_DATA_BODY_SIZE
+    call get_mem_def_name_buf
+    push rax
+    call curr_token_buf_ptr
+    pop rdx
+    pop rcx
+    mov [rdx], ecx 
+    mov [rdx+4], ebx 
     ret
 
 ; rdi - ptr to file entry, rsi - ptr to space for token
@@ -1329,14 +1344,8 @@ ___name_data_def:
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_DATA
-    mov edi, NAME_DATA_BODY_SIZE
-    call get_mem_def_name_buf
-    mov [rbp-84], rax
-    call curr_token_buf_ptr
-    mov r8, [rbp-84]
-    mov r9d, [rbp-92]
-    mov [r8], r9d
-    mov [r8+4], ebx 
+    mov edi, r9d
+    call set_last_name_data_h_info
 ___name_data_def_kw_new_rip:
     call curr_seg_ptr
     mov rdi, rax
@@ -1559,14 +1568,8 @@ __name_sp_aux:
     mov r8, [rbp-84]
     mov dword [r8], NAME_DATA_ENTRY_SIZE
     mov byte [r8+30], TOKEN_NAME_JMP
-    mov edi, NAME_DATA_BODY_SIZE
-    call get_mem_def_name_buf
-    mov [rbp-84], rax
-    call curr_token_buf_ptr
-    mov r8, [rbp-84]
-    mov r9d, dword [CURR_SEG_OFFSET]
-    mov [r8], r9d
-    mov [r8+4], ebx 
+    mov edi, dword [CURR_SEG_OFFSET]
+    call set_last_name_data_h_info
     jmp _new_entry_start_ps
 __name_sp_macro:
     mov dword [rbp-108], 0 
@@ -2034,13 +2037,14 @@ __kw_extrn:
     mov [rbp-72], rax
     mov rdi, rax
     lea rsi, [rbp-32]
-    xor rdx, rdx
-    call push_name_to_unk
-    mov rax, [rbp-72]
-    mov rbx, [rax]
-    sub rbx, NAME_SYM_REF_SERV_HS
-    mov byte [rbx+31], SYM_REF_MOD_EXTRN 
-    jmp __kw_name_mod_unk_set_data
+    mov edx, [rbp-52]
+    call push_name_to_defined
+    mov dword [rax], NAME_DATA_ENTRY_SIZE 
+    mov byte [rax+30], TOKEN_TYPE_EXT_REF 
+    mov byte [rax+31], SYM_REF_MOD_EXTRN 
+    mov edi, dword [CURR_SEG_OFFSET]
+    call set_last_name_data_h_info
+    jmp _new_entry_start_ps
 ___kw_extrn_check_name:
     sub rbx, NAME_SYM_REF_SERV_HS
     mov cl, [rbx+30]
