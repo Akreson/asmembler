@@ -2481,8 +2481,8 @@ __init_sec_skip_rela:
     mov r8d, ecx
     and ecx, SEC_INDEX_MASK
     and r8d, IS_SEC_USER_DEF_MASK
-    and r10d, SEC_ATTR_MASK
-    shl r10d, SEC_ATTR_SHIFT
+    shr r10d, SEC_ATTR_RIGHTS_SHIFT
+    and r10d, 0x7
     mov esi, DEF_TOKEN_BUF_SIZE
     mov eax, 0
     test r8d, r8d 

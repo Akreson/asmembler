@@ -587,8 +587,8 @@ _start_loop_dsof:
     rep movsb
     mov byte [rdi], 0
     mov r11d, [r10+8]
-    and r11d, SEC_ATTR_MASK
-    shl r11d, SEC_ATTR_SHIFT
+    shr r11d, SEC_ATTR_SEC_FLAG_SHIFT
+    and r11d, 0x7
     mov [r9+SH_name], ebx
     mov [r9+SH_flags], r11
     lea rdi, [BUILD_ARR]
