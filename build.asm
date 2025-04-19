@@ -324,6 +324,7 @@ __skip_set_rela_arr:
     shl r11, 32
     xor ebx, ebx
     mov al, [rdx+24]
+    and al, ADDR_PATCH_TYPE_MAIN_MASK
     cmp al, ADDR_PATCH_TYPE_DEF_RIP
     je _rip_patch_rsre
     cmp al, ADDR_PATCH_TYPE_ABS
