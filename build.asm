@@ -973,6 +973,7 @@ build_object_file:
     mov esi, 48 
     imul esi, eax
     call entry_array_ensure_free_space
+    call render_patch_delayed_ref
     mov rbx, qword [SEG_ENTRY_ARRAY]
     mov eax, KW_SEC_SHSTRTAB
     and eax, SEC_INDEX_MASK 
@@ -993,7 +994,6 @@ build_object_file:
     add rdi, 20
     call set_symtab_for_obj_file
     mov [rbp-24], rax
-    call render_patch_delayed_ref
     call render_set_rela_entry
     add eax, [rbp-64]
     mov [rbp-64], eax
