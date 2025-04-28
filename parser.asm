@@ -360,12 +360,15 @@ _end_patch_unk_ref:
     pop rbp
     ret
 
+; -24 temp entry_array, -32 ptr to old arr, -40 ptr to new arr, -44 curr offset,
+; -48 - max offset, -52 req size
 ; edi - req size
 ; return rax - addr to mem
 get_mem_def_name_buf:
     push rbp
     mov rbp, rsp
     sub rsp, 64
+    mov [rbp-52], edi
     mov esi, edi 
     mov rdi, NAME_SYM_REF_ARRAY
     call entry_array_check_get
@@ -401,7 +404,7 @@ __ht_reasign_pnt_def:
     mov ecx, [rbp-44]
     mov esi, [rbp-48]
     mov ebx, [rdx+rcx]
-    lea r9, [rdx+rcx+16]
+    lea r9, [rdx+rcx+NAME_SYM_REF_SERV_HS]
     mov [rax], r9
     add ecx, ebx
     cmp ecx, esi
@@ -419,7 +422,7 @@ __dealloc_old_pnt_def:
     mov ecx, ENTRY_ARRAY_DATA_SIZE 
     rep movsb
     mov rdi, rdx
-    mov esi, NAME_SYM_REF_HEADER_SIZE
+    mov esi, [rbp-52]
     call entry_array_check_get
     test rax, rax
     jnz _end_get_mem_def_name_buf 
