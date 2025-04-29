@@ -83,6 +83,9 @@ SEGMENT_PATCH_LIST dq 0
 dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
 dd 0, 0
 
+SEGMENT_DEF_ORDER_COUNT equ 6
+SEGMENT_DEF_ORDER db 6, 4, 5, 7, 3, 1
+
 entry_array_data_m TEMP_SYM_PTR_ARR, 8
 entry_array_data_m TEMP_HELP_ARR, 1
 
@@ -674,66 +677,24 @@ render_set_collate_seg_ptr:
     inc r9
     jmp _end_set_collate_seg_ptr
 _elf_rscsp:
+    lea r10, [SEGMENT_DEF_ORDER]
     mov ecx, SEG_ENTRY_SIZE
-    mov eax, 6
-    mul ecx
+    xor edx, edx
+_elf_rscsp_loop:
+    cmp dl, SEGMENT_DEF_ORDER_COUNT
+    je _end_set_collate_seg_ptr
+    movzx eax, byte [r10+rdx]
+    imul eax, ecx
     lea rbx, [r8+rax]
     mov esi, [rbx+8]
     test esi, esi
-    jz _set_collate_sg_check2
+    jz _elf_rscsp_loop_next
     inc r9d
     mov [rdi], rbx
     add rdi, 8
-_set_collate_sg_check2:
-    mov eax, 4
-    mul ecx
-    lea rbx, [r8+rax]
-    mov esi, [rbx+8]
-    test esi, esi
-    jz _set_collate_sg_check3
-    inc r9d
-    mov [rdi], rbx
-    add rdi, 8
-_set_collate_sg_check3:
-    mov eax, 5
-    mul ecx
-    lea rbx, [r8+rax]
-    mov esi, [rbx+8]
-    test esi, esi
-    jz _set_collate_sg_check4
-    inc r9d
-    mov [rdi], rbx
-    add rdi, 8
-_set_collate_sg_check4:
-    mov eax, 7
-    mul ecx
-    lea rbx, [r8+rax]
-    mov esi, [rbx+8]
-    test esi, esi
-    jz _set_collate_sg_check5
-    inc r9d
-    mov [rdi], rbx
-    add rdi, 8
-_set_collate_sg_check5:
-    mov eax, 3
-    mul ecx
-    lea rbx, [r8+rax]
-    mov esi, [rbx+8]
-    test esi, esi
-    jz _set_collate_sg_check6
-    inc r9d
-    mov [rdi], rbx
-    add rdi, 8
-_set_collate_sg_check6:
-    mov eax, 1
-    mul ecx
-    lea rbx, [r8+rax]
-    mov esi, [rbx+8]
-    test esi, esi
-    jz _end_set_collate_seg_ptr
-    inc r9d
-    mov [rdi], rbx
-    add rdi, 8
+_elf_rscsp_loop_next:
+    inc dl
+    jmp _elf_rscsp_loop
 _end_set_collate_seg_ptr:
     mov eax, r9d
     pop rbp
