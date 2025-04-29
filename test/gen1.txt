@@ -1,7 +1,6 @@
-format ELF64 executable
-entry _start
-segment readable executable
-_start:
+format ELF64 
+
+section readable executable
     dec dword [NAME_D-NAME_C]
     dec word [r8+r11]
     dec byte [rax+rdx]
@@ -367,7 +366,7 @@ _start:
     idiv esi
     idiv rsp
 
-segment readable
+section readable
 CONST_NEG equ -1
 NAME_C equ 0x4
 NAME_C2 equ 1
