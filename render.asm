@@ -3483,6 +3483,22 @@ _end_process_tzcnt:
     pop rbp
     ret
 
+process_popcnt:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 192
+    mov [rbp-8], rdi
+    mov [rbp-16], rsi
+    mov dword [rbp-64], 0x00F3B80F
+    lea rdx, [rbp-192]
+    lea rcx, [rbp-64]
+    lea r8, [rbp-32]
+    call process_ins_template2
+_end_process_popcnt:
+    add rsp, 192
+    pop rbp
+    ret
+
 ; rdi - segment ptr, rsi - ptr to token entry to process
 process_cmovcc:
     push rbp
@@ -4443,6 +4459,26 @@ _end_process_int1:
     ret
 
 ; rdi - segment ptr, rsi - ptr to token entry to process
+process_rdtsc:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov eax, [rdi+28]
+    mov [rsi], eax
+    add rdi, ENTRY_ARRAY_DATA_SIZE
+    mov [rbp-8], rdi
+    call entry_array_curr_ptr
+    mov word [rax], 0x310F
+    add rax, 2
+    mov rsi, rax
+    mov rdi, [rbp-8]
+    call entry_array_commit_size
+_end_process_rdtsc:
+    add rsp, 8
+    pop rbp
+    ret
+
+; rdi - segment ptr, rsi - ptr to token entry to process
 process_data_define:
     push rbp
     mov rbp, rsp
@@ -4864,8 +4900,18 @@ _check_ins_rps35:
     jmp _start_loop_process_segment
 _check_ins_rps36:
     cmp ebx, INS_INT1
-    jne _check_ins_rps_jmp
+    jne _check_ins_rps37
     call process_int1
+    jmp _start_loop_process_segment
+_check_ins_rps37:
+    cmp ebx, INS_RDTSC
+    jne _check_ins_rps38
+    call process_rdtsc
+    jmp _start_loop_process_segment
+_check_ins_rps38:
+    cmp ebx, INS_POPCNT
+    jne _check_ins_rps_jmp
+    call process_popcnt
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx

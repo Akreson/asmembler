@@ -206,6 +206,8 @@ INS_SYSCALL equ 0x11000051
 INS_INT     equ 0x10000052
 INS_INT3    equ 0x11000053
 INS_INT1    equ 0x11000054
+INS_RDTSC   equ 0x11000055
+INS_POPCNT  equ 0x10000056
 
 AUX_COLON     equ 0x20000000
 AUX_LPAREN    equ 0x20000001
@@ -456,6 +458,8 @@ STR_SYSCALL db "syscall"
 STR_INT     db "int"
 STR_INT3    db "int3"
 STR_INT1    db "int1"
+STR_RDTSC   db "rdtsc"
+STR_POPCNT  db "popcnt"
 
 STR_REP   db "rep"
 STR_REPE  db "repe"
@@ -737,6 +741,8 @@ def_symbol_m INS_SYSCALL, TOKEN_TYPE_INS, STR_SYSCALL, 7
 def_symbol_m INS_INT, TOKEN_TYPE_INS, STR_INT, 3
 def_symbol_m INS_INT3, TOKEN_TYPE_INS, STR_INT3, 4
 def_symbol_m INS_INT1, TOKEN_TYPE_INS, STR_INT1, 4
+def_symbol_m INS_RDTSC, TOKEN_TYPE_INS, STR_RDTSC, 5
+def_symbol_m INS_POPCNT, TOKEN_TYPE_INS, STR_POPCNT, 6
 
 def_symbol_m KW_DB, TOKEN_TYPE_KEYWORD, STR_KW_DB, 2
 def_symbol_m KW_DW, TOKEN_TYPE_KEYWORD, STR_KW_DW, 2

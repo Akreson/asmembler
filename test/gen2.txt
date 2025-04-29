@@ -1,13 +1,43 @@
-segment readable
+format ELF64
+
+section readable
+
 NAME_D dd 0
 CONST_NEG equ -1
 NAME_C equ 0x4
 NAME_C2 equ 1
 
-public NAME_D
-extrn NAME_D
+section readable executable
+    popcnt bx, cx
+    popcnt esi, edi
+    popcnt ax, r8w
+    popcnt edx, r10d
+    popcnt esi, r12d
+    popcnt rax, rcx
+    popcnt r8, rdi
+    popcnt rsp, r10
+    popcnt ax, [NAME_D+12]
+    popcnt eax, [NAME_D-NAME_C]
+    popcnt r12w, [r8+r11]
+    popcnt r10d, [r8+r10*8]
+    popcnt eax, [rax+rcx*2+14]
+    popcnt edx, [rax+rdx*4-NAME_C]
+    popcnt r12, [rbx+rdi]
+    popcnt eax, [rbp+rax*NAME_C]
+    popcnt eax, [rsp+rbp]
+    popcnt rdx, [NAME_D+22]
+    popcnt eax, [NAME_D-0xffffff]
+    popcnt eax, [rsp+NAME_C]
+    popcnt eax, [rcx+12]
+    popcnt eax, [rcx-1]
+    popcnt eax, [rbp+8]
+    popcnt eax, [rbp-8]
+    popcnt eax, [rsp+123]
+    popcnt eax, [NAME_D]
+    popcnt eax, [rbp]
+    popcnt eax, [rsp]
+    popcnt eax, [r8]
 
-segment readable executable
     bsr bx, cx
     bsr esi, edi
     bsr ax, r8w

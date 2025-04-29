@@ -1,13 +1,8 @@
-segment readable
-CONST_NEG equ -1
-NAME_C equ 0x4
-NAME_C2 equ 1
-NAME_D db 0
-
-segment readable executable
+format binary
     int 1
     int 255
     ret
     syscall
     int3
     int1
+    rdtsc
