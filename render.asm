@@ -667,6 +667,13 @@ render_set_collate_seg_ptr:
     mov rbp, rsp
     xor r9, r9
     mov r8, [SEG_ENTRY_ARRAY]
+    mov bl, [BUILD_TYPE]
+    cmp bl, BUILD_TYPE_BIN
+    jne _elf_rscsp
+    mov [rdi], r8
+    inc r9
+    jmp _end_set_collate_seg_ptr
+_elf_rscsp:
     mov ecx, SEG_ENTRY_SIZE
     mov eax, 6
     mul ecx

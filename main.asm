@@ -183,7 +183,7 @@ _check_b_o_start:
     call build_object_file
     jmp _wirte_output_start
 _b_b_start:
-    call render_patch_delayed_ref
+    call build_output_bin
 _wirte_output_start:
     mov rdi, [rbp+24]
     call open_file_w_trunc

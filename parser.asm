@@ -2294,7 +2294,7 @@ _first_check_fail:
     mov [rax+16], rbx
     jmp _set_bin_seg_pcf
 __check_next_pcf:
-    cmp eax, KW_F_BIN
+    cmp ecx, KW_F_BIN
     jne _err_parsre_check_format
 _set_bin_seg_pcf:
     mov dword [CURR_SEG_OFFSET], 0

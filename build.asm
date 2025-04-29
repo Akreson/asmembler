@@ -1050,3 +1050,22 @@ _end_build_object_file:
     add rsp, 64
     pop rbp
     ret
+
+build_output_bin:
+    push rbp
+    call render_patch_delayed_ref
+    mov rax, [SEG_ENTRY_ARRAY]
+    mov rbx, [rax+20]
+    mov esi, [rax+28]
+    lea rdi, [BUILD_ARR]
+    mov rdx, [rdi]
+    push rbx
+    push rdx
+    push rsi
+    call entry_array_reserve_size
+    pop rcx
+    pop rdi
+    pop rsi
+    rep movsb
+    pop rbp
+    ret
