@@ -3274,86 +3274,19 @@ _end_process_instemp2:
     pop rbp
     ret
 
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_bsr:
+; rdi - segment ptr, rsi - ptr to token entry to process, edx - template params
+process_ins_template2_default:
     push rbp
     mov rbp, rsp
     sub rsp, 192
     mov [rbp-8], rdi
     mov [rbp-16], rsi
-    mov dword [rbp-64], 0x0000BD0F
+    mov [rbp-64], edx
     lea rdx, [rbp-192]
     lea rcx, [rbp-64]
     lea r8, [rbp-32]
     call process_ins_template2
-_end_process_bsr:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_bsf:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x0000BC0F
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template2
-_end_process_bsf:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_lzcnt:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x00F3BD0F
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template2
-_end_process_lzcnt:
-    add rsp, 192
-    pop rbp
-    ret
-
-; rdi - segment ptr, rsi - ptr to token entry to process
-process_tzcnt:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x00F3BC0F
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template2
-_end_process_tzcnt:
-    add rsp, 192
-    pop rbp
-    ret
-
-process_popcnt:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 192
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov dword [rbp-64], 0x00F3B80F
-    lea rdx, [rbp-192]
-    lea rcx, [rbp-64]
-    lea r8, [rbp-32]
-    call process_ins_template2
-_end_process_popcnt:
+_end_process_ins_template2_default:
     add rsp, 192
     pop rbp
     ret
@@ -4658,126 +4591,131 @@ _check_ins_rps14:
 _check_ins_rps15:
     cmp ebx, INS_BSR
     jne _check_ins_rps16
-    call process_bsr
+    mov edx, 0x0000BD0F
+    call process_ins_template2_default
     jmp _start_loop_process_segment
 _check_ins_rps16:
     cmp ebx, INS_BSF
     jne _check_ins_rps17
-    call process_bsf
+    mov edx, 0x0000BC0F
+    call process_ins_template2_default
     jmp _start_loop_process_segment
 _check_ins_rps17:
     cmp ebx, INS_LZCNT
     jne _check_ins_rps18
-    call process_lzcnt
+    mov edx, 0x00F3BD0F
+    call process_ins_template2_default
     jmp _start_loop_process_segment
 _check_ins_rps18:
     cmp ebx, INS_TZCNT
     jne _check_ins_rps19
-    call process_tzcnt
+    mov edx, 0x00F3BC0F
+    call process_ins_template2_default
     jmp _start_loop_process_segment
 _check_ins_rps19:
-    cmp ebx, INS_MOVSB
-    jb _check_ins_rps20
-    cmp ebx, INS_MOVSQ
-    ja _check_ins_rps20
-    call process_movs
+    cmp ebx, INS_POPCNT
+    jne _check_ins_rps20
+    mov edx, 0x00F3B80F
+    call process_ins_template2_default
     jmp _start_loop_process_segment
 _check_ins_rps20:
-    cmp ebx, INS_STOSB
+    cmp ebx, INS_MOVSB
     jb _check_ins_rps21
-    cmp ebx, INS_STOSQ
-    ja _check_ins_rps_jmp
-    call process_stos
+    cmp ebx, INS_MOVSQ
+    ja _check_ins_rps21
+    call process_movs
     jmp _start_loop_process_segment
 _check_ins_rps21:
-    cmp ebx, INS_SHR
-    jne _check_ins_rps22
-    call process_shr
+    cmp ebx, INS_STOSB
+    jb _check_ins_rps22
+    cmp ebx, INS_STOSQ
+    ja _check_ins_rps22
+    call process_stos
     jmp _start_loop_process_segment
 _check_ins_rps22:
-    cmp ebx, INS_SHL
+    cmp ebx, INS_SHR
     jne _check_ins_rps23
-    call process_shl
+    call process_shr
     jmp _start_loop_process_segment
 _check_ins_rps23:
-    cmp ebx, INS_SAL
+    cmp ebx, INS_SHL
     jne _check_ins_rps24
     call process_shl
     jmp _start_loop_process_segment
 _check_ins_rps24:
-    cmp ebx, INS_SAR
+    cmp ebx, INS_SAL
     jne _check_ins_rps25
-    call process_sar
+    call process_shl
     jmp _start_loop_process_segment
 _check_ins_rps25:
-    cmp ebx, INS_IMUL
+    cmp ebx, INS_SAR
     jne _check_ins_rps26
-    call process_imul
+    call process_sar
     jmp _start_loop_process_segment
 _check_ins_rps26:
-    cmp ebx, INS_MOVZX
+    cmp ebx, INS_IMUL
     jne _check_ins_rps27
-    call process_movzx
+    call process_imul
     jmp _start_loop_process_segment
 _check_ins_rps27:
-    cmp ebx, INS_MOVSX
+    cmp ebx, INS_MOVZX
     jne _check_ins_rps28
-    call process_movsx
+    call process_movzx
     jmp _start_loop_process_segment
 _check_ins_rps28:
-    cmp ebx, INS_MOVSXD
+    cmp ebx, INS_MOVSX
     jne _check_ins_rps29
-    call process_movsxd
+    call process_movsx
     jmp _start_loop_process_segment
 _check_ins_rps29:
-    cmp ebx, INS_LEA
+    cmp ebx, INS_MOVSXD
     jne _check_ins_rps30
-    call process_lea
+    call process_movsxd
     jmp _start_loop_process_segment
 _check_ins_rps30:
-    cmp ebx, INS_PUSH
+    cmp ebx, INS_LEA
     jne _check_ins_rps31
-    call process_push
+    call process_lea
     jmp _start_loop_process_segment
 _check_ins_rps31:
-    cmp ebx, INS_POP
+    cmp ebx, INS_PUSH
     jne _check_ins_rps32
-    call process_pop
+    call process_push
     jmp _start_loop_process_segment
 _check_ins_rps32:
-    cmp ebx, INS_RET
+    cmp ebx, INS_POP
     jne _check_ins_rps33
-    call process_ret
+    call process_pop
     jmp _start_loop_process_segment
 _check_ins_rps33:
-    cmp ebx, INS_SYSCALL
+    cmp ebx, INS_RET
     jne _check_ins_rps34
-    call process_syscall
+    call process_ret
     jmp _start_loop_process_segment
 _check_ins_rps34:
-    cmp ebx, INS_INT
+    cmp ebx, INS_SYSCALL
     jne _check_ins_rps35
-    call process_int
+    call process_syscall
     jmp _start_loop_process_segment
 _check_ins_rps35:
-    cmp ebx, INS_INT3
+    cmp ebx, INS_INT
     jne _check_ins_rps36
-    call process_int3
+    call process_int
     jmp _start_loop_process_segment
 _check_ins_rps36:
-    cmp ebx, INS_INT1
+    cmp ebx, INS_INT3
     jne _check_ins_rps37
-    call process_int1
+    call process_int3
     jmp _start_loop_process_segment
 _check_ins_rps37:
-    cmp ebx, INS_RDTSC
+    cmp ebx, INS_INT1
     jne _check_ins_rps38
-    call process_rdtsc
+    call process_int1
     jmp _start_loop_process_segment
 _check_ins_rps38:
-    cmp ebx, INS_POPCNT
+    cmp ebx, INS_RDTSC
     jne _check_ins_rps_jmp
-    call process_popcnt
+    call process_rdtsc
     jmp _start_loop_process_segment
 _check_ins_rps_jmp:
     mov ecx, ebx
