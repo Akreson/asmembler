@@ -3,8 +3,6 @@ segment readable writeable
 ALL_ONE_8B dq 0x0101010101010101
 ALL_HIGH_SET_8B dq 0x8080808080808080
 SPACE_CHAR_4B dq 0x200D090B
-ALL_ONE_4B dd 0x01010101
-ALL_HIGH_SET_4B dd 0x80808080
 
 segment readable executable
 
@@ -19,10 +17,13 @@ is_contain_byte_8b:
     mul rdi
     xor rax, rsi
     mov r10, rax
+    mov r11, r8
+    xor r11, r10
+    and r8, r11
     sub r10, r8
     not rax
-    and rax, r9
     and rax, r10
+    and rax, r9
     pop rbp
     ret
 
@@ -30,16 +31,19 @@ is_contain_byte_8b:
 is_contain_byte_4b:
     push rbp
     mov rbp, rsp
-    mov r8d, [ALL_ONE_4B]
-    mov r9d, [ALL_HIGH_SET_4B]
+    mov r8d, dword [ALL_ONE_8B]
+    mov r9d, dword [ALL_HIGH_SET_8B]
     mov eax, r8d
     mul edi
     xor eax, esi
     mov r10d, eax
+    mov r11d, r8d
+    xor r11d, r10d
+    and r8d, r11d
     sub r10d, r8d
     not eax
-    and eax, r9d
     and eax, r10d
+    and eax, r9d
     pop rbp
     ret
 
