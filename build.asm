@@ -191,7 +191,7 @@ RA64_addend equ 16
 SYMTAB_BUILD_ENTRY_SIZE equ 32; SYM64_TABLE_ENTRY_SIZE + ptr 
 segment readable executable
 
-render_patch_delayed_ref:
+build_patch_delayed_ref:
     push rbp
     mov rbp, rsp
     sub rsp, 64
@@ -265,7 +265,7 @@ _end_render_patch_delayed_ref:
 
 ; -8 8, -16 8, -24 8, -28 4, -32 4, -40 8, -48 8
 ; return eax - count of .rela sec.
-render_set_rela_entry:
+build_set_rela_entry:
     push rbp
     mov rbp, rsp
     sub rsp, 64
@@ -476,7 +476,7 @@ build_executable:
     mov rdi, [rbp-8]
     mov esi, eax
     call build_exe_set_main_info
-    call render_patch_delayed_ref
+    call build_patch_delayed_ref
     mov r10, [rbp-8]
     mov r14d, [rbp-12]
     shl r14d, 3
@@ -973,7 +973,7 @@ build_object_file:
     mov esi, 48 
     imul esi, eax
     call entry_array_ensure_free_space
-    call render_patch_delayed_ref
+    call build_patch_delayed_ref
     mov rbx, qword [SEG_ENTRY_ARRAY]
     mov eax, KW_SEC_SHSTRTAB
     and eax, SEC_INDEX_MASK 
@@ -994,7 +994,7 @@ build_object_file:
     add rdi, 20
     call set_symtab_for_obj_file
     mov [rbp-24], rax
-    call render_set_rela_entry
+    call build_set_rela_entry
     add eax, [rbp-64]
     mov [rbp-64], eax
     mov edx, eax
@@ -1053,7 +1053,7 @@ _end_build_object_file:
 
 build_output_bin:
     push rbp
-    call render_patch_delayed_ref
+    call build_patch_delayed_ref
     mov rax, [SEG_ENTRY_ARRAY]
     mov rbx, [rax+20]
     mov esi, [rax+28]
