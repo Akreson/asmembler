@@ -306,8 +306,7 @@ set_local_ref_in_dec_order:
     mov rsi, [rbx]
     mov eax, [rax+8]
     mov r8d, eax
-    mov edx, SEGMENT_PATCH_ENTRY_SIZE
-    mul edx
+    imul eax, eax, SEGMENT_PATCH_ENTRY_SIZE
     add rax, rcx 
     shl r8d, 3
     add r8, rsi
@@ -502,9 +501,7 @@ render_patch_local_rel:
 _start_patch_rplr:
     lea rbx, [LOCAL_PATCH_ARR]
     mov rcx, [rbx]
-    mov r8d, [rbx+8]
-    mov eax, SEGMENT_PATCH_ENTRY_SIZE
-    mul r8d
+    imul eax, [rbx+8], SEGMENT_PATCH_ENTRY_SIZE
     add rax, rcx
     mov [rbp-56], rcx
     mov [rbp-64], rax
@@ -900,8 +897,7 @@ _switch_r_rm_skip_rex:
 set_reg_for_err_print:
     mov r10, rdi
     movzx eax, word [r10+4]
-    mov ecx, FILE_ARRAY_ENTRY_SIZE
-    mul ecx
+    imul eax, eax, FILE_ARRAY_ENTRY_SIZE
     mov edi, eax
     xor rdx, rdx
     mov ecx, [r10+8]
@@ -4400,9 +4396,8 @@ _process_data_dub:
     cmp edi, TOKEN_TYPE_STR
     je __process_data_dub_loop_start_string
 __process_data_dub_loop_start_digit:
-    movzx eax, byte [rbp-41]
-    mul ecx
-    mov edi, eax
+    movzx edi, byte [rbp-41]
+    imul edi, ecx
     mov esi, 8
     call align_to_pow2
     mov rdi, [rbp-24]
@@ -4425,9 +4420,8 @@ ___process_data_dub_end_loop_digit:
     call entry_array_commit_size
     jmp _loop_process_data_define
 __process_data_dub_loop_start_string:
-    mov eax, [rdx+8]
-    mul ecx  
-    mov esi, eax
+    mov esi, [rdx+8]
+    imul esi, ecx
     mov rdi, [rbp-24]
     call entry_array_ensure_free_space
     mov rdi, rax
