@@ -466,7 +466,7 @@ build_executable:
     mov rbp, rsp
     sub rsp, 64
     mov [rbp-64], rdi
-    mov rdi, TEMP_COMMON_ARR
+    lea rdi, [TEMP_COMMON_ARR]
     mov esi, 64
     call entry_array_ensure_free_space
     mov [rbp-8], rax

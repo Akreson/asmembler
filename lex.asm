@@ -94,9 +94,10 @@ _end_is_digit:
 is_aux_sym:
     push rbp
     mov rbp, rsp
-    sub rsp, 24
+    sub rsp, 32
     xor rax, rax
-    mov r8, STR_COMMA
+    lea r8, [STR_COMMA]
+    mov [rbp-32], r8
     mov r9, r8
     add r9, AUX_MEM_BLOCK_SIZE
     mov [rbp-16], r9
@@ -113,8 +114,7 @@ _loop_ias:
     je _end_is_aux_sym
     jmp _loop_ias
 _set_result_ias:
-    mov r11, STR_COMMA
-    sub r8, r11
+    sub r8, [rbp-32]
     lzcnt rax, rax
     mov r10, 64
     sub r10, rax
@@ -122,7 +122,7 @@ _set_result_ias:
     add r10, r8
     mov rax, r10
 _end_is_aux_sym:
-    add rsp, 24
+    add rsp, 32
     pop rbp
     ret
 
@@ -292,9 +292,8 @@ _aux_check_nt:
     call is_aux_sym
     test rax, rax
     jz _unrec_char_nt
-    mov rbx, DUMMY_NODE_AUX
-    mov rcx, TOKEN_KIND_SIZE
-    mul rcx
+    lea rbx, [DUMMY_NODE_AUX]
+    imul rax, rax, TOKEN_KIND_SIZE
     add rbx, rax
     mov [rbp-56], rbx
     mov edx, dword [rbx+8]
@@ -366,7 +365,7 @@ __finish_loop_scan_symbol_nt:
     mov ecx, eax
     pop rsi
     pop rdx
-    mov rdi, DEF_SYM_HASH_TABLE
+    lea rdi, [DEF_SYM_HASH_TABLE]
     call hash_table_find_entry
     mov rdi, [rbp-16]
     mov r8, [rax]
@@ -535,13 +534,13 @@ _eof_nt:
     mov rax, 1
     jmp _end_next_token
 _err_digit_format:
-    mov rbx, ERR_LEXER_NUMBER_FORMAT
+    lea rbx, [ERR_LEXER_NUMBER_FORMAT]
     jmp __err_digit_end_nt
 _err_out_of_base_digit:
-    mov rbx, ERR_LEXER_NUMBER_ORDER
+    lea rbx, [ERR_LEXER_NUMBER_ORDER]
     jmp __err_digit_end_nt
 _err_digit_overflow:
-    mov rbx, ERR_LEXER_NUM_TO_BIG
+    lea rbx, [ERR_LEXER_NUM_TO_BIG]
     jmp __err_digit_end_nt
 __err_digit_end_nt:
     mov [rbp-128], rbx
@@ -565,13 +564,13 @@ __finish_loop_err_digit_end_nt:
     mov [rbp-112], rdi
     jmp _err_end_next_token
 _err_string_parsing:
-    mov rsi, ERR_LEXER_STR_PARSE
+    lea rsi, [ERR_LEXER_STR_PARSE]
     jmp _err_next_token
 _unrec_char_nt:
-    mov rsi, ERR_LEXER_INVALID_CHAR
+    lea rsi, [ERR_LEXER_INVALID_CHAR]
     jmp _err_next_token
 _err_to_long_sym_nt:
-    mov rsi, ERR_LEXER_TO_LONG_NAME
+    lea rsi, [ERR_LEXER_TO_LONG_NAME]
 _err_next_token:
     mov edi, [CURR_FILE_ENTRY_OFFSET]
     xor rdx, rdx
@@ -585,18 +584,18 @@ _err_end_next_token:
     xor esi, esi
     xor rdx, rdx
     call print_file_line
-    mov rdi, ERR_HEADER_STR
+    lea rdi, [ERR_HEADER_STR]
     call print_zero_str
-    mov rdi, STR_DQM
+    lea rdi, [STR_DQM]
     mov esi, 1
     call print_len_str
     mov rdi, [rbp-112]
     mov rsi, [rbp-120]
     call print_len_str
-    mov rdi, STR_DQM
+    lea rdi, [STR_DQM]
     mov esi, 1
     call print_len_str
-    mov rdi, _STR_TAB
+    lea rdi, [_STR_TAB]
     mov esi, 1
     call print_len_str
     mov rdi, [rbp-128]

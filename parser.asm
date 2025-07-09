@@ -147,12 +147,12 @@ push_name_to_unk:
     mov [rbp-84], r8d
     mov [rbp-88], r9d
     mov [rbp-96], r10
-    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
+    lea rdi, [UNKNOWN_NAME_SYM_REF_ARRAY] 
     mov esi, 1
     call entry_array_check_get
     test rax, rax
     jnz _add_entry_pnt_unk
-    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
+    lea rdi, [UNKNOWN_NAME_SYM_REF_ARRAY] 
     mov esi, [rdi+12]
     shl esi, 1
     lea rdx, [rbp-24]
@@ -161,7 +161,7 @@ push_name_to_unk:
     jnz _success_realloc_pnt_unk
     exit_m -9
 _success_realloc_pnt_unk:
-    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY
+    lea rdi, [UNKNOWN_NAME_SYM_REF_ARRAY]
     mov r8, [rdi]
     mov r9, [rbp-24]
     mov [rbp-48], r8
@@ -178,7 +178,7 @@ __ht_reasign_push_unk_start:
     mov eax, [r8]
     test eax, eax; TODO: delete entry for not checking later?
     jz __ht_reasign_unk_next
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [r8+16]
     mov ecx, [r8+24]
     movzx edx, byte [r8+29]
@@ -198,9 +198,9 @@ __ht_reasign_unk_next:
     lea r8, [rdi+rcx]
     jmp __ht_reasign_push_unk_start
 __dealloc_old_push_unk:
-    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY
+    lea rdi, [UNKNOWN_NAME_SYM_REF_ARRAY]
     call entry_array_dealloc
-    mov rdx, UNKNOWN_NAME_SYM_REF_ARRAY 
+    lea rdx, [UNKNOWN_NAME_SYM_REF_ARRAY]
     mov rdi, rdx
     lea rsi, [rbp-24]
     mov ecx, ENTRY_ARRAY_DATA_SIZE 
@@ -218,14 +218,14 @@ _add_entry_pnt_unk:
     mov rsi, [rbp-40]
     mov ecx, 16
     rep movsb
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [rbp-32]
     mov rdx, rax
     call hash_table_add_entry
     mov rax, [rbp-80]
     test rax, rax
     jz _end_push_name_to_unk
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     call list_get_free
 _node_fetch_succ_pnt_unk:
     mov edx, eax
@@ -234,7 +234,7 @@ _node_fetch_succ_pnt_unk:
     mov [rcx], edx
     add rcx, 16
     sub rcx, rbx
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     mov esi, edx
     call list_get_node_ptr
     mov rdi, [rbp-96]
@@ -250,7 +250,7 @@ _node_fetch_succ_pnt_unk:
     mov [rax+20], r10d
     mov [rax+24], ebx
     mov [rax+28], esi
-    mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
+    lea rax, [UNKNOWN_NAME_SYM_REF_ARRAY]
     mov ebx, ecx
 _end_push_name_to_unk:
     add rsp, 96
@@ -270,7 +270,7 @@ push_link_to_unk:
     mov [rbp-24], ecx
     mov [rbp-28], r8d
     mov [rbp-36], r9
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     call list_get_free
     test eax, eax
     jnz _add_link_to_chain_unk
@@ -294,7 +294,7 @@ _add_link_to_chain_unk:
     mov edx, [rax]
     test edx, edx
     jz _insert_first_link_unk
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     call list_insert_node
     test eax, eax
     jnz _finish_add_link_unk
@@ -324,7 +324,7 @@ patch_unk_ref:
 _loop_patch_ur:
     test esi, esi
     jz _end_patch_unk_ref
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     call list_get_node_ptr
     test rax, rax
     jnz _valid_list_entry_patch_ur
@@ -348,7 +348,7 @@ _no_indrct_patch_ur:
     mov esi, [rbp-24]
     mov ecx, [rax]
     mov [rbp-24], ecx
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     call list_free_node
     mov esi, [rbp-24]
     jnz _loop_patch_ur
@@ -370,11 +370,11 @@ get_mem_def_name_buf:
     sub rsp, 64
     mov [rbp-52], edi
     mov esi, edi 
-    mov rdi, NAME_SYM_REF_ARRAY
+    lea rdi, [NAME_SYM_REF_ARRAY]
     call entry_array_check_get
     test rax, rax
     jnz _end_get_mem_def_name_buf 
-    mov rdi, NAME_SYM_REF_ARRAY
+    lea rdi, [NAME_SYM_REF_ARRAY]
     mov esi, [rdi+12]
     shl esi, 1
     lea rdx, [rbp-24]
@@ -383,7 +383,7 @@ get_mem_def_name_buf:
     jnz _success_realloc_pnt_def 
     exit_m -9
 _success_realloc_pnt_def:
-    mov rdi, NAME_SYM_REF_ARRAY
+    lea rdi, [NAME_SYM_REF_ARRAY]
     mov r8, [rdi]
     mov r9, [rbp-24]
     mov [rbp-32], r8
@@ -394,7 +394,7 @@ _success_realloc_pnt_def:
     mov dword [rbp-44], 0
     mov [rbp-48], eax
 __ht_reasign_pnt_def:
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [r8+16]
     mov ecx, [r8+24]
     movzx edx, byte [r8+29]
@@ -414,9 +414,9 @@ __ht_reasign_pnt_def:
     lea r8, [rdi+rcx]
     jmp __ht_reasign_pnt_def
 __dealloc_old_pnt_def:
-    mov rdi, NAME_SYM_REF_ARRAY
+    lea rdi, [NAME_SYM_REF_ARRAY]
     call entry_array_dealloc
-    mov rdx, NAME_SYM_REF_ARRAY
+    lea rdx, [NAME_SYM_REF_ARRAY]
     mov rdi, rdx
     lea rsi, [rbp-24]
     mov ecx, ENTRY_ARRAY_DATA_SIZE 
@@ -482,7 +482,7 @@ _add_entry_pnt_def:
     mov rdx, [rbp-32]
     mov ecx, [rbx+16]
     mov [rdx+8], ecx
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [rbp-8]
     add rdx, 16
     call hash_table_add_entry
@@ -511,7 +511,7 @@ get_name_sym_ref_data:
     mov rsi, [rdi]
     movzx edx, byte [rdi+13]
     mov ecx, [rdi+8]
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     call hash_table_find_entry
     mov rbx, [rax]
     test rbx, rbx
@@ -537,13 +537,13 @@ _check_exist_gnsrd:
     mov r8d, [rbp-36]
     mov r9, [rbp-44]
     call push_link_to_unk
-    mov rax, UNKNOWN_NAME_SYM_REF_ARRAY
+    lea rax, [UNKNOWN_NAME_SYM_REF_ARRAY]
     mov rbx, [rbp-32]
     mov rcx, [rax]
     sub rbx, rcx
     jmp _end_get_name_sym_ref_data
 _def_sym_gnsrd:
-    mov rax, NAME_SYM_REF_ARRAY
+    lea rax, [NAME_SYM_REF_ARRAY]
     mov rcx, [rax]
     sub rbx, rcx
 _end_get_name_sym_ref_data:
@@ -654,7 +654,7 @@ push_name_ptr_offset:
     inc ebx
     mov [rbp-24], rax
     mov rdi, [rbp-8]
-    mov rsi, SEG_ENTRY_ARRAY 
+    lea rsi, [SEG_ENTRY_ARRAY]
     mov edx, dword [CURR_SEG_OFFSET] 
     mov ecx, [rbp-16]
     mov r8d, ebx
@@ -1284,7 +1284,7 @@ ___ins_next_arg_eof:
     jmp _end_start_parser
 
 _begin_name_sp:
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [rbp-16]
     movzx edx, byte [rbp-3]
     mov ecx, [rbp-8]
@@ -1652,7 +1652,7 @@ ___name_sp_macro_arg_end:
 ___name_sp_macro_set_buf:
     cmp r9, r10
     jae ___name_sp_macro_end
-    mov rdi, TEMP_COMMON_ARR
+    lea rdi, [TEMP_COMMON_ARR]
     mov esi, [r9+4]
     movzx eax, byte [r9+8]
     cmp eax, MACRO_EMPTY_ARG_FLAG
@@ -1846,7 +1846,7 @@ __kw_macr:
     movzx eax, byte [rbp-4]
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [rbp-16]
     movzx edx, byte [rbp-3]
     mov ecx, [rbp-8]
@@ -1885,7 +1885,7 @@ __kw_macro_arg_loop:
     test rbx, rbx
     jnz _err_macro_arg_rep
     mov [rbp-108], rax
-    mov rdi, TEMP_COMMON_ARR
+    lea rdi, [TEMP_COMMON_ARR]
     mov esi, 15
     call entry_array_reserve_size
     mov rdx, rax
@@ -2025,7 +2025,7 @@ __kw_name_mod:
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [rbp-32]
     movzx edx, byte [rbp-19]
     mov ecx, [rbp-24]
@@ -2131,7 +2131,7 @@ __kw_entry:
     movzx eax, byte [rbp-20]
     cmp eax, TOKEN_TYPE_NAME
     jne _err_invalid_expr
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, [rbp-32]
     movzx edx, byte [rbp-19]
     mov ecx, [rbp-24]
@@ -2171,64 +2171,64 @@ __kw_entry_err:
     jmp _err_dubl_entry
 
 _err_macro_arg_rep:
-    mov rsi, ERR_MACRO_ARG_REP
+    lea rsi, [ERR_MACRO_ARG_REP]
     jmp _err_start_parser
 _err_macro_to_many_arg:
-    mov rsi, ERR_MACRO_TM_ARG
+    lea rsi, [ERR_MACRO_TM_ARG]
     jmp _err_start_parser
 _err_invalid_command_in_macr_def:
-    mov rsi, ERR_MACRO_FORBID_CMD
+    lea rsi, [ERR_MACRO_FORBID_CMD]
     jmp _err_start_parser
 _err_segment_not_set:
-    mov rsi, ERR_SEGMENT_NOT_SET
+    lea rsi, [ERR_SEGMENT_NOT_SET]
     jmp _err_start_parser
 _err_out_of_range_value:
-    mov rsi, ERR_STATIC_DIGIT_OVERFLOW
+    lea rsi, [ERR_STATIC_DIGIT_OVERFLOW]
     jmp _err_start_parser
 _err_invalid_const_value:
-    mov rsi, ERR_INV_CONST_DEF
+    lea rsi, [ERR_INV_CONST_DEF]
     jmp _err_start_parser
 _err_defined_symbol:
-    mov rsi, ERR_DEF_SYM
+    lea rsi, [ERR_DEF_SYM]
     jmp _err_start_parser
 _err_invalid_addr_expr:
-    mov rsi, ERR_INV_ADDR
+    lea rsi, [ERR_INV_ADDR]
     jmp _err_start_parser
 _err_invalid_expr:
-    mov rsi, ERR_INV_EXP
+    lea rsi, [ERR_INV_EXP]
     jmp _err_start_parser
 _err_def_ext:
-    mov rsi, ERR_SYM_EXT_ALR_DEF
+    lea rsi, [ERR_SYM_EXT_ALR_DEF]
     jmp _err_start_parser
 _err_def_pub:
-    mov rsi, ERR_SYM_PUB_TYPE
+    lea rsi, [ERR_SYM_PUB_TYPE]
     jmp _err_start_parser
 _err_def_mod_def:
-    mov rsi, ERR_SYM_HAS_MOD
+    lea rsi, [ERR_SYM_HAS_MOD]
     jmp _err_start_parser
 _err_def_ext_before:
-    mov rsi, ERR_SYM_EXT_DEF
+    lea rsi, [ERR_SYM_EXT_DEF]
     jmp _err_start_parser
 _err_dubl_entry:
-    mov rsi, ERR_DUBL_ENTRY
+    lea rsi, [ERR_DUBL_ENTRY]
     jmp _err_start_parser
 _err_str_reg_val:
-    mov rsi, ERR_INV_EXP
+    lea rsi, [ERR_INV_EXP]
     jmp _err_start_parser
 _err_seg_in_non_exe:
-    mov rsi, ERR_SEG_IN_N_EXE
+    lea rsi, [ERR_SEG_IN_N_EXE]
     jmp _err_start_parser
 _err_sec_in_non_obj:
-    mov rsi, ERR_SEC_IN_N_OBJ
+    lea rsi, [ERR_SEC_IN_N_OBJ]
     jmp _err_start_parser
 _err_invalid_sec_modifier:
-    mov rsi, ERR_SEC_INV_MOD
+    lea rsi, [ERR_SEC_INV_MOD]
     jmp _err_start_parser
 _err_entry_in_obj:
-    mov rsi, ERR_ENTRY_IN_OBJ
+    lea rsi, [ERR_ENTRY_IN_OBJ]
     jmp _err_start_parser
 _err_seg_inv_def:
-    mov rsi, ERR_SEG_INV_DEF
+    lea rsi, [ERR_SEG_INV_DEF]
 _err_start_parser:
     mov edi, [rbp-52]
     xor rdx, rdx
@@ -2315,7 +2315,7 @@ parser_check_print_unk_name:
     push rbp
     mov rbp, rsp
     sub rsp, 64
-    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY 
+    lea rdi, [UNKNOWN_NAME_SYM_REF_ARRAY] 
     mov ecx, [rdi+8]
     mov eax, UNK_ENTRY_SIZE
     mul ecx
@@ -2338,12 +2338,12 @@ _loop_cpun:
     mov [rbp-8], rdx
     mov r9, [rdx+16]
 __start_inner_loop_cpun:
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     call list_get_node_ptr
     mov ebx, [rax]
     mov [rbp-28], ebx
     mov edi, [rax+4]
-    mov rsi, ERR_UNDEF_SYM
+    lea rsi, [ERR_UNDEF_SYM]
     mov ecx, [rax+24]
     mov r8d, [rax+28]
     xor r9, r9
@@ -2399,26 +2399,26 @@ init_parser_data:
     push rbp
     mov rbp, rsp
     sub rsp, 32
-    mov rdi, TEMP_COMMON_ARR
+    lea rdi, [TEMP_COMMON_ARR]
     mov rsi, 2048
     call init_entry_array
-    mov rdi, NAME_SYM_HASH_TABLE
+    lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, 4096
     xor rdx, rdx
     call hash_table_init
     test rax, rax
     jz _fail_exit_init_parser_data 
-    mov rdi, UNKNOWN_NAME_SYM_REF_ARRAY
+    lea rdi, [UNKNOWN_NAME_SYM_REF_ARRAY]
     mov rsi, 1024
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
-    mov rdi, NAME_SYM_REF_ARRAY
+    lea rdi, [NAME_SYM_REF_ARRAY]
     mov esi, 20480
     call init_entry_array
     test rax, rax
     jz _fail_exit_init_parser_data
-    mov rdi, PATCH_LIST
+    lea rdi, [PATCH_LIST]
     mov esi, 1024
     call init_list
     test rax, rax
@@ -2426,7 +2426,7 @@ init_parser_data:
     mov bl, [BUILD_TYPE]
     cmp bl, BUILD_TYPE_ELF_EXE
     jne _init_parser_check_o
-    mov rdi, SEG_ENTRY_ARRAY
+    lea rdi, [SEG_ENTRY_ARRAY]
     mov esi, 8
     call init_entry_array
     test rax, rax
@@ -2450,7 +2450,7 @@ _init_parser_check_o:
     ; TODO: do similar init for exe type?
     cmp bl, BUILD_TYPE_ELF_OBJ
     jne _init_parser_check_b
-    mov rdi, SEG_ENTRY_ARRAY
+    lea rdi, [SEG_ENTRY_ARRAY]
     mov esi, 48
     call init_entry_array
     test rax, rax
@@ -2518,7 +2518,7 @@ __next_init_sec_loop:
     mov [rbp-8], rbx
     jmp _init_sections_loop
 _init_parser_check_b:
-    mov rdi, SEG_ENTRY_ARRAY
+    lea rdi, [SEG_ENTRY_ARRAY]
     mov esi, 1
     call init_entry_array
     mov rdi, qword [SEG_ENTRY_ARRAY]
