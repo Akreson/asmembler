@@ -2399,9 +2399,6 @@ init_parser_data:
     push rbp
     mov rbp, rsp
     sub rsp, 32
-    lea rdi, [TEMP_COMMON_ARR]
-    mov rsi, 2048
-    call init_entry_array
     lea rdi, [NAME_SYM_HASH_TABLE]
     mov rsi, 4096
     xor rdx, rdx

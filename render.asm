@@ -79,15 +79,15 @@ entry_array_data_m DELAYED_PATCH_ARR, ADDR_ARR_PATCH_ENTRY_SIZE
 SEGMENT_PATCH_ENTRY_SIZE equ 24
 entry_array_data_m LOCAL_PATCH_ARR, SEGMENT_PATCH_ENTRY_SIZE
 
+entry_array_data_m TEMP_SYM_PTR_ARR, 8
+entry_array_data_m TEMP_HELP_ARR, 1
+
 SEGMENT_PATCH_LIST dq 0
 dd 0, 0, SEGMENT_PATCH_ENTRY_SIZE
 dd 0, 0
 
 SEGMENT_DEF_ORDER_COUNT equ 6
 SEGMENT_DEF_ORDER db 6, 4, 5, 7, 3, 1
-
-entry_array_data_m TEMP_SYM_PTR_ARR, 8
-entry_array_data_m TEMP_HELP_ARR, 1
 
 segment readable executable
 
@@ -241,54 +241,6 @@ _end_push_to_addr_patch:
     pop rbp
     ret
 
-; rdi - ptr to token buff entry_array, rsi - ptr to render entry_array
-; rdx - ptr to header start from, ecx - amount of bytes to shift
-reduce_ins_offset:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 32
-    mov [rbp-8], rdi
-    mov [rbp-16], rsi
-    mov [rbp-20], ecx
-    movzx ebx, byte [rdx+7]
-    mov eax, [rdx]
-    add eax, ebx
-    mov r8, [rsi]
-    mov r9d, [rsi+8]
-    lea rdi, [r8+rax]
-    add r8, r9
-    mov rsi, rdi
-    add rsi, rcx
-    mov rcx, r8
-    sub rcx, rsi
-    rep movsb
-    mov rdi, [rbp-8]
-    mov r8, [rdi]
-    mov r9d, [rdi+8]
-    add r8, r9
-    mov ecx, [rbp-20]
-    mov eax, [rdx+12]
-    add rdx, rax
-_start_loop_reduce_io:
-    cmp rdx, r8
-    jge _end_reduce_ins_offset
-    mov rsi, rdx
-    mov eax, [rdx+12]
-    mov bl, [rdx+7]
-    add rdx, rax
-    test bl, bl
-    jz _start_loop_reduce_io
-    mov r10d, [rsi]
-    sub [rsi], ecx
-    jmp _start_loop_reduce_io 
-_end_reduce_ins_offset:
-    mov eax, [rbp-20]
-    mov rsi, [rbp-16]
-    sub [rsi+8], eax
-    add rsp, 32
-    pop rbp
-    ret
-
 ; rdi - ptr to start of token buff,
 set_local_ref_in_dec_order:
     push rbp
@@ -297,11 +249,13 @@ set_local_ref_in_dec_order:
     mov [rbp-24], rdi
     lea rax, [LOCAL_PATCH_ARR]
     lea rdi, [TEMP_SYM_PTR_ARR]
+    push rax
+    push rdi
     mov esi, [rax+8]
     call entry_array_reserve_size
     mov rdi, [rbp-24]
-    lea rax, [LOCAL_PATCH_ARR]
-    lea rbx, [TEMP_SYM_PTR_ARR]
+    pop rbx
+    pop rax
     mov rcx, [rax]
     mov rsi, [rbx]
     mov eax, [rax+8]
@@ -469,26 +423,30 @@ _end_propagate_local_patch:
 ; -40 ptr to curr entry,-44 curr entry offset, -48 , -56 ptr to start of patch_arr
 ; -64 ptr to end of patch_arr, -72 ptr to arr of ptr of sym,
 ; -80 end of arr ptr for prev / ptr to last patch entry 
+; -120 end ptr for render buff
 ; edi - curr seg offset
 render_patch_local_rel:
     push rbp
     mov rbp, rsp
     sub rsp, 128
-    lea rsi, [TEMP_COMMON_ARR]
-    lea rdx, [TEMP_HELP_ARR]
-    mov [rbp-104], rsi
-    mov [rbp-112], rdx
-    lea rax, [SEG_ENTRY_ARRAY]
-    mov rbx, [rax]
+    mov rbx, [SEG_ENTRY_ARRAY]
     lea rcx, [rbx+rdi]
     lea rdx, [rbx+rdi+20]
+    mov esi, [rbx+rdi+28]
     mov [rbp-8], rcx
     mov [rbp-16], rdx
     mov rax, [rcx]
     mov rbx, [rdx]
     mov [rbp-24], rax
     mov [rbp-32], rbx
-    mov rdi, rax
+    add rbx, rsi
+    mov [rbp-120], rbx
+    lea rdi, [TEMP_COMMON_ARR]
+    lea rdx, [TEMP_HELP_ARR]
+    mov [rbp-104], rdi
+    mov [rbp-112], rdx
+    call entry_array_ensure_free_space
+    mov rdi, [rbp-24]
     call set_local_ref_in_dec_order
     lea rax, [TEMP_SYM_PTR_ARR]
     mov rbx, [rax]
@@ -611,50 +569,90 @@ __file_left_end:
     mov [rbp-112], rax
     jmp _fix_left_patches_rplr
 _patch_ins_rplr:
-    mov r15, [rbp-56]
-    mov rax, [rbp-64]
-    sub rax, SEGMENT_PATCH_ENTRY_SIZE
+    mov r14, [rbp-24]
+    mov rsi, [rbp-32]
+    mov rax, [rbp-56]
+    mov r15, [rbp-64]
+    mov rdi, [TEMP_COMMON_ARR] 
+    xor ebx, ebx
+    mov [rbp-40], ebx
 _patch_loop_start_rplr:
-    cmp rax, r15
-    jb _end_render_patch_local_rel 
-    mov rdi, [rbp-32]
-    mov rdx, [rax+16]
-    mov r9d, [rdx]; curr sym offset
-    lea rsi, [rdi+r9]
+    cmp rax, r15 
+    jge _end_patching_rplr
+    mov rdx, [rbp-32]
+    mov r10, [rax+16]
+    mov r9d, [r10]; curr sym offset
+    lea rcx, [rdx+r9]
     movzx ebx, byte [rax+5]
-    mov ecx, [rsi+rbx]
+    mov edx, [rcx+rbx]
     mov r11b, MAX_INT8
     mov r12b, MIN_INT8
     movsx r11d, r11b
     movsx r12d, r12b
-    cmp ecx, r11d
+    cmp edx, r11d
     jg _patch_loop_next_rplr
-    cmp ecx, r12d
+    cmp edx, r12d
     jl _patch_loop_next_rplr
     movzx r8d, byte [rax+4]
     cmp r8d, ADDR_PATCH_TYPE_JCC_RIP
     jne _check_jmp_patch_rplr
-    mov bl, [rsi+1] ; from 2 byte jcc opcode to 1 byte
+    mov bl, [rcx+1] ; from 2 byte jcc opcode to 1 byte
     sub bl, 0x10
-    mov [rsi], bl
-    mov [rsi+1], cl
-    mov byte [rdx+7], 2
-    movzx ecx, byte [rax+2]
+    mov [rcx], bl
+    mov [rcx+1], dl
     jmp _reduce_buffers_rplr
 _check_jmp_patch_rplr:
-    or byte [rsi], 0x2
-    mov byte [rdx+7], 2
-    movzx ecx, byte [rax+2]
+    or byte [rcx], 0x2
 _reduce_buffers_rplr:
-    mov [rbp-80], rax
-    mov rdi, [rbp-8]
-    mov rsi, [rbp-16]
-    call reduce_ins_offset
-    mov r15, [rbp-56]
-    mov rax, [rbp-80]    
+    movzx r9, byte [rax+2] 
+    mov byte [r10+7], 2
+    add rcx, 2
+    sub rcx, rsi
+    rep movsb
+    add rsi, r9
+    mov ebx, [rbp-40]
+    add [rbp-40], r9d
+    mov rdx, r14
+    mov r11d, [r10+12]
+    add r10, r11
+_tail_patch_rplr:
+    mov r14, r10
+_start_loop_reduce_io:
+    cmp rdx, r10
+    jge _patch_loop_next_rplr
+    mov rcx, rdx 
+    mov r11d, [rdx+12]
+    add rdx, r11
+    mov r8b, [rcx+7]
+    test r8b, r8b
+    jz _start_loop_reduce_io
+    sub [rcx], ebx
+    jmp _start_loop_reduce_io 
 _patch_loop_next_rplr:
-    sub rax, SEGMENT_PATCH_ENTRY_SIZE
+    add rax, SEGMENT_PATCH_ENTRY_SIZE
     jmp _patch_loop_start_rplr
+_end_patching_rplr:
+    mov rdx, r14
+    mov ebx, [rbp-40]
+    mov rcx, [rbp-8]
+    mov r10d, [rcx+8]
+    add r10, [rcx]
+    cmp r14, r10
+    jne _tail_patch_rplr
+    mov rax, rsi
+    mov rcx, rdi
+    mov rsi, [TEMP_COMMON_ARR]
+    sub rcx, rsi
+    mov rdi, [rbp-32]
+    rep movsb
+    mov rcx, [rbp-120]
+    cmp rax, rcx
+    je _end_render_patch_local_rel
+    mov rsi, rax 
+    sub rcx, rax
+    rep movsb
+    mov rdx, [rbp-16]
+    sub [rdx+8], ebx
 _end_render_patch_local_rel:
     add rsp, 128
     pop rbp
@@ -4732,7 +4730,7 @@ _check_kw_rps:
     call process_data_define
     jmp _start_loop_process_segment
 _err_processing_start_token:
-    mov rsi, ERR_INS_UNSUPPORT
+    lea rsi, [ERR_INS_UNSUPPORT]
     mov rdi, [rbp-8]
     call set_reg_for_err_print
     call err_print
