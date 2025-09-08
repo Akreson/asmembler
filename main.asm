@@ -27,9 +27,9 @@ include 'render.asm'
 include 'build.asm'
 
 segment readable writeable
-TEST_R db "./r.bin", 0
-TEST_RW db "./rw.bin", 0
-TEST_RX db "./rx.bin", 0
+;TEST_R db "./r.bin", 0
+;TEST_RW db "./rw.bin", 0
+;TEST_RX db "./rx.bin", 0
 
 entry_array_data_m BUILD_ARR, 1
 entry_array_data_m TEMP_COMMON_ARR, 1
@@ -210,7 +210,7 @@ _print_info_start:
 ;    mov r8, [SEG_ENTRY_ARRAY]
 ;    add r8, 256
 ;    mov rdi, rax
-;   mov rsi, [r8+20]
+;    mov rsi, [r8+20]
 ;    mov edx, [r8+28]
 ;    call write
 
@@ -222,7 +222,7 @@ _print_info_start:
 ;    mov rsi, [r8+20]
 ;    mov edx, [r8+28]
 ;    call write
-    jmp _end_start
+    jmp _end_start ;NOTE: do not comment this line
 _err_arg_missed:
     lea rsi, [ERR_MISSED_ARG]
     jmp _err_start
