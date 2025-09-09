@@ -1,130 +1,29 @@
 segment readable writeable
 
-ALL_ONE_8B dq 0x0101010101010101
-ALL_HIGH_SET_8B dq 0x8080808080808080
-SPACE_CHAR_4B dq 0x200D090B
+CHAR_TABLE db 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0x42, 4, 0, 4, 0, 0; 0 - 15
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 16 - 31
+db 4, 0, 0x4A, 0, 0, 0x82, 0, 0x52, 0x5A, 0x62, 0x3A, 0x2A, 0xA, 0x32, 0x8A, 0; 32 - 47
+db 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0x12, 0x7A, 0, 0, 0, 0; 48 - 63
+db 0x92, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1; 64 - 79
+db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0x1A, 0, 0x22, 0, 1; 80 - 95
+db 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1; 96 - 111
+db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0x6A, 0, 0x72, 0, 0; 112 - 127
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 128 - 143
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 144 - 159
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 160 - 175
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 176 - 191
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 192 - 207
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 208 - 223
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 224 - 239
+db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 240 - 255
+
+CHAR_TYPE_INVALID equ 0
+CHAR_TYPE_NAME    equ 1
+CHAR_TYPE_AUX     equ 2
+CHAR_TYPE_DIGIT   equ 3
+CHAR_TYPE_SPACE   equ 4
 
 segment readable executable
-
-; does not modifies rbx, rcx, rsi, rdi reg
-;rdi - byte to check, rsi - bytes to cmp with
-is_contain_byte_8b:
-    push rbp
-    mov rbp, rsp
-    mov r8, [ALL_ONE_8B]
-    mov r9, [ALL_HIGH_SET_8B]
-    mov rax, r8
-    mul rdi
-    xor rax, rsi
-    mov r10, rax
-    mov r11, r8
-    xor r11, r10
-    and r8, r11
-    sub r10, r8
-    not rax
-    and rax, r10
-    and rax, r9
-    pop rbp
-    ret
-
-; edi - byte to check, esi - bytes to cmp with
-is_contain_byte_4b:
-    push rbp
-    mov rbp, rsp
-    mov r8d, dword [ALL_ONE_8B]
-    mov r9d, dword [ALL_HIGH_SET_8B]
-    mov eax, r8d
-    mul edi
-    xor eax, esi
-    mov r10d, eax
-    mov r11d, r8d
-    xor r11d, r10d
-    and r8d, r11d
-    sub r10d, r8d
-    not eax
-    and eax, r10d
-    and eax, r9d
-    pop rbp
-    ret
-
-;rdi - char to check
-is_alpha:
-    push rbp
-    mov rbp, rsp
-    xor rax, rax
-    mov ecx, 'a'
-    mov ebx, 'z'
-    cmp edi, ecx
-    jb _check_next_alpha_range_ia
-    cmp edi, ebx
-    ja _end_is_alpha 
-    jmp _success_ia
-_check_next_alpha_range_ia:
-    mov ecx, 'A'
-    mov ebx, 'Z'
-    cmp edi, ecx
-    jb _end_is_alpha
-    cmp edi, ebx
-    ja _end_is_alpha
-_success_ia:
-    inc rax
-_end_is_alpha:
-    pop rbp
-    ret
-
-;does not modifies rbx -rdi reg
-;rdi - char to check
-is_digit:
-    push rbp
-    mov rbp, rsp
-    xor eax, eax
-    mov r8d, '0'
-    mov r9d, '9'
-    cmp edi, r8d
-    jb _end_is_digit
-    cmp edi, r9d
-    ja _end_is_digit
-    inc eax
-_end_is_digit:
-    pop rbp
-    ret
-
-;does not modifies rbx, rcx, rdx, rdi reg
-;rdi - byte to check
-is_aux_sym:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 32
-    xor rax, rax
-    lea r8, [STR_COMMA]
-    mov [rbp-32], r8
-    mov r9, r8
-    add r9, AUX_MEM_BLOCK_SIZE
-    mov [rbp-16], r9
-_loop_ias:
-    mov rsi, qword [r8]
-    mov [rbp-8], r8
-    call is_contain_byte_8b
-    mov r8, [rbp-8]
-    test rax, rax
-    jnz _set_result_ias
-    mov r9, [rbp-16]
-    add r8, 8
-    cmp r8, r9
-    je _end_is_aux_sym
-    jmp _loop_ias
-_set_result_ias:
-    sub r8, [rbp-32]
-    lzcnt rax, rax
-    mov r10, 64
-    sub r10, rax
-    shr r10, 3
-    add r10, r8
-    mov rax, r10
-_end_is_aux_sym:
-    add rsp, 32
-    pop rbp
-    ret
 
 ; rdi - ptr to file entry, esi - line skip to
 ; return rax - ptr, rbx - offset
@@ -196,31 +95,6 @@ _end_get_curr_line_start_end:
     pop rbp
     ret
 
-;does not modifies rbx, rcx, rdx, rdi reg
-;rdi - char to check
-is_valid_sym_char:
-    push rbp
-    mov rbp, rsp
-    mov esi, dword [SPACE_CHAR_4B]
-    test edi, edi
-    jz _fail_ivsc
-    call is_contain_byte_4b
-    test eax, eax
-    jnz _fail_ivsc
-    call is_aux_sym
-    test rax, rax
-    jz _success_ivsc
-    cmp rax, AUX_NAME_VALID_FROM
-    jb _fail_ivsc
-_success_ivsc:
-    mov rax, 1
-    jmp _end_valid_sym_char
-_fail_ivsc:
-    xor rax, rax
-_end_valid_sym_char:
-    pop rbp
-    ret
-
 ; rdi - file entry ptr, rsi - ptr to space for symbol entry
 ; -8 passed rdi, -16 passed rsi, -24 ptr to buff, -32 size of buff
 ; -40 curr read offset, -48 cached last read char, -56 ptr to aux token
@@ -236,7 +110,7 @@ next_token:
     mov [rbp-24], rbx
     mov rdx, [rdi+8]
     mov [rbp-32], rdx
-    mov esi, dword [SPACE_CHAR_4B]
+    lea rsi, [CHAR_TABLE]
     mov [rbp-80], rcx
     mov dword [rbp-84], 0
 _loop_skip_wt_nt:
@@ -253,12 +127,12 @@ __comment_skip_loop:
     cmp edi, _CONST_NEW_LINE
     jne __comment_skip_loop
     mov [rbp-40], rcx
-    jmp _aux_check_nt
+    jmp _char_check_begin_nt
 __loop_skip_check_space:
-    call is_contain_byte_4b
-    test eax, eax
-    jz _char_check_nt
-    mov rdx, [rbp-32]
+    mov al, [rsi+rdi]
+    and al, 0x7
+    cmp al, CHAR_TYPE_SPACE
+    jne _char_check_nt
     inc rcx
     cmp rcx, rdx
     je _eof_nt
@@ -271,38 +145,36 @@ _char_check_nt:
     mov rcx, r9
     mov [rbp-40], rcx
     mov [rbp-48], edi
-    call is_alpha
-    test rax, rax
-    jnz _scan_symbol_nt
-    mov edi, [rbp-48]
-    mov ebx, '_'
-    cmp edi, ebx
+_char_check_begin_nt:
+    lea rdx, [CHAR_TABLE]
+    movzx ebx, byte [rdx+rdi]
+    mov eax, ebx
+    and ebx, 0x7
+    cmp ebx, CHAR_TYPE_NAME
     je _scan_symbol_nt
-    call is_digit
-    test eax, eax
-    jnz _scan_digit_nt
-    mov edi, [rbp-48]
-    mov ebx, _CONST_DQM
-    mov edx, _CONST_QM
-    cmp edi, ebx
+    cmp ebx, CHAR_TYPE_DIGIT
+    je _scan_digit_nt
+    mov esi, _CONST_DQM
+    mov ecx, _CONST_QM
+    cmp edi, esi 
     je _set_str_token
-    cmp edi, edx
+    cmp edi, ecx
     je _set_str_token
 _aux_check_nt:
-    call is_aux_sym
-    test rax, rax
-    jz _unrec_char_nt
-    lea rbx, [DUMMY_NODE_AUX]
-    imul rax, rax, TOKEN_KIND_SIZE
-    add rbx, rax
-    mov [rbp-56], rbx
-    mov edx, dword [rbx+8]
+    cmp ebx, CHAR_TYPE_AUX
+    jne _unrec_char_nt
+    shr eax, 3
+    imul eax, eax, TOKEN_KIND_SIZE
+    lea rcx, [DUMMY_NODE_AUX]
+    add rcx, rax
+    mov [rbp-56], rcx
+    mov edx, dword [rcx+8]
     cmp edx, AUX_NEW_LINE
     jne _set_aux_token
     mov rbx, [rbp-24]
     mov rdx, [rbp-32]
     mov rcx, [rbp-40]
-    mov esi, dword [SPACE_CHAR_4B]
+    lea rsi, [CHAR_TABLE]
 _loop_new_line_collate_nl_nt:
     mov rdi, [rbp-8]
     inc dword [rdi+44]
@@ -315,9 +187,10 @@ _loop_collate_nl_nt:
     je _loop_new_line_collate_nl_nt
     cmp edi, _CONST_SEMICOLON
     je __comment_skip_loop
-    call is_contain_byte_4b
-    test eax, eax
-    jnz _loop_collate_nl_nt
+    mov al, [rsi+rdi]
+    and al, 0x7
+    cmp al, CHAR_TYPE_SPACE
+    je _loop_collate_nl_nt
     dec rcx
     mov [rbp-40], rcx
 _set_aux_token:
@@ -333,24 +206,36 @@ _set_aux_token:
     rep movsb
     mov rax, 1
     jmp _end_next_token
+
 _scan_symbol_nt:
     mov rbx, [rbp-24]
     mov rcx, [rbp-40]
     mov [rbp-64], rcx
+
+    mov r8, [rbp-32]
+    mov r9, [rbp-64]
+    lea rdx, [CHAR_TABLE]
 __loop_scan_symbol_nt:
     inc rcx
-    mov r8, [rbp-32]
     cmp rcx, r8
     jae __finish_loop_scan_symbol_nt
-    mov rdx, rcx
-    mov rax, [rbp-64]
-    sub rdx, rax
-    cmp rdx, SYM_NAME_MAX_LEN
+    mov rsi, rcx
+    sub rsi, r9 
+    cmp rsi, SYM_NAME_MAX_LEN
     ja _err_to_long_sym_nt
     movzx edi, byte [rbx+rcx]
-    call is_valid_sym_char
-    test rax, rax
-    jnz __loop_scan_symbol_nt
+    movzx eax, byte [rdx+rdi]
+    mov esi, eax
+    and eax, 0x7
+    cmp eax, CHAR_TYPE_INVALID
+    je _unrec_char_nt 
+    cmp eax, CHAR_TYPE_SPACE
+    je __finish_loop_scan_symbol_nt
+    cmp eax, CHAR_TYPE_AUX
+    jne __loop_scan_symbol_nt
+    shr esi, 3
+    cmp esi, AUX_NAME_VALID_FROM
+    jae __loop_scan_symbol_nt
 __finish_loop_scan_symbol_nt:
     mov [rbp-40], rcx
     mov rbx, [rbp-24]
@@ -396,6 +281,7 @@ _scan_digit_nt:
     mov rbx, [rbp-24]
     mov rcx, [rbp-40]
     mov [rbp-64], rcx
+    lea r9, [CHAR_TABLE]
     mov eax, 10
     cmp edi, '0'
     je __check_base16_start_nt
@@ -403,6 +289,8 @@ _scan_digit_nt:
 __check_base16_start_nt:
     inc rcx
     movzx edi, byte [rbx+rcx]
+    movzx esi, byte [r9+rdi]
+    and esi, 0x7
     cmp edi, _CONST_SPACE
     je __start_loop_scan_digit_nt
     cmp edi, _CONST_TAB
@@ -412,9 +300,8 @@ __check_base16_start_nt:
     mov eax, 16
     jmp __start_loop_inc_scan_digit_nt
 __check_base8_start_nt:
-    call is_digit
-    test eax, eax
-    jz __check_base2_start_nt
+    cmp esi, CHAR_TYPE_DIGIT
+    jne __check_base2_start_nt
     mov eax, 8
     jmp __start_loop_inc_scan_digit_nt
 __check_base2_start_nt:
@@ -423,9 +310,8 @@ __check_base2_start_nt:
     mov eax, 2
     jmp __start_loop_inc_scan_digit_nt
 __check_aux_digit_next:
-    call is_aux_sym
-    test rax, rax
-    jz _err_digit_format
+    cmp esi, CHAR_TYPE_AUX
+    jne _err_digit_format
     mov eax, 10
     xor edi, edi
     jmp __finish_scan_digit_nt
@@ -438,33 +324,27 @@ __loop_scan_digit_nt:
     cmp rcx, r8
     jae __finish_scan_digit_nt
     movzx edi, byte [rbx+rcx]
-    call is_digit
-    test eax, eax
-    jz __check_base16_digit_nt
+    movzx esi, byte [r9+rdi]
+    and esi, 0x7
+    cmp esi, CHAR_TYPE_DIGIT
+    jne __check_base16_digit_nt
     sub edi, '0'
     jmp __build_up_digit_nt
 __check_base16_digit_nt:
     mov edx, edi
-    mov eax, 32
-    not eax
-    and edx, eax
-    mov eax, 'A'
-    mov esi, 'F'
-    cmp edi, eax
+    and edx, 0xDF 
+    cmp dl, 'A'
     jb __check_end_of_digit
-    cmp edx, esi
+    cmp dl, 'F'
     ja __check_end_of_digit
     mov edi, edx
     sub edi, 55
     jmp __build_up_digit_nt
 __check_end_of_digit:
-    call is_aux_sym
-    test rax, rax
-    jnz __finish_scan_digit_nt
-    mov esi, dword [SPACE_CHAR_4B]
-    call is_contain_byte_4b
-    test rax, rax
-    jnz __finish_scan_digit_nt
+    cmp esi, CHAR_TYPE_AUX
+    je __finish_scan_digit_nt 
+    cmp esi, CHAR_TYPE_SPACE 
+    je __finish_scan_digit_nt
     jmp _err_digit_format
 __build_up_digit_nt:
     mov rsi, [rbp-72]
@@ -545,16 +425,16 @@ _err_digit_overflow:
 __err_digit_end_nt:
     mov [rbp-128], rbx
     mov rbx, [rbp-24]
-    mov esi, dword [SPACE_CHAR_4B]
+    lea rdx, [CHAR_TABLE]
 __loop_err_digit_end_nt:
     inc rcx
     movzx edi, byte [rbx+rcx]
-    call is_aux_sym
-    test eax, eax
-    jnz __finish_loop_err_digit_end_nt
-    call is_contain_byte_4b
-    test eax, eax
-    jnz __finish_loop_err_digit_end_nt
+    movzx eax, byte [rdx+rdi]
+    and eax, 0x7
+    cmp eax, CHAR_TYPE_AUX
+    je __finish_loop_err_digit_end_nt
+    cmp eax, CHAR_TYPE_SPACE
+    je __finish_loop_err_digit_end_nt
     jmp __loop_err_digit_end_nt
 __finish_loop_err_digit_end_nt:
     mov rax, [rbp-64]
