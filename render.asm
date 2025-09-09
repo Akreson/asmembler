@@ -619,7 +619,7 @@ _tail_patch_rplr:
     mov r14, r10
 _start_loop_reduce_io:
     cmp rdx, r10
-    jge _patch_loop_next_rplr
+    jae _patch_loop_next_rplr
     mov rcx, rdx 
     mov r11d, [rdx+12]
     add rdx, r11
