@@ -154,11 +154,9 @@ _char_check_begin_nt:
     je _scan_symbol_nt
     cmp ebx, CHAR_TYPE_DIGIT
     je _scan_digit_nt
-    mov esi, _CONST_DQM
-    mov ecx, _CONST_QM
-    cmp edi, esi 
+    cmp dil, _CONST_DQM 
     je _set_str_token
-    cmp edi, ecx
+    cmp dil, _CONST_QM
     je _set_str_token
 _aux_check_nt:
     cmp ebx, CHAR_TYPE_AUX
